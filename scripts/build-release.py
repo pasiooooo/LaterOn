@@ -79,7 +79,8 @@ def relative_name(path: Path) -> str:
 def release_files() -> list[Path]:
     files = [ROOT / name for name in RUNTIME_FILES]
     for directory in RUNTIME_DIRS:
-        files.extend(path for path in (ROOT / directory).rglob("*") if path.is_file())
+        files.extend(path for path in (ROOT / directory).rglob("*")
+                     if path.is_file() and path.name not in FORBIDDEN_NAMES)
 
     missing = [relative_name(path) for path in files if not path.is_file()]
     if missing:
@@ -125,7 +126,7 @@ def validate_archive(archive: Path, expected: set[str]) -> None:
             extra = sorted(set(names) - expected)
             raise RuntimeError(f"Release ZIP contents differ from allowlist; missing={missing}, extra={extra}")
         for name in names:
-            if name in FORBIDDEN_NAMES or name.endswith(".md") or name.startswith(FORBIDDEN_PREFIXES):
+            if Path(name).name in FORBIDDEN_NAMES or name.endswith(".md") or name.startswith(FORBIDDEN_PREFIXES):
                 raise RuntimeError(f"Development-only file leaked into release ZIP: {name}")
         json.loads(package.read("manifest.json").decode("utf-8"))
 

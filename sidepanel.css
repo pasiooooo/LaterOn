@@ -65,7 +65,8 @@ main { padding:14px 13px 30px; }
 .thumb img { width:100%; height:100%; object-fit:cover; }
 /* 没抓到封面时的兜底：和完整界面一样铺满显示 LaterOn 的 Logo 砖，而不是一个箭头。 */
 .thumb-placeholder { position:absolute; inset:0; display:grid; place-items:center; background:linear-gradient(140deg,#ff7a45,#ff5c35); }
-/* 真实封面：盖在占位之上（它在 DOM 里排在占位前面，不给 z-index 会被占位挡住）。 */
+/* 有真实封面时隐藏占位，透明 SVG/PNG 只透出主题底色；坏图移除后自动恢复占位。 */
+.thumb-img ~ .thumb-placeholder { display:none; }
 .thumb .thumb-img { position:absolute; inset:0; z-index:1; }
 .thumb-logo { display:block; width:100%; height:100%; object-fit:cover; }
 .thumb-placeholder .thumb-logo { border-radius: 0; }
