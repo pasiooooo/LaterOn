@@ -12,10 +12,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
 
-# Only files required by the installed extension belong in a release package.
+# Only extension runtime files and the required license notice belong in a release package.
 # Keep this list explicit: adding a test, screenshot, design draft or document to
 # the repository must never make it into a user's extension by accident.
 RUNTIME_FILES = (
+    "LICENSE",
     "manifest.json",
     "article-cover-placeholder.png",
     "background.js",
