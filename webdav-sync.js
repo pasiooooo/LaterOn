@@ -4,8 +4,11 @@
   const Core = globalThis.LaterOnSyncCore;
   const CONFIG = "laterOnWebDAV", STATE = "laterOnSyncState", STATUS = "laterOnSyncStatus";
   const APPLIED = "laterOnSyncApplied", ALARM = "laterOnWebDAVSync";
+  const QUIET = "laterOnSyncQuietUntil", LOCAL_IDLE_MS = 30000;
   const FILE = "lateron-sync-v1.json", MAX_BYTES = 50 * 1024 * 1024;
+  const BASE = "laterOnWebDAVBase";
   let localQueue = Promise.resolve(), active = null, debounce = null, generation = 0;
+  let quietUntil = 0;
   const controllers = new Set();
   let rerun = false;
   const serial = task => {
@@ -41,10 +44,11 @@
     const message = String(error?.message || "");
     return /^sync[A-Za-z]+$/.test(message) || /^HTTP \d{3}$/.test(message) ? message : "syncNetworkError";
   }
-  async function commit(doc, device) {
+  async function commit(doc, device, base) {
     const next = Core.materialize(doc);
     const current = await chrome.storage.local.get(Core.KEYS);
-    const patch = { [STATE]: { device, doc }, [APPLIED]: crypto.randomUUID() };
+    const patch = { [STATE]: { device, doc }, [APPLIED]: crypto.randomUUID(), [QUIET]: quietUntil };
+    if (base) patch[BASE] = base;
     for (const key of Core.KEYS) if (!Core.equal(current[key] ?? (Array.isArray(next[key]) ? [] : {}), next[key])) patch[key] = next[key];
     await chrome.storage.local.set(patch);
   }
@@ -59,7 +63,8 @@
   }
   async function initialize() {
     return serial(async () => {
-      const stored = await chrome.storage.local.get([...Core.KEYS, STATE, CONFIG]);
+      const stored = await chrome.storage.local.get([...Core.KEYS, STATE, CONFIG, QUIET]);
+      if (Number.isFinite(stored[QUIET])) quietUntil = Math.max(quietUntil, stored[QUIET]);
       if (!stored[STATE] && !stored[CONFIG]?.enabled) return;
       const device = stored[STATE]?.device || crypto.randomUUID();
       const doc = stored[STATE]?.doc;
@@ -67,6 +72,7 @@
       // Repair the journal if the worker stopped after a user write but before
       // its storage change event was recorded.
       const next = doc ? Core.change(doc, Core.materialize(doc), data, device) : Core.seed(data, device);
+      if (doc && !Core.equal(next, doc)) quietUntil = Date.now() + LOCAL_IDLE_MS;
       await commit(next, device);
     });
   }
@@ -76,17 +82,20 @@
   }
   function soon() {
     if (debounce !== null) clearTimeout(debounce);
-    debounce = setTimeout(() => { debounce = null; sync().catch(() => {}); }, 1200);
+    debounce = setTimeout(() => { debounce = null; sync().catch(() => {}); }, Math.max(0, quietUntil - Date.now()));
     // The persistent alarm is the fallback if MV3 suspends this timer.
   }
   const ready = initialize();
   ready.catch(() => status({ phase: "error", error: "syncLocalError" }).catch(() => {}));
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "local" || changes[APPLIED] || !Core.KEYS.some(key => changes[key])) return;
+    // Set this synchronously so an in-flight poll cannot publish a fresh edit
+    // while its journal write is still queued. Persist it with the journal.
+    quietUntil = Date.now() + LOCAL_IDLE_MS;
     serial(async () => {
       const stored = await chrome.storage.local.get([STATE]);
       const state = stored[STATE];
-      if (!state) return;
+      if (!state) { await chrome.storage.local.set({ [QUIET]: quietUntil }); return; }
       const before = {}, after = {};
       for (const key of Core.KEYS) if (changes[key]) {
         before[key] = changes[key].oldValue;
@@ -175,85 +184,104 @@
     if (!response.ok) throw httpError(response.status);
     return LaterOnWebDAVDirectory.names(response.text, directoryUrl(config));
   }
-  async function exchange(config, epoch) {
-    // Immutable, random snapshot names eliminate the shared-file write race.
-    // ETags and conditional PUT support are deliberately not required.
+  function checkQuiet(manual) {
+    if (!manual && Date.now() < quietUntil) throw new Error("syncWaitingForIdle");
+  }
+  async function exchange(config, epoch, manual) {
+    const identity = JSON.stringify([directoryUrl(config), config.username]);
+    const savedBase = (await chrome.storage.local.get(BASE))[BASE];
+    const base = savedBase?.identity === identity ? Core.validate(savedBase.doc) : null;
     for (let attempt = 0; attempt < 4; attempt++) {
       const names = await listSnapshots(config, epoch);
-      const snapshots = [];
-      let remote = Core.empty(), retry = false;
-      for (const name of names) {
-        const response = await request(config, "GET", {}, undefined, name, epoch);
-        // Another device may have compacted this snapshot after our listing.
-        // Refresh the listing before activating any new-device seed records.
-        if (response.status === 404) { retry = true; break; }
-        const doc = parseRemote(response);
-        remote = Core.merge(remote, doc);
-        snapshots.push({ name, doc });
+      const latestName = names.filter(name => LaterOnWebDAVDirectory.DAILY.test(name)).at(-1);
+      let remote = Core.empty(), remoteData = null, retry = false;
+      if (latestName) {
+        // Daily backups are mutable: always read the latest day's actual body.
+        // Earlier days are historical restore points, never merge them back in.
+        const response = await request(config, "GET", {}, undefined, latestName, epoch);
+        if (response.status === 404) continue;
+        if (!response.ok) throw httpError(response.status);
+        let payload;
+        try { payload = JSON.parse(response.text); } catch { throw new Error("syncInvalidData"); }
+        remoteData = Core.backupData(payload);
+        // Each device remembers its last successful sync. Comparing that base
+        // with the complete remote backup detects deletions without putting an
+        // internal synchronization journal into the user's exported JSON.
+        remote = base
+          ? Core.change(base, Core.materialize(base), remoteData, "webdav-backup", payload.exportedAt)
+          : Core.activate(Core.seed(remoteData, "webdav-backup"), "webdav-backup", payload.exportedAt);
+        Core.validate(remote);
+      } else {
+        // One-time migration from previous snapshot/delta formats. Keep the old
+        // files untouched; once a daily backup exists it is the source of truth.
+        for (const name of names) {
+          const response = await request(config, "GET", {}, undefined, name, epoch);
+          if (response.status === 404) { retry = true; break; }
+          remote = Core.merge(remote, parseRemote(response));
+        }
       }
       if (retry) continue;
       const local = await serial(async () => {
         if (epoch !== generation) throw new Error("syncCancelled");
+        checkQuiet(manual);
         return readCurrentState();
       });
-      const merged = Core.validate(Core.activate(Core.merge(local.doc, remote), local.device));
-      let retained = snapshots.find(entry => entry.name !== FILE && Core.equal(entry.doc, merged))?.name;
-      if (!retained) {
-        const body = JSON.stringify(merged);
+      // On first connection, pre-existing local records fill gaps but do not
+      // replace matching records from the latest complete backup.
+      const localDoc = latestName && !base ? Core.seed(Core.materialize(local.doc), local.device) : local.doc;
+      const merged = Core.validate(Core.activate(Core.merge(localDoc, remote), local.device));
+      const data = Core.materialize(merged);
+      const today = Core.backupName();
+      // A clock/timezone moving backwards must not rewrite a historical day.
+      const target = latestName && latestName > today ? latestName : today;
+      if (target !== latestName || !Core.equal(data, remoteData)) {
+        const body = JSON.stringify(Core.backup(merged), null, 2);
         if (new TextEncoder().encode(body).length > MAX_BYTES) throw new Error("syncTooLarge");
-        retained = `lateron-snapshot-v2-${crypto.randomUUID()}.json`;
-        const result = await request(config, "PUT", { "Content-Type": "application/json; charset=utf-8" }, body, retained, epoch);
+        checkQuiet(manual);
+        const result = await request(config, "PUT", { "Content-Type": "application/json; charset=utf-8" }, body, target, epoch);
         if (!result.ok) throw httpError(result.status);
-        // Read back before pruning anything. An interrupted upload or failed
-        // verification leaves all prior snapshots and the local journal intact.
-        const verify = await request(config, "GET", {}, undefined, retained, epoch);
+        const verify = await request(config, "GET", {}, undefined, target, epoch);
         if (!verify.ok) throw httpError(verify.status);
-        if (verify.text !== body) {
-          // Only this run owns the fresh UUID. Remove its corrupt upload so it
-          // cannot block later merges; all previous snapshots are still intact.
-          await request(config, "DELETE", {}, undefined, retained, epoch).catch(() => {});
-          throw new Error("syncVerifyFailed");
-        }
+        // Never delete a daily backup on verification failure. Preserve all
+        // historical files and local edits so a failed upload cannot erase them.
+        if (verify.text !== body) throw new Error("syncVerifyFailed");
       }
       await serial(async () => {
         if (epoch !== generation) throw new Error("syncCancelled");
         const latest = await readCurrentState();
-        const final = Core.merge(latest.doc, merged);
-        await commit(final, latest.device);
+        // Retain only edits made since this run's captured local state, so a
+        // first-sync rebase cannot bring stale local records back after upload.
+        const final = Core.merge(merged, Core.delta(latest.doc, local.doc));
+        await commit(final, latest.device, { identity, doc: merged });
         if (!Core.equal(final, merged)) rerun = true;
       });
-      // Only the exact immutable snapshots read above are eligible for cleanup:
-      // their records/tombstones are already covered by the verified successor.
-      // Never delete a concurrent publication, the v1 file, or unrelated files.
-      let cleanupPending = false;
-      for (const entry of snapshots) {
-        if (entry.name === FILE || entry.name === retained) continue;
-        try {
-          const removed = await request(config, "DELETE", {}, undefined, entry.name, epoch);
-          if (!removed.ok && removed.status !== 404) cleanupPending = true;
-        } catch (error) {
-          if (epoch !== generation) throw error;
-          cleanupPending = true;
-        }
-      }
-      return { cleanupPending };
+      return { cleanupPending: false };
     }
     throw new Error("syncConflict");
   }
-  async function sync() {
-    if (active) { rerun = true; return active; }
+  async function sync(manual = false) {
+    if (active) {
+      if (manual) { await active; return sync(true); }
+      rerun = true; return active;
+    }
     const epoch = generation;
     const work = async () => {
       await ready;
       const raw = (await chrome.storage.local.get(CONFIG))[CONFIG];
       if (!raw?.enabled) return { ok: true, disabled: true };
+      if (!manual && Date.now() < quietUntil) { soon(); return { ok: true, pending: true }; }
       const config = configValue(raw, true);
       await status({ phase: "syncing", error: null });
       try {
-        const result = await exchange(config, epoch);
+        const result = await exchange(config, epoch, manual);
         if (epoch === generation) await status({ phase: "success", lastSuccess: Date.now(), error: null, cleanupPending: result.cleanupPending });
         return { ok: true };
       } catch (error) {
+        if (epoch === generation && error.message === "syncWaitingForIdle") {
+          soon();
+          await status({ phase: "pending", error: null });
+          return { ok: true, pending: true };
+        }
         if (epoch === generation) await status({ phase: "error", error: errorCode(error) });
         return { ok: false, error: errorCode(error) };
       }
@@ -280,7 +308,10 @@
       const patch = { [CONFIG]: config, [STATUS]: { phase: config.enabled ? "pending" : "disabled", error: null,
         lastSuccess: changedServer ? null : (await chrome.storage.local.get(STATUS))[STATUS]?.lastSuccess || null } };
       // Tombstones from one account must never delete data in another account.
-      if (!stored[STATE] || changedServer) patch[STATE] = { device, doc: Core.seed(stored, device) };
+      if (!stored[STATE] || changedServer) {
+        patch[STATE] = { device, doc: Core.seed(stored, device) };
+        patch[BASE] = null;
+      }
       await chrome.storage.local.set(patch);
     });
     await scheduleAlarm(config.enabled);
@@ -319,7 +350,7 @@
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const actions = {
       WEBDAV_SAVE: () => saveConfig(message.config),
-      WEBDAV_SYNC: () => sync(),
+      WEBDAV_SYNC: () => sync(true),
       WEBDAV_TEST: () => testConnection(message.config)
     };
     if (!actions[message?.type]) return;

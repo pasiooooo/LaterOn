@@ -140,7 +140,7 @@ async function init() {
 
   // 导出收藏
   document.querySelector("#exportBtn").addEventListener("click", async () => {
-    const data = await chrome.storage.local.get(["laterOnItems", "laterOnProjects", "laterOnCovers", "laterOnOrder"]);
+    const data = await chrome.storage.local.get(["laterOnItems", "laterOnProjects", "laterOnCovers", "laterOnOrder", "laterOnReadingPositions"]);
     const payload = {
       type: "lateron-backup",
       version: 2,
@@ -149,13 +149,16 @@ async function init() {
       projects: data.laterOnProjects || [],
       // 自定义封面本体不在 items 里；不导出它，恢复后 local:// 指针会全部变成坏图。
       covers: data.laterOnCovers || {},
-      order: data.laterOnOrder || {}
+      order: data.laterOnOrder || {},
+      readingPositions: data.laterOnReadingPositions || {}
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `lateron-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    const date = new Date(payload.exportedAt);
+    const day = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+    a.download = `lateron-backup-${day}.json`;
     a.click();
     // 给浏览器一次事件循环去接管下载，再释放 URL；同步释放在部分环境会取消下载。
     window.setTimeout(() => URL.revokeObjectURL(url), 0);
@@ -215,7 +218,7 @@ async function init() {
       let parsed;
       try { parsed = JSON.parse(text); } catch { throw new Error(t("importBadFile")); }
       if (!parsed || !Array.isArray(parsed.items)) throw new Error(t("importBadFile"));
-      const existing = await chrome.storage.local.get(["laterOnItems", "laterOnProjects", "laterOnCovers", "laterOnOrder"]);
+      const existing = await chrome.storage.local.get(["laterOnItems", "laterOnProjects", "laterOnCovers", "laterOnOrder", "laterOnReadingPositions"]);
       const byUrl = new Map((existing.laterOnItems || []).map((it) => [normalizeUrl(it.url), it]));
       let skipped = 0;
       for (const it of parsed.items) {
@@ -225,13 +228,17 @@ async function init() {
         if (!byUrl.has(key)) byUrl.set(key, it);
       }
       const mergedItems = [...byUrl.values()];
+      const itemIds = new Set(mergedItems.map(item => item.id));
       const projById = new Map((existing.laterOnProjects || []).map((p) => [p.id, p]));
       (parsed.projects || []).forEach((p) => { if (!projById.has(p.id)) projById.set(p.id, p); });
       await chrome.storage.local.set({
         laterOnItems: mergedItems,
         laterOnProjects: [...projById.values()],
         laterOnCovers: { ...(existing.laterOnCovers || {}), ...(parsed.covers || {}) },
-        laterOnOrder: { ...(existing.laterOnOrder || {}), ...(parsed.order || {}) }
+        laterOnOrder: { ...(existing.laterOnOrder || {}), ...(parsed.order || {}) },
+        laterOnReadingPositions: { ...(existing.laterOnReadingPositions || {}),
+          ...Object.fromEntries(Object.entries(parsed.readingPositions || {}).filter(([id, position]) =>
+            itemIds.has(id) && Number.isFinite(position) && position >= 0)) }
       });
       await LaterOnDialog.alert({
         tone: "success",

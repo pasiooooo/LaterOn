@@ -2,7 +2,10 @@
 // workers have no DOMParser. DTDs/entities and malformed XML are rejected.
 (function () {
   const LEGACY = 'lateron-sync-v1.json';
-  const SNAPSHOT = /^lateron-snapshot-v2-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.json$/;
+  // Timestamped publications and existing UUID-only snapshots share the same
+  // document format. Keep both readable during upgrades and compaction.
+  const SNAPSHOT = /^lateron-snapshot-v2-(?:\d{8}T\d{9}Z-)?[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.json$/;
+  const DAILY = /^lateron-backup-\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])\.json$/;
   const invalid = () => { throw new Error('syncInvalidListing'); };
   function decode(text) {
     if (/&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[0-9a-fA-F]+;)/.test(text)) invalid();
@@ -63,12 +66,12 @@
       } catch { invalid(); }
       if (url.origin !== base.origin || url.username || url.password || url.search || url.hash
         || decodeURIComponent(new URL('.', url).pathname) !== decodeURIComponent(base.pathname)) continue;
-      if (name !== LEGACY && !SNAPSHOT.test(name)) continue;
+      if (name !== LEGACY && !SNAPSHOT.test(name) && !DAILY.test(name)) continue;
       const statuses = [...children(response, 'status'), ...children(response, 'propstat').flatMap(prop => children(prop, 'status'))];
       if (!statuses.some(node => /^HTTP\/\d(?:\.\d)?\s+2\d\d(?:\s|$)/.test(node.text.trim()))) invalid();
       output.add(name);
     }
     return [...output].sort();
   }
-  globalThis.LaterOnWebDAVDirectory = { names, LEGACY, SNAPSHOT };
+  globalThis.LaterOnWebDAVDirectory = { names, LEGACY, SNAPSHOT, DAILY };
 })();

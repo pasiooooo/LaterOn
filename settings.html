@@ -139,7 +139,7 @@
 
         <section class="settings-group" aria-labelledby="webdavTitle">
           <h2 id="webdavTitle" data-i18n="syncTitle">多设备同步 · WebDAV</h2>
-          <p class="setting-note" data-i18n="syncDescription">同步网页、项目、阅读状态、封面、排序和阅读位置。本机修改后自动上传，浏览器运行时每 30 秒检查远端。</p>
+          <p class="setting-note" data-i18n="syncDescription">每天保存一份完整 JSON 备份，同一天持续更新，往日备份保留。本机连续 30 秒无新修改后自动同步；浏览器运行时每 30 秒检查远端，本机待同步时会等到修改结束。</p>
           <form id="webdavForm">
             <div class="setting-row">
               <label class="setting-label" for="webdavEnabled"><strong data-i18n="syncEnable">启用自动同步</strong><span data-i18n="syncEnableHint">在每台设备上填写相同的 WebDAV 地址与账号，保存后生效。</span></label>
@@ -155,7 +155,7 @@
             </div>
             <p id="webdavPrivacy" class="setting-note webdav-note" data-i18n="syncPrivacy">自动在此地址下创建并使用 LaterOn 文件夹，无需手动建目录。建议使用 HTTPS；账号密码仅保存在本机，请保护服务器访问权限。</p>
             <p id="webdavLegacyNote" class="setting-note" data-i18n="syncLegacyDirectory" hidden>旧版配置仍使用原目录。重新保存后将使用地址下的 LaterOn 文件夹；请在其他设备上同步更新配置。</p>
-            <p class="setting-note" data-i18n="syncMergeHint">首次同步会合并两端数据。相同条目发生冲突时保留较新修改；删除与清空也会同步到其他设备。主题、语言和快捷键保持本机设置。</p>
+            <p class="setting-note" data-i18n="syncMergeHint">备份名为 lateron-backup-YYYY-MM-DD.json，可下载后直接导入。同步网页、项目、阅读状态、封面、排序和阅读位置，删除与清空也会同步。首次合并两端数据；主题、语言和快捷键留在本机。</p>
             <div class="data-actions webdav-actions">
               <button id="webdavTest" class="setting-action" type="button" data-i18n="syncTest">测试连接</button>
               <button id="webdavSave" class="setting-action" type="submit" data-i18n="syncSave">保存配置</button>

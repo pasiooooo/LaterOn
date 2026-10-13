@@ -18,7 +18,6 @@
     const labels = { disabled: "syncDisabled", pending: "syncPending", syncing: "syncRunning", success: "syncSuccess", error: "syncFailed" };
     let text = t(labels[phase] || "syncPending");
     if (phase === "error") text += ` · ${errorText(state.error)}`;
-    if (phase === "success" && state.cleanupPending) text += ` · ${t("syncCleanupPending")}`;
     if (state.lastSuccess) text += ` · ${t("syncLastSuccess", { time: new Date(state.lastSuccess).toLocaleString(document.documentElement.lang) })}`;
     output.removeAttribute("data-i18n");
     output.textContent = text;

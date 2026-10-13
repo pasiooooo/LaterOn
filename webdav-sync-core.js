@@ -66,6 +66,16 @@
     }
     return out;
   }
+  // Both full checkpoints and sparse deltas use the same record format. Missing
+  // records in a delta mean "unchanged"; deletions remain explicit tombstones.
+  function delta(next, base) {
+    const out = empty();
+    for (const group of GROUPS) for (const [id, record] of Object.entries(next.records[group])) {
+      if (!equal(record, base.records[group][id])) out.records[group][id] = record;
+    }
+    return out;
+  }
+  const hasRecords = doc => GROUPS.some(group => Object.keys(doc.records[group]).length > 0);
   function change(doc, before, after, device, now = Date.now()) {
     const out = merge(doc, empty());
     const stamp = [Math.max(now, maxClock(doc) + 1), device];
@@ -117,5 +127,32 @@
     out.laterOnOrder = Object.fromEntries(Object.entries(out.laterOnOrder).map(([key, list]) => [key, list.filter(id => ids.has(id))]));
     return out;
   }
-  root.LaterOnSyncCore = { KEYS, empty, equal, validate, merge, change, seed, activate, materialize };
+  function backupName(now = Date.now()) {
+    const date = new Date(now);
+    const day = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+    return `lateron-backup-${day}.json`;
+  }
+  function backup(doc, now = Date.now()) {
+    const data = materialize(doc);
+    return { type: 'lateron-backup', version: 2, exportedAt: now,
+      items: data.laterOnItems, projects: data.laterOnProjects, covers: data.laterOnCovers,
+      order: data.laterOnOrder, readingPositions: data.laterOnReadingPositions };
+  }
+  function backupData(payload) {
+    if (!isObject(payload) || payload.type !== 'lateron-backup' || payload.version !== 2
+      || !Number.isSafeInteger(payload.exportedAt) || payload.exportedAt < 0
+      || !Array.isArray(payload.items) || !Array.isArray(payload.projects)
+      || !isObject(payload.covers) || !isObject(payload.order)
+      || (payload.readingPositions !== undefined && !isObject(payload.readingPositions))) throw new Error('syncInvalidData');
+    const data = { laterOnItems: payload.items, laterOnProjects: payload.projects,
+      laterOnCovers: payload.covers, laterOnOrder: payload.order, laterOnReadingPositions: payload.readingPositions || {} };
+    for (const key of KEYS) {
+      const value = data[key];
+      const entries = Array.isArray(value) ? value.map(item => [item?.id, item]) : Object.entries(value);
+      if (new Set(entries.map(([id]) => id)).size !== entries.length
+        || entries.some(([id, item]) => !safeId(id) || !validValue(key, id, item))) throw new Error('syncInvalidData');
+    }
+    return data;
+  }
+  root.LaterOnSyncCore = { KEYS, empty, equal, validate, merge, delta, hasRecords, change, seed, activate, materialize, backupName, backup, backupData };
 })(globalThis);
