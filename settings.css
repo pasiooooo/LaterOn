@@ -124,3 +124,34 @@ body {
 .data-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .danger-row { align-items: flex-start; }
 .danger-row .setting-label strong { color: #df4c31; }
+
+/* WebDAV configuration follows the existing settings card and theme. */
+.webdav-fields { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.webdav-fields label { margin-top: 7px; font-size: 12.5px; font-weight: 650; }
+.webdav-fields input {
+  width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid var(--hairline-2);
+  border-radius: 10px; background: var(--paper); color: var(--ink); font: inherit; font-size: 13px;
+}
+.webdav-fields input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.webdav-note { margin-top: 14px; }
+.webdav-actions { flex-wrap: wrap; margin: 16px 0; }
+.webdav-status { padding-top: 4px; overflow-wrap: anywhere; }
+#webdavFeedback { overflow-wrap: anywhere; }
+#webdavStatus[data-phase="error"], #webdavFeedback[data-phase="error"] { color: var(--danger, #c53830); }
+#webdavForm button:disabled { opacity: .5; cursor: default; }
+
+#webdavForm .switch input:focus-visible + .slider { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* Pasted URL lists stay available for correction when a line or write fails. */
+.url-import { padding: 12px 0 18px; border-top: 1px solid var(--hairline); }
+.url-import summary { cursor: pointer; font-size: 14px; font-weight: 650; }
+#urlImportForm { margin-top: 14px; }
+#urlImportForm label { display: block; }
+#urlImportText {
+  display: block; width: 100%; min-height: 150px; margin: 10px 0; padding: 12px;
+  border: 1px solid var(--hairline-2); border-radius: 12px; resize: vertical;
+  background: var(--field); color: var(--ink); font: inherit; font-size: 13px; line-height: 1.6;
+}
+#urlImportText:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#urlImportSubmit { margin-top: 8px; }
+#urlImportSubmit:disabled, #importBtn:disabled { opacity: .5; cursor: default; }

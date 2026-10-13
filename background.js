@@ -1,4 +1,4 @@
-importScripts("url-utils.js", "reading-position-background.js");
+importScripts("url-utils.js", "reading-position-background.js", "webdav-sync-core.js", "webdav-directory.js", "webdav-sync.js", "import-metadata-background.js", "import-urls-background.js");
 const normalizeUrl = LaterOnUrl.normalize;
 
 const STORAGE_KEY = "laterOnItems";

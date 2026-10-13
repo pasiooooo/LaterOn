@@ -161,14 +161,59 @@ async function init() {
     window.setTimeout(() => URL.revokeObjectURL(url), 0);
   });
 
-  // 导入收藏（按网址去重合并）
+  // JSON 备份与逐行 URL 文件共用文件入口；粘贴列表走同一个后台导入事务。
   const fileInput = document.querySelector("#importFile");
+  const urlText = document.querySelector("#urlImportText");
+  const urlForm = document.querySelector("#urlImportForm");
+  let importBusy = false;
+  const setImportBusy = busy => {
+    importBusy = busy;
+    document.querySelector("#importBtn").disabled = busy;
+    document.querySelector("#urlImportSubmit").disabled = busy;
+    urlText.disabled = busy;
+    urlForm.setAttribute("aria-busy", String(busy));
+    document.querySelector("#urlImportSubmit").textContent = t(busy ? "processing" : "urlImportAction");
+  };
+  const importUrls = async text => {
+    const result = await chrome.runtime.sendMessage({ type: "IMPORT_URL_LINES", text });
+    if (!result?.ok) throw new Error(t(result?.error || "urlImportSaveFailed"));
+    const noValid = !result.added && !result.duplicates;
+    await LaterOnDialog.alert({
+      tone: result.added ? "success" : "info",
+      title: t(noValid ? "urlImportNoValid" : "importDoneTitle"),
+      message: t("urlImportResult", result) + (result.enrichmentQueued ? "\n" + t("urlMetadataQueued", { count: result.enrichmentQueued }) : "")
+    });
+    return result;
+  };
+  const importError = error => LaterOnDialog.alert({
+    tone: "danger", title: t("importFailTitle"), message: String(error?.message || error)
+  });
+  urlForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (importBusy) return;
+    setImportBusy(true);
+    try {
+      const result = await importUrls(urlText.value);
+      // Mixed lists remain available so the user can correct rejected lines.
+      if (!result.invalid) urlText.value = "";
+    } catch (error) { await importError(error); }
+    finally { setImportBusy(false); }
+  });
   document.querySelector("#importBtn").addEventListener("click", () => fileInput.click());
   fileInput.addEventListener("change", async () => {
     const file = fileInput.files[0];
-    if (!file) return;
+    if (!file || importBusy) return;
+    setImportBusy(true);
     try {
-      const parsed = JSON.parse(await file.text());
+      const text = (await file.text()).replace(/^\uFEFF/, "").trim();
+      // Keep malformed JSON backups as errors instead of silently treating
+      // their lines as URLs. Other files can contain a plain URL list.
+      if (!/\.json$/i.test(file.name) && !/^[\[{]/.test(text) && file.type !== "application/json") {
+        await importUrls(text);
+        return;
+      }
+      let parsed;
+      try { parsed = JSON.parse(text); } catch { throw new Error(t("importBadFile")); }
       if (!parsed || !Array.isArray(parsed.items)) throw new Error(t("importBadFile"));
       const existing = await chrome.storage.local.get(["laterOnItems", "laterOnProjects", "laterOnCovers", "laterOnOrder"]);
       const byUrl = new Map((existing.laterOnItems || []).map((it) => [normalizeUrl(it.url), it]));
@@ -194,13 +239,10 @@ async function init() {
         message: t("importDoneMsg", { n: mergedItems.length, skipped: skipped ? t("skippedCount", { n: skipped }) : "" })
       });
     } catch (error) {
-      await LaterOnDialog.alert({
-        tone: "danger",
-        title: t("importFailTitle"),
-        message: String(error?.message || error)
-      });
+      await importError(error);
     } finally {
       fileInput.value = "";
+      setImportBusy(false);
     }
   });
 
@@ -209,7 +251,7 @@ async function init() {
     const confirmed = await LaterOnDialog.confirm({
       tone: "danger",
       title: t("wipeConfirmTitle"),
-      message: t("wipeConfirmMsg"),
+      message: t((await chrome.storage.local.get("laterOnWebDAV")).laterOnWebDAV?.enabled ? "wipeSyncConfirmMsg" : "wipeConfirmMsg"),
       confirmText: t("wipeConfirmBtn")
     });
     if (!confirmed) return;

@@ -26,6 +26,9 @@ RUNTIME_FILES = (
     "dialog.css",
     "dialog.js",
     "i18n.js",
+    "import-urls-background.js",
+    "import-metadata-background.js",
+    "import-metadata-settings.js",
     "icon16.png",
     "icon32.png",
     "icon48.png",
@@ -49,6 +52,10 @@ RUNTIME_FILES = (
     "theme.js",
     "translation.css",
     "url-utils.js",
+    "webdav-sync-core.js",
+    "webdav-directory.js",
+    "webdav-sync.js",
+    "webdav-settings.js",
 )
 RUNTIME_DIRS = ("_locales",)
 
