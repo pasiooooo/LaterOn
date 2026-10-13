@@ -223,6 +223,8 @@ async function recordDiag(patch) {
 // 右键菜单任何时候都能用，作为兜底。
 const MENU_SAVE_ALL = "lateron-save-all-tabs";
 const MENU_SAVE_PAGE = "lateron-save-page";
+const MENU_SAVE_SELECTED = "lateron-save-selected-tabs";
+const MENU_SAVE_GROUP = "lateron-save-tab-group";
 let contextMenuRefresh = Promise.resolve();
 
 function setupContextMenus() {
@@ -233,8 +235,10 @@ function setupContextMenus() {
     const stored = await chrome.storage.local.get(SETTINGS_KEY).catch(() => ({}));
     const language = stored[SETTINGS_KEY]?.language === "en" ? "en" : "zh-CN";
     const titles = language === "en"
-      ? { page: "Add this page to LaterOn", all: "Add all tabs in this window to LaterOn" }
-      : { page: "添加此页面到 LaterOn", all: "添加本窗口所有标签页到 LaterOn" };
+      ? { page: "Add this page to LaterOn", selected: "Add selected tabs to LaterOn",
+          group: "Add this tab group to LaterOn", all: "Add all tabs in this window to LaterOn" }
+      : { page: "添加此页面到 LaterOn", selected: "添加所选全部网页到 LaterOn",
+          group: "添加当前标签组所有网页到 LaterOn", all: "添加本窗口所有标签页到 LaterOn" };
     await new Promise((resolve) => {
       try {
         chrome.contextMenus.removeAll(() => {
@@ -252,8 +256,10 @@ function setupContextMenus() {
         // 菜单已存在或权限未就绪时忽略。
       }
     };
-    create({ id: MENU_SAVE_PAGE, title: titles.page, contexts: ["page", "action"] });
-    create({ id: MENU_SAVE_ALL, title: titles.all, contexts: ["page", "action"] });
+    for (const [id, title] of [[MENU_SAVE_PAGE, titles.page], [MENU_SAVE_SELECTED, titles.selected],
+      [MENU_SAVE_GROUP, titles.group], [MENU_SAVE_ALL, titles.all]]) {
+      create({ id, title, contexts: ["page", "action"] });
+    }
   });
   return contextMenuRefresh;
 }
@@ -364,12 +370,15 @@ chrome.storage.onChanged?.addListener((changes, area) => {
 // 现已下线：新标签恢复浏览器默认行为，不再有任何劫持。
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === MENU_SAVE_ALL) {
-    saveAllTabsInWindow("menu", tab).catch((error) => reportFailure(error));
-  } else if (info.menuItemId === MENU_SAVE_PAGE && tab?.id) {
-    quickSave(tab, "menu").catch((error) => reportFailure(error));
-  }
+  handleContextMenu(info, tab).catch(error => reportFailure(error));
 });
+
+async function handleContextMenu(info, tab) {
+  if (info.menuItemId === MENU_SAVE_SELECTED) return saveSelectedTabs(tab, "menu");
+  if (info.menuItemId === MENU_SAVE_GROUP) return saveCurrentTabGroup(tab, "menu");
+  if (info.menuItemId === MENU_SAVE_ALL) return saveAllTabsInWindow("menu", tab);
+  if (info.menuItemId === MENU_SAVE_PAGE && tab?.id) return quickSave(tab, "menu");
+}
 
 // 工具栏图标的左键行为由上面的 setPanelBehavior 交给浏览器原生处理：
 // 点击直接打开 / 聚焦 LaterOn 侧栏，不再经过缩略图 popup。
