@@ -1468,12 +1468,7 @@ function isIconLikeImage(url) {
   }
 }
 
-// ── 服务端 meta 兜底 ──────────────────────────────────────────────
-// 场景（topbook.cc 实测）：这类站点点开文章是「弹窗」，网址靠 pushState 变化，
-// head 里的 og 标签根本不会更新——页面里能看到的还是列表页那一套
-// （og:image 是站点 icon、og:title 是首页标题）。但直接向服务器请求「当前网址」，
-// 返回的 HTML 里却带着这篇内容正确的 og 标签（SSR 渲染）。
-// 所以当「页面里抓到的明显是站点通用值」时，由 background 重新请求一次网址补救。
+// 后台读取 HTML：用于 URL 导入，也用于补救 SPA 页面中未更新的 meta 标签。
 const SERVER_META_TIMEOUT_MS = 8000;
 
 async function refetchMetaFromServer(url) {
@@ -1482,60 +1477,58 @@ async function refetchMetaFromServer(url) {
     const response = await withTimeout(fetch(url, { credentials: "omit" }), SERVER_META_TIMEOUT_MS, null);
     if (!response || !response.ok) return null;
     if (!/text\/html/i.test(response.headers.get("content-type") || "")) return null;
-    // og 标签都在文档头部，前 200KB 足够。
+    // Read metadata from the response without loading a page or executing scripts.
     const html = (await withTimeout(response.text(), SERVER_META_TIMEOUT_MS, "")) || "";
-    const head = html.slice(0, 200000);
-
-    const decode = (text) =>
-      (text || "")
-        .replace(/&amp;/g, "&")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/&quot;/g, '"')
-        .replace(/&#0?39;|&apos;/g, "'")
-        .replace(/&nbsp;/g, " ")
-        .trim();
-
-    // og 标签的属性顺序不固定（content 可能写在 property 前面），两种写法都试。
-    const metaTag = (name) => {
-      const forward = new RegExp(
-        `<meta[^>]+(?:property|name)=["']${name}["'][^>]*?content=["']([^"']*)["']`,
-        "i"
-      ).exec(head);
-      const reversed = new RegExp(
-        `<meta[^>]+content=["']([^"']*)["'][^>]*?(?:property|name)=["']${name}["']`,
-        "i"
-      ).exec(head);
-      return decode(forward?.[1] || reversed?.[1]);
+    const head = html.slice(0, 200000)
+      .replace(/<!--[\s\S]*?(?:-->|$)/g, "")
+      .replace(/<(script|style)\b[^>]*>[\s\S]*?(?:<\/\1\s*>|$)/gi, "");
+    const decode = text => (text || "").replace(
+      /&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi,
+      (entity, value) => {
+        if (value[0] !== "#") return { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " }[value.toLowerCase()];
+        const code = value[1].toLowerCase() === "x" ? parseInt(value.slice(2), 16) : Number(value.slice(1));
+        return code > 0 && code <= 0x10ffff && !(code >= 0xd800 && code <= 0xdfff) ? String.fromCodePoint(code) : "\ufffd";
+      }).trim();
+    const attributes = tag => {
+      const result = {};
+      const pattern = /([^\s=<>/]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g;
+      for (const match of tag.matchAll(pattern)) {
+        const key = match[1].toLowerCase();
+        if (!(key in result)) result[key] = decode(match[2] ?? match[3] ?? match[4]);
+      }
+      return result;
     };
-    const pageTitle = decode(/<title[^>]*>([\s\S]*?)<\/title>/i.exec(head)?.[1]);
-
-    // 相对地址（/img/cover.jpg）补全成绝对地址。
-    const absolute = (value) => {
+    const tags = [...head.matchAll(/<(meta|link|base)\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi)]
+      .map(match => ({ name: match[1].toLowerCase(), attrs: attributes(match[0]) }));
+    const metaTag = name => tags.find(tag => tag.name === "meta" &&
+      (tag.attrs.property || tag.attrs.name || "").toLowerCase() === name && tag.attrs.content)?.attrs.content || "";
+    const responseUrl = response.url || url;
+    const absolute = (value, base = responseUrl) => {
       if (!value) return "";
       try {
-        return new URL(value, url).href;
-      } catch {
-        return value;
-      }
+        const resolved = new URL(value, base);
+        return /^https?:$/.test(resolved.protocol) ? resolved.href : "";
+      } catch { return ""; }
     };
-
+    const baseUrl = absolute(tags.find(tag => tag.name === "base" && tag.attrs.href)?.attrs.href) || responseUrl;
+    const pageTitle = decode(/<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(head)?.[1]);
+    const icons = tags.filter(tag => tag.name === "link" &&
+      /(?:^|\s)(?:icon|apple-touch-icon|apple-touch-icon-precomposed)(?:\s|$)/i.test(tag.attrs.rel || ""));
     return {
+      url,
       title: metaTag("og:title") || metaTag("twitter:title") || pageTitle,
       description: metaTag("og:description") || metaTag("twitter:description") || metaTag("description"),
-      image: absolute(
-        metaTag("og:image") || metaTag("og:image:url") || metaTag("og:image:secure_url") || metaTag("twitter:image")
-      )
+      image: ["og:image", "og:image:url", "og:image:secure_url", "twitter:image", "twitter:image:src"]
+        .map(name => absolute(metaTag(name), baseUrl)).find(Boolean) || "",
+      favicon: icons.map(tag => absolute(tag.attrs.href, baseUrl)).find(Boolean) || absolute("/favicon.ico"),
+      source: metaTag("og:site_name") || safeHostname(responseUrl)
     };
   } catch {
     return null;
   }
 }
 
-// 给「明显是站点通用值」的抓取结果做服务端兜底（说明见 refetchMetaFromServer）：
-// 标题是标签页/文档标题兜底、或标题里混着站点名（首页 og:title 停在列表页的痕迹）、
-// 或封面缺失/是站点图标时，重新请求一次网址，用服务器 HTML 里的 og 标签补齐。
-// 原地修改并返回 result。
+// 仅补救弱标题、图标封面和缺失摘要，保留页面内已提取到的正文信息。
 async function applyServerMetaRescue(result) {
   const titleIsWeak =
     ["tab", "page-title", "none", "page", "meta-title"].includes(result.titleFrom) ||
