@@ -3,6 +3,6 @@
   "extensionDescription": { "message": "A web manager built for project research. Add scattered pages into projects, organize them, and keep working through them." },
   "actionTitle": { "message": "Open the LaterOn side panel" },
   "commandSavePage": { "message": "Add the current page to LaterOn" },
-  "commandTranslatePage": { "message": "Translate the current page or restore the original" },
+  "commandSaveTabGroup": { "message": "Add all pages in the current tab group to LaterOn" },
   "commandSaveAllTabs": { "message": "Add every tab in the current window to LaterOn" }
 }

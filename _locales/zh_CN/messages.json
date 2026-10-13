@@ -3,6 +3,6 @@
   "extensionDescription": { "message": "为项目研究而生的网页管理工具，把散乱的网页按项目收集、整理和持续处理。" },
   "actionTitle": { "message": "打开 LaterOn 侧栏" },
   "commandSavePage": { "message": "将当前网页添加到 LaterOn" },
-  "commandTranslatePage": { "message": "翻译当前网页或恢复原文" },
+  "commandSaveTabGroup": { "message": "添加当前标签组的所有网页" },
   "commandSaveAllTabs": { "message": "将当前窗口所有标签页添加到 LaterOn" }
 }

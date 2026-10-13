@@ -1,4 +1,4 @@
-importScripts("url-utils.js", "reading-position-background.js", "webdav-sync-core.js", "webdav-directory.js", "webdav-sync.js", "import-metadata-background.js", "import-urls-background.js");
+importScripts("url-utils.js", "reading-position-background.js", "webdav-sync-core.js", "webdav-directory.js", "webdav-sync.js", "import-metadata-background.js", "import-urls-background.js", "tab-group-background.js");
 const normalizeUrl = LaterOnUrl.normalize;
 
 const STORAGE_KEY = "laterOnItems";
@@ -68,12 +68,12 @@ const PENDING_KEY = "laterOnPendingBatch";
 // 上次用过的项目：下次弹窗时默认选中它。
 const LAST_PROJECT_KEY = "laterOnLastProjectId";
 
-// translation.css 只需给每个标签页注入一次，避免反复收藏时堆叠重复样式表。
+// page-notifications.css 只需给每个标签页注入一次，避免反复收藏时堆叠重复样式表。
 const injectedCssTabs = new Set();
-async function ensureTranslationCss(tabId) {
+async function ensurePageNotificationCss(tabId) {
   if (!tabId || injectedCssTabs.has(tabId)) return;
   try {
-    await chrome.scripting.insertCSS({ target: { tabId }, files: ["translation.css"] });
+    await chrome.scripting.insertCSS({ target: { tabId }, files: ["page-notifications.css"] });
     injectedCssTabs.add(tabId);
   } catch {
     // 页面受保护或已关闭，忽略即可。
@@ -491,6 +491,9 @@ async function handleCommand(command, commandTab) {
     return;
   }
 
+  // Keep the legacy command ID to preserve Alt+2/custom bindings on upgrade.
+  if (command === "toggle-translation") return saveCurrentTabGroup(commandTab);
+
   const tab = commandTab?.id
     ? commandTab
     : (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
@@ -506,8 +509,6 @@ async function handleCommand(command, commandTab) {
 
   if (command === "quick-save") {
     await quickSave(tab);
-  } else if (command === "toggle-translation") {
-    await toggleTranslation(tab);
   }
 }
 
@@ -560,16 +561,6 @@ async function quickSave(tab, source = "shortcut") {
   return { ok: true, duplicated: !!saved.duplicated, refreshed: !!saved.refreshed, updated: !!saved.updated };
 }
 
-async function toggleTranslation(tab) {
-  await ensureTranslationCss(tab.id);
-  const injection = await chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    world: "MAIN",
-    files: ["content-translation.js"]
-  });
-  if (injection[0]?.result?.ok === false) await showActionError();
-}
-
 async function showActionError() {
   await showActionFeedback("!", "#d94841", 2200);
 }
@@ -581,8 +572,8 @@ async function showLibraryCommandNotice(tab, command) {
   const libraryUrl = chrome.runtime.getURL("library.html");
   if (!String(tab.url || "").startsWith(libraryUrl)) return false;
   const en = await usesEnglish();
-  const message = command === "toggle-translation"
-    ? (en ? "You’re in LaterOn. Open the page you want to translate, then press Alt+2." : "当前是 LaterOn，请打开需要翻译的网页后再按 Alt+2")
+  const message = command === "save-tab-group"
+    ? (en ? "This tab is not in a group. Switch to a grouped tab and press Alt+2." : "当前标签页不属于任何标签组，请切换到组内标签页后再按 Alt+2")
     : (en ? "You’re in LaterOn. Open the page you want to add, then press Alt+1." : "当前是 LaterOn，请先打开想添加的网页，再按 Alt+1");
   try {
     const response = await chrome.runtime.sendMessage({
@@ -628,7 +619,7 @@ async function showPagePills(tabId, messages) {
   const overflow = list.length - shown.length;
   const en = await usesEnglish();
 
-  await ensureTranslationCss(tabId);
+  await ensurePageNotificationCss(tabId);
   await chrome.scripting.executeScript({
     target: { tabId },
     func: (items, extra, overflowText) => {
@@ -819,14 +810,22 @@ async function saveItem(item, options = {}) {
 // 这样收进来的文章直接归到对应项目，不用事后手动整理。
 // 若在设置里关掉了「先选项目」，则直接用上次用过的项目开始收藏。
 async function saveAllTabsInWindow(source = "shortcut") {
+  return saveTabsInScope(source);
+}
+
+// Window and group saves share the picker, duplicate handling and write queue.
+async function saveTabsInScope(source = "shortcut", groupTab = null) {
   // 每一步都记一笔：万一中途卡住或失败，去设置页就能看出停在哪一步。
   const stage = (patch) => recordDiag({ lastTrigger: source, lastStageAt: Date.now(), ...patch });
 
   try {
     await stage({ lastStage: "开始", lastRunAt: Date.now() });
 
-    const tabs = await chrome.tabs.query({ currentWindow: true });
-    const targets = tabs.filter((tab) => isWebUrl(tab.url));
+    const tabs = await chrome.tabs.query(groupTab
+      ? { windowId: groupTab.windowId, groupId: groupTab.groupId }
+      : { currentWindow: true });
+    const targets = tabs.filter(tab => isWebUrl(tab.url))
+      .sort((a, b) => (a.index || 0) - (b.index || 0));
     await stage({ lastStage: "读取标签页", lastTabCount: targets.length });
 
     if (!targets.length) {
@@ -836,7 +835,7 @@ async function saveAllTabsInWindow(source = "shortcut") {
         lastDuplicated: 0,
         lastEnriched: 0,
         lastDegraded: 0,
-        lastError: "当前窗口没有可添加的网页",
+        lastError: groupTab ? "当前标签组没有可添加的网页" : "当前窗口没有可添加的网页",
         lastErrorAt: Date.now(),
         lastResultAt: Date.now()
       });
@@ -844,7 +843,7 @@ async function saveAllTabsInWindow(source = "shortcut") {
       return { ok: false, added: 0, duplicated: 0 };
     }
 
-    const activeTab = tabs.find((tab) => tab.active) || targets[0];
+    const activeTab = groupTab || tabs.find((tab) => tab.active) || targets[0];
     const settings = (await chrome.storage.local.get(SETTINGS_KEY))[SETTINGS_KEY] || {};
     const savedProject = (await chrome.storage.local.get(LAST_PROJECT_KEY))[LAST_PROJECT_KEY] || "";
     // 上次用过的项目可能已经被删掉了：先校验一次，
@@ -1695,5 +1694,3 @@ async function openLibrary(context = null) {
 //
 // ⚠️ 单页应用（SPA）陷阱 —— 以 YouTube 为例（已实测确认）：
 // 体积较大的网页执行代码已移到 content-metadata.js，仅在实际使用时注入目标网页。
-
-// 体积较大的网页执行代码已移到 content-translation.js，仅在实际使用时注入目标网页。

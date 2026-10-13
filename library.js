@@ -124,7 +124,7 @@ function syncDocumentTitle() {
   document.title = `LaterOn - ${pageName}`;
 }
 
-// 在全屏收藏库里按 Alt+1 / Alt+2 时，后台不能对这个扩展页面执行网页收藏或翻译。
+// 在全屏收藏库里触发不适用的快捷键时，直接显示后台发来的说明。
 // 直接复用本页 toast 解释原因，避免用户只看到工具栏图标上的「!」却不知道发生了什么。
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type !== "SHOW_LIBRARY_NOTICE") return;

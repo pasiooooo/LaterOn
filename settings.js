@@ -70,14 +70,15 @@ async function init() {
   try {
     const commands = await chrome.commands.getAll();
     const save = commands.find((c) => c.name === "quick-save");
-    const translate = commands.find((c) => c.name === "toggle-translation");
+    // Keep the installed command ID so Chrome preserves existing key bindings.
+    const saveGroup = commands.find((c) => c.name === "toggle-translation");
     const saveAll = commands.find((c) => c.name === "save-all-tabs");
     document.querySelector("#cmdSave").textContent = save?.shortcut ? t("shortcutDefault", { shortcut: save.shortcut, def: "Alt+1" }) : t("shortcutNotSet", { def: "Alt+1" });
-    document.querySelector("#cmdTranslate").textContent = translate?.shortcut ? t("shortcutDefault", { shortcut: translate.shortcut, def: "Alt+2" }) : t("shortcutNotSet", { def: "Alt+2" });
+    document.querySelector("#cmdSaveGroup").textContent = saveGroup?.shortcut ? t("shortcutDefault", { shortcut: saveGroup.shortcut, def: "Alt+2" }) : t("shortcutNotSet", { def: "Alt+2" });
     document.querySelector("#cmdSaveAll").textContent = saveAll?.shortcut ? t("shortcutDefault", { shortcut: saveAll.shortcut, def: "Alt+Shift+1" }) : t("shortcutNotSet", { def: "Alt+Shift+1" });
   } catch {
     document.querySelector("#cmdSave").textContent = t("shortcutNotSet", { def: "Alt+1" });
-    document.querySelector("#cmdTranslate").textContent = t("shortcutNotSet", { def: "Alt+2" });
+    document.querySelector("#cmdSaveGroup").textContent = t("shortcutNotSet", { def: "Alt+2" });
     document.querySelector("#cmdSaveAll").textContent = t("shortcutNotSet", { def: "Alt+Shift+1" });
   }
 
@@ -277,7 +278,7 @@ async function init() {
 // 这些映射存的是 i18n 词条 key，显示时用 t() 按当前语言取词。
 const COMMAND_KEYS = {
   "quick-save": "cmdSavePage",
-  "toggle-translation": "cmdTranslatePage",
+  "toggle-translation": "cmdSaveTabGroup",
   "save-all-tabs": "cmdSaveAllTabs"
 };
 const TRIGGER_KEYS = { shortcut: "triggerShortcut", menu: "triggerMenu", panel: "triggerPanel" };
