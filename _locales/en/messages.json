@@ -4,5 +4,6 @@
   "actionTitle": { "message": "Open the LaterOn side panel" },
   "commandSavePage": { "message": "Add the current page to LaterOn" },
   "commandSaveTabGroup": { "message": "Add all pages in the current tab group to LaterOn" },
+  "commandSaveSelectedTabs": { "message": "Add all selected tabs in the current window to LaterOn" },
   "commandSaveAllTabs": { "message": "Add every tab in the current window to LaterOn" }
 }

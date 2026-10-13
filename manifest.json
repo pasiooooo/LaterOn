@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "version": "1.67.3",
+  "version": "1.67.4",
   "default_locale": "zh_CN",
   "minimum_chrome_version": "121",
   "description": "__MSG_extensionDescription__",
@@ -53,6 +53,12 @@
     "save-all-tabs": {
       "suggested_key": {
         "default": "Alt+Shift+1"
+      },
+      "description": "__MSG_commandSaveSelectedTabs__"
+    },
+    "save-window-tabs": {
+      "suggested_key": {
+        "default": "Alt+Shift+2"
       },
       "description": "__MSG_commandSaveAllTabs__"
     }

@@ -66,20 +66,19 @@ async function init() {
     });
   });
 
-  // 快捷键：展示当前绑定
-  try {
-    const commands = await chrome.commands.getAll();
-    const save = commands.find((c) => c.name === "quick-save");
-    // Keep the installed command ID so Chrome preserves existing key bindings.
-    const saveGroup = commands.find((c) => c.name === "toggle-translation");
-    const saveAll = commands.find((c) => c.name === "save-all-tabs");
-    document.querySelector("#cmdSave").textContent = save?.shortcut ? t("shortcutDefault", { shortcut: save.shortcut, def: "Alt+1" }) : t("shortcutNotSet", { def: "Alt+1" });
-    document.querySelector("#cmdSaveGroup").textContent = saveGroup?.shortcut ? t("shortcutDefault", { shortcut: saveGroup.shortcut, def: "Alt+2" }) : t("shortcutNotSet", { def: "Alt+2" });
-    document.querySelector("#cmdSaveAll").textContent = saveAll?.shortcut ? t("shortcutDefault", { shortcut: saveAll.shortcut, def: "Alt+Shift+1" }) : t("shortcutNotSet", { def: "Alt+Shift+1" });
-  } catch {
-    document.querySelector("#cmdSave").textContent = t("shortcutNotSet", { def: "Alt+1" });
-    document.querySelector("#cmdSaveGroup").textContent = t("shortcutNotSet", { def: "Alt+2" });
-    document.querySelector("#cmdSaveAll").textContent = t("shortcutNotSet", { def: "Alt+Shift+1" });
+  // Legacy IDs preserve users' installed bindings when the action changes.
+  let commands = [];
+  try { commands = await chrome.commands.getAll(); } catch {}
+  for (const [name, selector, shortcut] of [
+    ["quick-save", "#cmdSave", "Alt+1"],
+    ["save-all-tabs", "#cmdSaveSelected", "Alt+Shift+1"],
+    ["toggle-translation", "#cmdSaveGroup", "Alt+2"],
+    ["save-window-tabs", "#cmdSaveAll", "Alt+Shift+2"]
+  ]) {
+    const current = commands.find(command => command.name === name)?.shortcut;
+    document.querySelector(selector).textContent = current
+      ? t("shortcutDefault", { shortcut: current, def: shortcut })
+      : t("shortcutNotSet", { def: shortcut });
   }
 
   document.querySelector("#openShortcuts").addEventListener("click", () => {
@@ -279,7 +278,8 @@ async function init() {
 const COMMAND_KEYS = {
   "quick-save": "cmdSavePage",
   "toggle-translation": "cmdSaveTabGroup",
-  "save-all-tabs": "cmdSaveAllTabs"
+  "save-all-tabs": "cmdSaveSelectedTabs",
+  "save-window-tabs": "cmdSaveAllTabs"
 };
 const TRIGGER_KEYS = { shortcut: "triggerShortcut", menu: "triggerMenu", panel: "triggerPanel" };
 // 「封面是从哪一层拿到的」的词条 key（对应提取函数里的 imageFrom）。

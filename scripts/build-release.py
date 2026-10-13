@@ -48,7 +48,7 @@ RUNTIME_FILES = (
     "sidepanel.html",
     "sidepanel.js",
     "tab-navigation.js",
-    "tab-group-background.js",
+    "tab-batch-background.js",
     "theme-vars.css",
     "theme.js",
     "page-notifications.css",

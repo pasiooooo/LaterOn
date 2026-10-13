@@ -1,4 +1,4 @@
-importScripts("url-utils.js", "reading-position-background.js", "webdav-sync-core.js", "webdav-directory.js", "webdav-sync.js", "import-metadata-background.js", "import-urls-background.js", "tab-group-background.js");
+importScripts("url-utils.js", "reading-position-background.js", "webdav-sync-core.js", "webdav-directory.js", "webdav-sync.js", "import-metadata-background.js", "import-urls-background.js", "tab-batch-background.js");
 const normalizeUrl = LaterOnUrl.normalize;
 
 const STORAGE_KEY = "laterOnItems";
@@ -365,7 +365,7 @@ chrome.storage.onChanged?.addListener((changes, area) => {
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === MENU_SAVE_ALL) {
-    saveAllTabsInWindow("menu").catch((error) => reportFailure(error));
+    saveAllTabsInWindow("menu", tab).catch((error) => reportFailure(error));
   } else if (info.menuItemId === MENU_SAVE_PAGE && tab?.id) {
     quickSave(tab, "menu").catch((error) => reportFailure(error));
   }
@@ -485,12 +485,9 @@ chrome.commands.onCommand.addListener((command, tab) => {
 });
 
 async function handleCommand(command, commandTab) {
-  // 「收藏当前窗口所有标签页」不依赖当前激活页是否为网页，单独处理。
-  if (command === "save-all-tabs") {
-    await saveAllTabsInWindow();
-    return;
-  }
-
+  // Existing Alt+Shift+1 bindings now add the selection; Alt+Shift+2 adds the window.
+  if (command === "save-all-tabs") return saveSelectedTabs(commandTab);
+  if (command === "save-window-tabs") return saveAllTabsInWindow("shortcut", commandTab);
   // Keep the legacy command ID to preserve Alt+2/custom bindings on upgrade.
   if (command === "toggle-translation") return saveCurrentTabGroup(commandTab);
 
@@ -804,26 +801,14 @@ async function saveItem(item, options = {}) {
   return saved;
 }
 
-// ── 一键收藏所有标签 ────────────────────────────────────────
-// 入口：快捷键 Alt+Shift+1 或右键菜单。
-// 默认先在当前网页里弹出「选择项目」浮层，选好项目后再真正开始收藏，
-// 这样收进来的文章直接归到对应项目，不用事后手动整理。
-// 若在设置里关掉了「先选项目」，则直接用上次用过的项目开始收藏。
-async function saveAllTabsInWindow(source = "shortcut") {
-  return saveTabsInScope(source);
-}
-
-// Window and group saves share the picker, duplicate handling and write queue.
-async function saveTabsInScope(source = "shortcut", groupTab = null) {
+// All batch scopes share the picker, duplicate handling and write queue.
+async function saveTabsInScope(source, tabs, activeTab) {
   // 每一步都记一笔：万一中途卡住或失败，去设置页就能看出停在哪一步。
   const stage = (patch) => recordDiag({ lastTrigger: source, lastStageAt: Date.now(), ...patch });
 
   try {
     await stage({ lastStage: "开始", lastRunAt: Date.now() });
 
-    const tabs = await chrome.tabs.query(groupTab
-      ? { windowId: groupTab.windowId, groupId: groupTab.groupId }
-      : { currentWindow: true });
     const targets = tabs.filter(tab => isWebUrl(tab.url))
       .sort((a, b) => (a.index || 0) - (b.index || 0));
     await stage({ lastStage: "读取标签页", lastTabCount: targets.length });
@@ -835,7 +820,7 @@ async function saveTabsInScope(source = "shortcut", groupTab = null) {
         lastDuplicated: 0,
         lastEnriched: 0,
         lastDegraded: 0,
-        lastError: groupTab ? "当前标签组没有可添加的网页" : "当前窗口没有可添加的网页",
+        lastError: "所选范围没有可添加的网页",
         lastErrorAt: Date.now(),
         lastResultAt: Date.now()
       });
@@ -843,7 +828,6 @@ async function saveTabsInScope(source = "shortcut", groupTab = null) {
       return { ok: false, added: 0, duplicated: 0 };
     }
 
-    const activeTab = groupTab || tabs.find((tab) => tab.active) || targets[0];
     const settings = (await chrome.storage.local.get(SETTINGS_KEY))[SETTINGS_KEY] || {};
     const savedProject = (await chrome.storage.local.get(LAST_PROJECT_KEY))[LAST_PROJECT_KEY] || "";
     // 上次用过的项目可能已经被删掉了：先校验一次，
