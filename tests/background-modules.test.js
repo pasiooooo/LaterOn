@@ -7,7 +7,7 @@ const ROOT = path.resolve(__dirname, "..");
 const read = (name) => fs.readFileSync(path.join(ROOT, name), "utf8");
 const background = read("background.js");
 const metadata = read("content-metadata.js");
-const translation = read("content-translation.js");
+const notifications = read("page-notifications.css");
 const picker = read("content-folder-picker.js");
 
 assert.ok(Buffer.byteLength(background) < 80000, `background.js 重新膨胀到 ${Buffer.byteLength(background)} bytes`);
@@ -16,10 +16,12 @@ assert.ok(!background.includes("function togglePageTranslation"), "翻译函数�
 assert.ok(!background.includes("function showFolderPickerOverlay"), "批量选择浮层不应在后台冷启动时解析");
 
 assert.ok(metadata.includes("function extractPageMetadataForShortcut"));
-assert.ok(translation.includes("function togglePageTranslation"));
+assert.match(notifications, /lateron-pill/);
+assert.doesNotMatch(notifications, /lateron-inline-translation|lateron-translation-status/);
 assert.ok(picker.includes("function showFolderPickerOverlay"));
 assert.match(background, /files:\s*\["content-metadata\.js"\]/);
-assert.match(background, /files:\s*\["content-translation\.js"\]/);
+assert.doesNotMatch(background, /toggleTranslation|content-translation|ensureTranslationCss/);
+assert.match(background, /files:\s*\["page-notifications\.css"\]/);
 assert.match(background, /files:\s*\["picker-ui\.js",\s*"content-folder-picker\.js"\]/);
 assert.match(picker, /function safeRuntimeMessage\(message\)/);
 assert.match(picker, /try \{ return Promise\.resolve\(chrome\.runtime\.sendMessage\(message\)\)\.catch\(\(\) => null\); \}\s*catch \{ return Promise\.resolve\(null\); \}/);

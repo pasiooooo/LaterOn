@@ -48,7 +48,7 @@ assert.strictEqual(manifest.default_locale, "zh_CN");
 assert.match(manifest.name, /^__MSG_/);
 for (const locale of ["zh_CN", "en"]) {
   const messages = JSON.parse(read(`_locales/${locale}/messages.json`));
-  for (const key of ["extensionName", "extensionDescription", "actionTitle", "commandSavePage", "commandTranslatePage", "commandSaveAllTabs"]) {
+  for (const key of ["extensionName", "extensionDescription", "actionTitle", "commandSavePage", "commandSaveTabGroup", "commandSaveAllTabs"]) {
     assert.ok(messages[key]?.message, `${locale} 缺少 ${key}`);
   }
 }

@@ -99,8 +99,8 @@ const chrome = {
     query(filter = {}) {
       // 没有选项目窗口开着时返回空；开着时返回它（用于验证「重复触发会先关掉旧的」）。
       if (filter.url) return Promise.resolve(pickerOpen ? [{ id: 99, windowId: 99, url: filter.url }] : []);
-      if (filter.active && filter.currentWindow) return Promise.resolve(tabs.filter((t) => t.active));
-      if (filter.currentWindow) return Promise.resolve(tabs.slice());
+      if (filter.active && (filter.currentWindow || filter.lastFocusedWindow)) return Promise.resolve(tabs.filter((t) => t.active));
+      if (filter.currentWindow || filter.windowId === 1) return Promise.resolve(tabs.slice());
       return Promise.resolve([]);
     },
     get: (id) => {
@@ -209,6 +209,7 @@ sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 
 const start = Date.now();
+vm.runInContext(fs.readFileSync(path.join(path.dirname(SOURCE), "tab-batch-background.js"), "utf8"), sandbox);
 vm.runInContext(src, sandbox, { filename: "background.js" });
 
 let failures = 0;

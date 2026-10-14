@@ -404,7 +404,7 @@ const callExtract = (sandbox, tab) => sandbox.run(`extractTabMetadata(${JSON.str
     check("quickSave 改为走 extractTabMetadata（快捷键入口也被覆盖）", /const meta = await extractTabMetadata\(tab\);/.test(BACKGROUND));
     const quickSaveBody = BACKGROUND.slice(
       BACKGROUND.indexOf("async function quickSave"),
-      BACKGROUND.indexOf("async function toggleTranslation")
+      BACKGROUND.indexOf("async function showActionError")
     );
     check(
       "quickSave 里不再有「直接注入、无超时」的老写法",
