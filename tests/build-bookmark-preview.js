@@ -55,7 +55,7 @@ const fixture = function(images) {
 };
 fs.writeFileSync(path.join(OUT,'fixture.js'),`(${fixture.toString()})(${JSON.stringify(images)});`);
 let html=fs.readFileSync(path.join(ROOT,'bookmarks.html'),'utf8');
-html=html.replace('<script src="theme.js"></script>','<script src="fixture.js"></script><script src="bookmark-previews.js"></script><script src="bookmark-sync.js"></script><script src="theme.js"></script>');
+html=html.replace('<script src="theme.js"></script>','<script src="fixture.js"></script><script src="page-metadata.js"></script><script src="bookmark-previews.js"></script><script src="bookmark-sync.js"></script><script src="theme.js"></script>');
 fs.writeFileSync(path.join(OUT,'bookmarks.html'),html);
 execFileSync(process.execPath,[path.join(__dirname,'build-board-preview.js')],{cwd:ROOT});
 fs.copyFileSync(path.join(__dirname,'board-preview.html'),path.join(OUT,'library.html'));

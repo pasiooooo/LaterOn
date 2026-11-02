@@ -1,4 +1,4 @@
-importScripts("url-utils.js", "reading-position-background.js", "webdav-sync-core.js", "webdav-directory.js", "webdav-sync.js", "import-metadata-background.js", "import-urls-background.js", "tab-batch-background.js", "bookmark-previews.js", "bookmark-sync.js");
+importScripts("page-metadata.js", "url-utils.js", "reading-position-background.js", "webdav-sync-core.js", "webdav-directory.js", "webdav-sync.js", "import-metadata-background.js", "import-urls-background.js", "tab-batch-background.js", "bookmark-previews.js", "bookmark-sync.js");
 const normalizeUrl = LaterOnUrl.normalize;
 
 const STORAGE_KEY = "laterOnItems";
@@ -1475,50 +1475,7 @@ async function refetchMetaFromServer(url) {
     if (!/text\/html/i.test(response.headers.get("content-type") || "")) return null;
     // Read metadata from the response without loading a page or executing scripts.
     const html = (await withTimeout(response.text(), SERVER_META_TIMEOUT_MS, "")) || "";
-    const head = html.slice(0, 200000)
-      .replace(/<!--[\s\S]*?(?:-->|$)/g, "")
-      .replace(/<(script|style)\b[^>]*>[\s\S]*?(?:<\/\1\s*>|$)/gi, "");
-    const decode = text => (text || "").replace(
-      /&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi,
-      (entity, value) => {
-        if (value[0] !== "#") return { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " }[value.toLowerCase()];
-        const code = value[1].toLowerCase() === "x" ? parseInt(value.slice(2), 16) : Number(value.slice(1));
-        return code > 0 && code <= 0x10ffff && !(code >= 0xd800 && code <= 0xdfff) ? String.fromCodePoint(code) : "\ufffd";
-      }).trim();
-    const attributes = tag => {
-      const result = {};
-      const pattern = /([^\s=<>/]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g;
-      for (const match of tag.matchAll(pattern)) {
-        const key = match[1].toLowerCase();
-        if (!(key in result)) result[key] = decode(match[2] ?? match[3] ?? match[4]);
-      }
-      return result;
-    };
-    const tags = [...head.matchAll(/<(meta|link|base)\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi)]
-      .map(match => ({ name: match[1].toLowerCase(), attrs: attributes(match[0]) }));
-    const metaTag = name => tags.find(tag => tag.name === "meta" &&
-      (tag.attrs.property || tag.attrs.name || "").toLowerCase() === name && tag.attrs.content)?.attrs.content || "";
-    const responseUrl = response.url || url;
-    const absolute = (value, base = responseUrl) => {
-      if (!value) return "";
-      try {
-        const resolved = new URL(value, base);
-        return /^https?:$/.test(resolved.protocol) ? resolved.href : "";
-      } catch { return ""; }
-    };
-    const baseUrl = absolute(tags.find(tag => tag.name === "base" && tag.attrs.href)?.attrs.href) || responseUrl;
-    const pageTitle = decode(/<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(head)?.[1]);
-    const icons = tags.filter(tag => tag.name === "link" &&
-      /(?:^|\s)(?:icon|apple-touch-icon|apple-touch-icon-precomposed)(?:\s|$)/i.test(tag.attrs.rel || ""));
-    return {
-      url,
-      title: metaTag("og:title") || metaTag("twitter:title") || pageTitle,
-      description: metaTag("og:description") || metaTag("twitter:description") || metaTag("description"),
-      image: ["og:image", "og:image:url", "og:image:secure_url", "twitter:image", "twitter:image:src"]
-        .map(name => absolute(metaTag(name), baseUrl)).find(Boolean) || "",
-      favicon: icons.map(tag => absolute(tag.attrs.href, baseUrl)).find(Boolean) || absolute("/favicon.ico"),
-      source: metaTag("og:site_name") || safeHostname(responseUrl)
-    };
+    return { ...LaterOnPageMetadata.parse(html, response.url || url), url };
   } catch {
     return null;
   }
@@ -1553,7 +1510,8 @@ async function applyServerMetaRescue(result) {
   return result;
 }
 
-async function extractTabMetadata(tab) {
+async function extractTabMetadata(tab, { serverRescue = true } = {}) {
+  const rescue = result => serverRescue ? applyServerMetaRescue(result) : result;
   const fallback = {
     title: tab.title || tab.url,
     titleFrom: "tab",
@@ -1568,7 +1526,7 @@ async function extractTabMetadata(tab) {
   // 休眠（内存被回收）或从未加载过的标签，注入脚本注定要等到超时，
   // 这种情况直接用浏览器已有的标题和图标，省下几秒白等。
   // 就算注入失败，服务端兜底也还能补救（弹窗类站点的标签页标题同样是错的）。
-  if (tab.discarded || tab.status === "unloaded") return applyServerMetaRescue(fallback);
+  if (tab.discarded || tab.status === "unloaded") return rescue(fallback);
 
   // 抖音滑动切换视频后，标题面板与封面会滞后于网址；先等它对齐，否则会抓到上一条视频。
   // 等待 + 事后复核共用同一个截止时间，所以最多只耽搁 DOUYIN_SETTLE_MS。
@@ -1578,7 +1536,8 @@ async function extractTabMetadata(tab) {
 
   for (;;) {
     const data = await readTabMetadata(tab);
-    if (!data) return applyServerMetaRescue(fallback);
+    if (!data) return rescue(fallback);
+    if (!serverRescue && data.url !== tab.url) return fallback;
 
     // 复核：提取脚本会回报它实际读到的视频 id（面板上的那个）。
     // 跟网址一对，就知道读到的标题/封面是不是这条视频的。对不上就趁剩下的时间再读一次。
@@ -1586,6 +1545,7 @@ async function extractTabMetadata(tab) {
       await new Promise((resolve) => setTimeout(resolve, DOUYIN_POLL_MS));
       continue;
     }
+    if (!serverRescue && expectedId && data.videoId && data.videoId !== expectedId) return fallback;
 
     const result = {
       title: data.title || fallback.title,
@@ -1597,7 +1557,7 @@ async function extractTabMetadata(tab) {
       source: data.source || fallback.source,
       url: tab.url
     };
-    return applyServerMetaRescue(result);
+    return rescue(result);
   }
 }
 

@@ -39,7 +39,7 @@ const allow = async () => {};
   let imageReads = 0, imageCancellations = 0;
   image.ctx.fetch = async url => url.endsWith('.png') ? {
     ok: true, headers: new Headers({ 'content-type': 'image/png' }), body: { getReader: () => ({
-      async read() { imageReads++; return { done: false, value: Buffer.alloc(512 * 1024 + 1) }; },
+      async read() { imageReads++; return { done: false, value: Buffer.alloc(4 * 1024 * 1024 + 1) }; },
       async cancel() { imageCancellations++; }
     }) }
   } : new Response('<meta name="description" content="Keep the summary"><meta property="og:image" content="https://images.test/large.png">', { headers: { 'content-type': 'text/html' } });

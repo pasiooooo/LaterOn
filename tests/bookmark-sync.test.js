@@ -53,7 +53,8 @@ function fixture(initial = {}, noNamespace = false, blockedListeners = false) {
     runtime: { onMessage: event(), onStartup: event(), onInstalled: event(), getURL: p => `chrome-extension://fixture/${p}` },
     alarms: { create() {}, clear() {}, onAlarm: event() }
   };
-  const ctx = vm.createContext({ chrome, URL, console, setTimeout, clearTimeout, AbortController, TextDecoder, btoa });
+  const ctx = vm.createContext({ chrome, URL, console, setTimeout, clearTimeout, AbortController, TextDecoder, btoa, Blob });
+  vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../page-metadata.js'), 'utf8'), ctx);
   vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../bookmark-previews.js'), 'utf8'), ctx);
   vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../bookmark-sync.js'), 'utf8'), ctx);
   return { store, nodes, chrome, native, ctx, api: ctx.LaterOnBookmarkSync, grant() { granted = true; chrome.permissions.onAdded.emit({ permissions: ['bookmarks'] }); }, revoke() { granted = false; chrome.permissions.onRemoved.emit({ permissions: ['bookmarks'] }); }, fail() { fail = true; } };

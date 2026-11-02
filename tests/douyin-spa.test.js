@@ -46,6 +46,7 @@ function grabConst(source, name) {
 }
 
 const REAL_SOURCE = [
+  fs.readFileSync(path.join(ROOT, "page-metadata.js"), "utf8"),
   grabConst(BACKGROUND, "EXTRACT_TIMEOUT_MS"),
   grabConst(BACKGROUND, "DOUYIN_SETTLE_MS"),
   grabConst(BACKGROUND, "DOUYIN_POLL_MS"),

@@ -63,6 +63,7 @@ RUNTIME_FILES = (
     "theme-vars.css",
     "theme.js",
     "page-notifications.css",
+    "page-metadata.js",
     "url-utils.js",
     "webdav-sync-core.js",
     "webdav-directory.js",

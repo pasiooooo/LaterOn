@@ -54,6 +54,7 @@ function grabConst(source, name) {
 
 const PAGE_SOURCE = grabFunction(PAGE_SCRIPT, "extractPageMetadataForShortcut");
 const BACKGROUND_SOURCE = [
+  fs.readFileSync(path.join(ROOT, "page-metadata.js"), "utf8"),
   grabConst(BACKGROUND, "EXTRACT_TIMEOUT_MS"),
   grabConst(BACKGROUND, "DOUYIN_SETTLE_MS"),
   grabConst(BACKGROUND, "DOUYIN_POLL_MS"),
@@ -177,6 +178,16 @@ async function extractWith(setup) {
 }
 
 (async () => {
+  {
+    const { sandbox, state } = makeSandbox({ injected: pageMeta, serverHtml: SERVER_HTML, tab: baseTab });
+    sandbox.TAB = baseTab;
+    const result = await vm.runInContext('extractTabMetadata(TAB, { serverRescue: false })', sandbox);
+    check('书签复用页面提取但不绕过受限网络通道', state.fetches.length === 0 && result.image === pageMeta.image);
+    const changed = makeSandbox({ injected: { ...pageMeta, url: 'https://elsewhere.test/' }, serverHtml: SERVER_HTML, tab: baseTab });
+    changed.sandbox.TAB = baseTab;
+    const stale = await vm.runInContext('extractTabMetadata(TAB, { serverRescue: false })', changed.sandbox);
+    check('书签提取拒绝其他文档的封面', !stale.image && changed.state.fetches.length === 0);
+  }
   console.log("\n后台兜底：弹窗已渲染（标题已对，封面是图标 → 只补封面）");
   {
     const { result, state } = await extractWith({ injected: pageMeta, serverHtml: SERVER_HTML, tab: baseTab });
