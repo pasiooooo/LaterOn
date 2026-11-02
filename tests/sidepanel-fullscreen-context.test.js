@@ -82,7 +82,7 @@ const tick = (window, ms = 100) => new Promise((resolve) => window.setTimeout(re
   const direct = mount("chrome-extension://lateron/library.html");
   await tick(direct.window);
   assert(direct.window.document.querySelector('.project-nav[data-project="all"]')?.classList.contains("active"), "普通打开仍应进入全部项目首页");
-  assert.strictEqual(direct.window.document.title, "LaterOn - 有价值的网页，留给 LaterOn。");
+  assert.strictEqual(direct.window.document.title, "LaterOn - 阅读库");
   direct.dom.window.close();
 
   assert.match(sidepanelSource, /type:\s*"OPEN_LIBRARY"[\s\S]*source:\s*"sidepanel"[\s\S]*projectId:\s*activeProject[\s\S]*filter[\s\S]*focusItemId:\s*currentItemId/);

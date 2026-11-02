@@ -111,7 +111,7 @@ function itemIsArchived(item) {
 function syncDocumentTitle() {
   let pageName = "";
   if (pageTitleMode === "home") {
-    pageName = tr("slogan");
+    pageName = tr("readingLibrary");
   } else if (activeProject === "unfiled") {
     pageName = tr("inbox");
   } else if (activeProject === "archive") {

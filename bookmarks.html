@@ -17,14 +17,14 @@
 <body>
   <header class="bookmark-header">
     <a class="bookmark-brand" href="library.html"><img src="icon128.png" width="36" height="36" alt="" />LaterOn</a>
-    <nav aria-label="Libraries"><a href="library.html" data-bm="reading">临时阅读</a><a href="bookmarks.html" aria-current="page" data-bm="name">书签库</a></nav>
+    <nav aria-label="Libraries"><a href="library.html" data-bm="reading">阅读库</a><a href="bookmarks.html" aria-current="page" data-bm="name">书签库</a></nav>
     <a href="settings.html" data-bm="settings">设置</a>
   </header>
   <main class="bookmark-shell">
     <section class="bookmark-intro">
       <p class="bookmark-eyebrow" data-bm="eyebrow">长期收藏 · 浏览器双向同步</p>
       <h1 data-bm="name">书签库</h1>
-      <p data-bm="intro">与浏览器书签保持一致的长期收藏，独立于临时阅读，不受已读自动清除影响。</p>
+      <p data-bm="intro">与浏览器书签保持一致的长期收藏，独立于阅读库，不受已读自动清除影响。</p>
     </section>
     <section class="bookmark-sync" aria-labelledby="syncTitle">
       <div class="sync-copy"><h2 id="syncTitle" data-bm="syncTitle">浏览器书签双向同步</h2><p data-bm="syncHint">默认同步全部书签，也可以只选择一个文件夹及其子文件夹。停用或修改范围不会删除浏览器书签。</p></div>
@@ -39,9 +39,9 @@
       <p id="bookmarkStatus" class="bookmark-status" role="status" aria-live="polite"></p>
     </section>
     <section id="bookmarkTransfer" class="bookmark-transfer" hidden aria-labelledby="transferTitle">
-      <h2 id="transferTitle" data-bm="transfer">从临时阅读存入书签库</h2>
+      <h2 id="transferTitle" data-bm="transfer">从阅读库存入书签库</h2>
       <p id="bookmarkTransferSummary"></p>
-      <p data-bm="transferHint">转存会保留临时阅读中的原件，日后清除原件也不会删除书签。</p>
+      <p data-bm="transferHint">转存会保留阅读库中的原件，日后清除原件也不会删除书签。</p>
       <label for="bookmarkTransferFolder" data-bm="destination">目标文件夹</label>
       <select id="bookmarkTransferFolder" class="folder-destination"></select>
       <button id="bookmarkCopy" class="primary" type="button" data-bm="copy">确认转存</button>
@@ -76,7 +76,7 @@
         <div id="bookmarkList" class="bookmark-list"></div>
       </section>
     </div>
-    <p class="bookmark-footnote" data-bm="privacy">书签修改直接作用于当前浏览器。此区域不参与临时阅读的清空、JSON 备份或 WebDAV 同步；跨设备书签同步由浏览器负责。</p>
+    <p class="bookmark-footnote" data-bm="privacy">书签修改直接作用于当前浏览器。此区域不参与阅读库的清空、JSON 备份或 WebDAV 同步；跨设备书签同步由浏览器负责。</p>
   </main>
 </body>
 </html>
