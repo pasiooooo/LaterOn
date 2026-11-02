@@ -47,6 +47,7 @@ RUNTIME_FILES = (
     "onboarding.css",
     "onboarding.js",
     "picker-ui.js",
+    "picker-keyboard-guard.js",
     "reading-position-background.js",
     "content-reading-position.js",
     "settings.css",
@@ -116,6 +117,8 @@ def validate_manifest(files: list[Path]) -> str:
     }
     referenced.update(manifest.get("icons", {}).values())
     referenced.update(manifest.get("action", {}).get("default_icon", {}).values())
+    for script in manifest.get("content_scripts", []):
+        referenced.update(script.get("js", []) + script.get("css", []))
     for group in manifest.get("web_accessible_resources", []):
         referenced.update(group.get("resources", []))
 

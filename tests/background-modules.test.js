@@ -22,7 +22,7 @@ assert.ok(picker.includes("function showFolderPickerOverlay"));
 assert.match(background, /files:\s*\["content-metadata\.js"\]/);
 assert.doesNotMatch(background, /toggleTranslation|content-translation|ensureTranslationCss/);
 assert.match(background, /files:\s*\["page-notifications\.css"\]/);
-assert.match(background, /files:\s*\["picker-ui\.js",\s*"content-folder-picker\.js"\]/);
+assert.match(background, /files:\s*\["picker-keyboard-guard\.js",\s*"picker-ui\.js",\s*"content-folder-picker\.js"\]/);
 assert.match(picker, /function safeRuntimeMessage\(message\)/);
 assert.match(picker, /try \{ return Promise\.resolve\(chrome\.runtime\.sendMessage\(message\)\)\.catch\(\(\) => null\); \}\s*catch \{ return Promise\.resolve\(null\); \}/);
 

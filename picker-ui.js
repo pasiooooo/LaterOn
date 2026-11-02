@@ -53,9 +53,11 @@
       failed: "操作失败，请重试。", search: "输入筛选项目…", noMatch: "没有匹配的项目，清空筛选或在下方新建项目。"
     };
 
+    try { window.__laterOnActivePickerClose?.(); } catch {}
     const HOST_ID = "lateron-folder-picker";
     const stale = document.getElementById(HOST_ID);
     if (stale) stale.remove();
+    const previousFocus = document.activeElement;
 
     // 主题：跟着设置走；设置为「跟随系统」时看系统偏好。
     const themeSetting = data.theme || "light";
@@ -68,6 +70,7 @@
     let selected = typeof data.selected === "string" ? data.selected : "";
     let busy = false;
     let closed = false;
+    let releaseKeyboard = null;
 
     const host = document.createElement("div");
     host.id = HOST_ID;
@@ -266,7 +269,7 @@
     };
 
     // ── 播放守卫：浮层开着的时候，网页里的视频不该被我们的按键打断 ──────
-    // 为什么光拦事件还不够：视频网站的「空格 = 播放/暂停」很可能挂在 window 的捕获阶段，
+    // 兼容尚未刷新、没有提前装好键盘守卫的旧标签页：「空格 = 播放/暂停」可能挂在 window 捕获阶段，
     // 而且是页面加载时就注册好的 —— 比浮层的监听早，stopPropagation 拦不住；
     // 再加上 Shadow DOM 会把事件目标改写成浮层的根宿主，
     // 网站那句「焦点在输入框里就不响应快捷键」的判断也会失效。
@@ -310,8 +313,12 @@
     const close = () => {
       if (closed) return;
       closed = true;
-      window.removeEventListener("keydown", onKeydown, true);
-      window.removeEventListener("keyup", onKeyup, true);
+      const ownedFocus = document.activeElement === host;
+      host.inert = true;
+      if (ownedFocus && previousFocus?.isConnected) previousFocus.focus?.({ preventScroll: true });
+      releaseKeyboard?.();
+      if (window.__laterOnActivePickerClose === close) delete window.__laterOnActivePickerClose;
+      for (const type of ["keydown", "keypress", "keyup"]) window.removeEventListener(type, onModalKeyboard, true);
       window.removeEventListener("keydown", onPopoverKeydown, true);
       window.removeEventListener("scroll", positionPanel, true);
       window.removeEventListener("resize", positionPanel);
@@ -377,33 +384,46 @@
       close();
     };
 
-    // 键盘事件统一在捕获阶段处理：比页面自己的快捷键听得早，抢得到；
-    // 用 composedPath 判断焦点是否在浮层的输入框里（Shadow DOM 里的 target 会被重定向）。
+    // The document_start gate also precedes window capture listeners. Stopping
+    // propagation preserves native editing, but requires handling modal keys here.
     const typingInInput = (event) => event.composedPath().some(node => node === newInput || node === searchInput);
 
     function onKeydown(event) {
       if (closed) return;
+      event.stopImmediatePropagation();
+      if (event.isComposing || event.keyCode === 229) return;
       if (event.key === "Escape") {
         event.preventDefault();
-        event.stopPropagation();
         cancel();
         return;
       }
-      if (event.isComposing || event.keyCode === 229 || event.altKey || event.ctrlKey || event.metaKey) return;
-      if (typingInInput(event)) return;
+      if (event.key === "Tab" && !event.altKey && !event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        const targets = [...root.querySelectorAll("input, button, summary")].filter(el => !el.disabled && !el.closest("[hidden]"));
+        const index = targets.indexOf(shadow.activeElement);
+        const next = (index + (event.shiftKey ? -1 : 1) + targets.length) % targets.length;
+        targets[next]?.focus();
+        return;
+      }
+      if (typingInInput(event)) {
+        if (event.key === "Enter") { event.preventDefault(); submitSelection(); }
+        if (event.key === "ArrowDown" && event.composedPath().includes(searchInput)) { event.preventDefault(); folderList.querySelector("button")?.focus(); }
+        return;
+      }
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
+      const control = event.composedPath().some(node => node.tagName === "BUTTON" || node.tagName === "SUMMARY");
+      if (control && (event.key === "Enter" || event.key === " ")) return;
       if (event.key === "Enter") {
         event.preventDefault();
-        event.stopPropagation();
         submitSelection();
         return;
       }
-      if (event.key !== "Tab") event.preventDefault();
-      event.stopPropagation();
+      event.preventDefault();
     }
 
-    function onKeyup(event) {
-      if (closed || typingInInput(event)) return;
-      event.stopPropagation();
+    function onModalKeyboard(event) {
+      if (!host.isConnected) { close(); return; }
+      if (event.type === "keydown") onKeydown(event); else if (!closed) event.stopImmediatePropagation();
     }
 
     // 浮层（贴着卡片按钮）只拦 Esc：其余按键照常放行给网页/扩展页，
@@ -458,10 +478,11 @@
       window.addEventListener("scroll", positionPanel, true);
       window.addEventListener("resize", positionPanel);
     } else {
-      window.addEventListener("keydown", onKeydown, true);
-      window.addEventListener("keyup", onKeyup, true);
+      if (window.LaterOnPickerKeyboard) releaseKeyboard = window.LaterOnPickerKeyboard.capture(onModalKeyboard, () => !closed && host.isConnected);
+      else for (const type of ["keydown", "keypress", "keyup"]) window.addEventListener(type, onModalKeyboard, true);
     }
 
+    window.__laterOnActivePickerClose = close;
     renderFolders();
     if (isPopover) positionPanel();
     searchInput.focus({ preventScroll: true });

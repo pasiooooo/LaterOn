@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "version": "1.71.0",
+  "version": "1.71.1",
   "default_locale": "zh_CN",
   "minimum_chrome_version": "121",
   "optional_permissions": ["bookmarks"],
@@ -20,6 +20,11 @@
     "http://*/*",
     "https://*/*"
   ],
+  "content_scripts": [{
+    "matches": ["http://*/*", "https://*/*"],
+    "js": ["picker-keyboard-guard.js"],
+    "run_at": "document_start"
+  }],
   "action": {
     "default_title": "__MSG_actionTitle__",
     "default_icon": {

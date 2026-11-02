@@ -1214,8 +1214,8 @@ async function showPickerOverlay(tab, payload) {
       withTimeout(
         chrome.scripting.executeScript({
           target: { tabId: tab.id },
-          // picker-ui.js 先注入（提供 window.openFolderPicker），content-folder-picker.js 再调用它。
-          files: ["picker-ui.js", "content-folder-picker.js"]
+          // Include the gate for tabs opened before the extension was updated.
+          files: ["picker-keyboard-guard.js", "picker-ui.js", "content-folder-picker.js"]
         }),
         PICKER_INJECT_TIMEOUT_MS,
         null
