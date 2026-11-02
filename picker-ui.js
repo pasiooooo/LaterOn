@@ -40,7 +40,7 @@
       newMove: "Type a new project name and press Enter to move", newSave: "Type a new project name and press Enter to add", inbox: "Inbox",
       processing: "Working…", createMove: (name) => `Create “${name}” and move`, createSave: (name) => `Create “${name}” and add`,
       moveTo: (name) => `Move to “${name}”`, saveTo: (name) => `Add to “${name}”`, createFailed: "Couldn’t create the project. Try again.",
-      failed: "Something went wrong. Try again."
+      failed: "Something went wrong. Try again.", search: "Filter projects…", noMatch: "No matching projects. Clear the search or create a project below."
     } : {
       projects: "选择项目", newProject: "新建项目名称", cancel: "取消", moveTitle: "把这篇放到哪个项目？",
       saveTitle: "添加到哪个项目？", saveSingleTitle: "把这个网页添加到哪个项目？",
@@ -50,7 +50,7 @@
       newMove: "输入新项目名，回车直接移入", newSave: "输入新项目名，回车直接添加进去", inbox: "等待整理",
       processing: "正在处理…", createMove: (name) => `新建「${name}」并移入`, createSave: (name) => `新建「${name}」并添加`,
       moveTo: (name) => `移动到「${name}」`, saveTo: (name) => `添加到「${name}」`, createFailed: "新建项目失败，请重试。",
-      failed: "操作失败，请重试。"
+      failed: "操作失败，请重试。", search: "输入筛选项目…", noMatch: "没有匹配的项目，清空筛选或在下方新建项目。"
     };
 
     const HOST_ID = "lateron-folder-picker";
@@ -104,8 +104,10 @@
           <ul class="lon-page-list"></ul>
         </details>
         <div class="lon-box">
+          <input class="lon-search-input" type="search" placeholder="${copy.search}" aria-label="${copy.search}" autocomplete="off" />
           <div class="lon-folders" role="radiogroup" aria-label="${copy.projects}">
             <div class="lon-folder-list"></div>
+            <p class="lon-empty" role="status" hidden>${copy.noMatch}</p>
             <input class="lon-new-input" maxlength="28" placeholder="" aria-label="${copy.newProject}" />
           </div>
         </div>
@@ -124,7 +126,7 @@
     const pagesLabel = $(".lon-pages-label");
     const pageList = $(".lon-page-list");
     const folderList = $(".lon-folder-list");
-    const newForm = $(".lon-new");
+    const searchInput = $(".lon-search-input");
     const newInput = $(".lon-new-input");
     const confirmBtn = $(".lon-primary");
     const cancelBtn = $(".lon-ghost");
@@ -164,12 +166,17 @@
 
     // 输入框里写下的新项目名（空 = 用上面选中的那个项目）。
     const pendingNewName = () => newInput.value.trim();
+    const visibleFolders = () => {
+      const query = searchInput.value.trim().toLocaleLowerCase();
+      return folders.filter(folder => String(folder.name || "").toLocaleLowerCase().includes(query));
+    };
     const selectedName = () => {
       if (!selected) return copy.inbox;
       return folders.find((folder) => folder.id === selected)?.name || copy.inbox;
     };
     const applyLabel = () => {
       const name = pendingNewName();
+      confirmBtn.disabled = busy || (!name && !!searchInput.value.trim() && !visibleFolders().length);
       if (name) {
         confirmBtn.textContent = busy
           ? copy.processing
@@ -207,7 +214,9 @@
 
     const renderFolders = () => {
       folderList.replaceChildren();
-      folders.forEach((folder) => {
+      const visible = visibleFolders();
+      $(".lon-empty").hidden = visible.length > 0;
+      visible.forEach((folder) => {
         const button = document.createElement("button");
         button.type = "button";
         button.className = `lon-folder${selected === folder.id ? " is-selected" : ""}`;
@@ -240,11 +249,13 @@
         button.append(icon, name, count, tick);
 
         button.addEventListener("click", () => {
+          if (busy) return;
           newInput.value = "";
           selected = folder.id;
           renderFolders();
         });
         button.addEventListener("dblclick", () => {
+          if (busy) return;
           selected = folder.id;
           renderFolders();
           submitSelection();
@@ -329,7 +340,7 @@
     };
 
     const submitSelection = async () => {
-      if (busy || closed) return;
+      if (busy || closed || confirmBtn.disabled) return;
       busy = true;
       confirmBtn.disabled = true;
       applyLabel();
@@ -368,7 +379,7 @@
 
     // 键盘事件统一在捕获阶段处理：比页面自己的快捷键听得早，抢得到；
     // 用 composedPath 判断焦点是否在浮层的输入框里（Shadow DOM 里的 target 会被重定向）。
-    const typingInInput = (event) => event.composedPath().includes(newInput);
+    const typingInInput = (event) => event.composedPath().some(node => node === newInput || node === searchInput);
 
     function onKeydown(event) {
       if (closed) return;
@@ -408,6 +419,21 @@
 
     // 输入框里的正常打字：事件在输入框这一层就地拦住、不再往外传。
     const swallowTyping = (event) => event.stopPropagation();
+    searchInput.addEventListener("input", () => {
+      if (busy) return;
+      const visible = visibleFolders();
+      if (visible.length && !visible.some(folder => folder.id === selected)) selected = visible[0].id;
+      renderFolders();
+      if (isPopover) positionPanel();
+    });
+    searchInput.addEventListener("keyup", swallowTyping);
+    searchInput.addEventListener("keypress", swallowTyping);
+    searchInput.addEventListener("keydown", event => {
+      event.stopPropagation();
+      if (event.isComposing || event.keyCode === 229) return;
+      if (event.key === "Enter") { event.preventDefault(); submitSelection(); }
+      if (event.key === "ArrowDown") { event.preventDefault(); folderList.querySelector("button")?.focus(); }
+    });
     newInput.addEventListener("keyup", swallowTyping);
     newInput.addEventListener("keypress", swallowTyping);
     newInput.addEventListener("input", () => { if (!busy) applyLabel(); });
@@ -438,7 +464,7 @@
 
     renderFolders();
     if (isPopover) positionPanel();
-    panel.focus({ preventScroll: true });
+    searchInput.focus({ preventScroll: true });
     // 入场动画：下一帧再加类，保证 transition 生效。
     window.requestAnimationFrame(() => root.classList.add("is-in"));
 
@@ -526,6 +552,11 @@
       .lon-page-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--lon-ink); opacity: .82; }
 
       .lon-box { display: flex; flex-direction: column; gap: 9px; min-height: 0; }
+      .lon-search-input { flex: none; width: 100%; border: 1px solid var(--lon-line); border-radius: 10px; padding: 10px 12px; background: var(--lon-field); color: var(--lon-ink); font: inherit; font-size: 13px; }
+      .lon-search-input:focus { outline: 2px solid var(--lon-accent); outline-offset: 1px; }
+      .lon-search-input::placeholder { color: var(--lon-muted); }
+      .lon-empty { margin: 8px; color: var(--lon-muted); font-size: 12px; }
+      .lon-empty[hidden] { display: none; }
       .lon-box-label { margin: 0; color: var(--lon-subtle); font-size: 10.5px; font-weight: 750; letter-spacing: 1px; text-transform: uppercase; }
       .lon-folders { display: flex; flex-direction: column; gap: 6px; max-height: 230px; overflow: auto; padding: 2px; margin: -2px; }
       .lon-folder-list { display: flex; flex-direction: column; gap: 6px; }
