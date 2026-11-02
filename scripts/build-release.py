@@ -32,6 +32,7 @@ RUNTIME_FILES = (
     "boot.js",
     "content-folder-picker.js",
     "content-metadata.js",
+    "current-page-background.js",
     "dialog.css",
     "dialog.js",
     "i18n.js",

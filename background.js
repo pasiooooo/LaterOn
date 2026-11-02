@@ -1,4 +1,4 @@
-importScripts("page-metadata.js", "url-utils.js", "reading-position-background.js", "webdav-sync-core.js", "webdav-directory.js", "webdav-sync.js", "import-metadata-background.js", "import-urls-background.js", "tab-batch-background.js", "bookmark-previews.js", "bookmark-sync.js");
+importScripts("page-metadata.js", "url-utils.js", "reading-position-background.js", "webdav-sync-core.js", "webdav-directory.js", "webdav-sync.js", "import-metadata-background.js", "import-urls-background.js", "tab-batch-background.js", "bookmark-previews.js", "bookmark-sync.js", "current-page-background.js");
 const normalizeUrl = LaterOnUrl.normalize;
 
 const STORAGE_KEY = "laterOnItems";
@@ -444,7 +444,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   // 弹窗 / 侧栏要显示「当前网页」的标题封面摘要时，统一由后台来抓。
   // 这样全网只有一份提取逻辑，不会出现「改了一处、另一处还是旧行为」。
   if (message.type === "EXTRACT_METADATA") {
-    extractTabMetadataById(message.tabId)
+    LaterOnCurrentPageMetadata.get(message.tabId)
       .then((response) => {
         // 记一笔「封面是从哪一层拿到的」，方便在设置页排查抓不到封面的站点。
         if (response?.ok) {

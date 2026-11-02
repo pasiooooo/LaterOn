@@ -52,6 +52,8 @@ let sortMode = "newest";   // 全屏那边的排序方式（只有 custom 会影
 let orders = {};           // 用户拖出来的自定义顺序（与全屏共享：{ 范围: [收藏 id] }）
 let covers = {};           // 用户上传的封面：{ 收藏 id: dataURL }（与 COVERS_KEY 对应）
 let loadGeneration = 0;
+let currentTabId = null;
+let currentPageQuerying = false;
 const itemMap = new Map();
 let currentItemId = null;     // 当前正在读的文章 id（与全屏界面共享，用于高亮 + 滚动定位）
 // 收藏一多（几百上千条），一次性把卡片全画出来会把主线程占住好几秒——
@@ -465,11 +467,16 @@ function withTimeout(promise, ms, fallback) {
   });
 }
 
-async function loadCurrentPage() {
+async function loadCurrentPage({ invalidate = false } = {}) {
   const generation = ++loadGeneration;
-  resetCurrentPage();
+  status.textContent = "";
+  if (invalidate) resetCurrentPage();
+  currentPageQuerying = true;
+  saveButton.disabled = true;
   try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const [tab] = await chrome.tabs.query(sidePanelWindowId ? { active: true, windowId: sidePanelWindowId } : { active: true, currentWindow: true });
+    if (generation !== loadGeneration) return;
+    currentPageQuerying = false;
     if (!tab?.id) throw new Error(tr("noCurrentPage"));
     if (!/^https?:/i.test(tab.url || "")) {
       const scheme = String(tab.url || "").split(":", 1)[0].toLowerCase();
@@ -479,7 +486,10 @@ async function loadCurrentPage() {
     }
     const fallback = fallbackMetadata(tab);
     // 第一段：立刻显示，按钮放开，不等后台。
-    applyCurrentPage({ ...fallback, url: tab.url }, generation);
+    if (invalidate || currentTabId !== tab.id || currentItem?.url !== tab.url) {
+      resetCurrentPage(); currentTabId = tab.id;
+      applyCurrentPage({ ...fallback, url: tab.url }, generation);
+    } else syncCurrentTabItem(currentItem.url, { followProject: false });
     // 第二段：抓取交给后台，和「一键收藏」「弹窗」共用同一份逻辑。
     const response = await withTimeout(
       chrome.runtime.sendMessage({ type: "EXTRACT_METADATA", tabId: tab.id }).catch(() => null),
@@ -487,12 +497,14 @@ async function loadCurrentPage() {
       null
     );
     if (generation !== loadGeneration) return;
-    if (response?.ok && response.metadata) {
+    if (response?.ok && response.metadata?.url === tab.url) {
       // 延迟返回的摘要/封面只补资料，不再次切换用户已选择的项目。
       applyCurrentPage({ ...fallback, ...response.metadata, url: tab.url }, generation, { followProject: false });
     }
   } catch (error) {
     if (generation !== loadGeneration) return;
+    currentPageQuerying = false;
+    resetCurrentPage();
     document.querySelector("#currentSource").textContent = error.message;
   }
 }
@@ -503,16 +515,22 @@ function applyCurrentPage(result, generation, options) {
   syncCurrentTabItem(currentItem.url, options);
   document.querySelector("#currentTitle").textContent = currentItem.title;
   document.querySelector("#currentSource").textContent = currentItem.source;
-  if (currentItem.image) setCurrentThumb(currentItem.image);
+  if (currentItem.image) setCurrentThumb(currentItem.image); else resetCurrentThumb();
 }
 
-chrome.tabs.onActivated.addListener(() => loadCurrentPage());
+chrome.tabs.onActivated.addListener(info => {
+  if (!sidePanelWindowId || !info || info.windowId === sidePanelWindowId) {
+    if (info && info.tabId !== currentTabId) resetCurrentPage();
+    loadCurrentPage();
+  }
+});
 chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
-  if (tab.active && (changeInfo.status === "complete" || changeInfo.url)) loadCurrentPage();
+  if (tab.active && (!sidePanelWindowId || tab.windowId === sidePanelWindowId) && (changeInfo.status === "loading" || changeInfo.status === "complete" || changeInfo.url)) loadCurrentPage({ invalidate: changeInfo.status === "loading" || !!changeInfo.url });
 });
 
 function resetCurrentPage() {
   currentItem = null;
+  currentTabId = null;
   saveButton.disabled = true;
   saveButton.classList.remove("done", "saved");
   saveButton.querySelector("span").textContent = "＋";
@@ -520,13 +538,12 @@ function resetCurrentPage() {
   document.querySelector("#currentTitle").textContent = tr("currentPage");
   document.querySelector("#currentSource").textContent = tr("currentLoading");
   resetCurrentThumb();
-  status.textContent = "";
 }
 
 function syncSaveButtonState(isSaved) {
   saveButton.classList.remove("done");
   saveButton.classList.toggle("saved", isSaved);
-  saveButton.disabled = isSaved || !currentItem;
+  saveButton.disabled = currentPageQuerying || isSaved || !currentItem;
   saveButton.querySelector("span").textContent = isSaved ? "✓" : "＋";
   saveButton.querySelector(".save-label").textContent = tr(isSaved ? "currentAdded" : "saveCurrent");
   saveButton.title = tr(isSaved ? "currentAdded" : "saveCurrent");
@@ -1544,18 +1561,23 @@ function nextCoverFallback(currentSrc) {
 function resetCurrentThumb() {
   const thumb = document.querySelector("#currentThumb");
   thumb.style.backgroundImage = "";
+  thumb.dataset.cover = "";
   thumb.classList.remove("has-cover");
 }
 
 function setCurrentThumb(src) {
   const thumb = document.querySelector("#currentThumb");
+  if (thumb.dataset.cover === src) return;
+  thumb.dataset.cover = src;
   const probe = new Image();
   // 先悄悄试加载：确认拿得到图才盖到缩略图上，拿不到就让 Logo 继续兜底。
   probe.addEventListener("load", () => {
+    if (thumb.dataset.cover !== src) return;
     thumb.style.backgroundImage = `url("${src.replace(/"/g, "%22")}")`;
     thumb.classList.add("has-cover");
   });
   probe.addEventListener("error", () => {
+    if (thumb.dataset.cover !== src) return;
     const fallback = nextCoverFallback(src);
     if (fallback) setCurrentThumb(fallback);
     else resetCurrentThumb();
