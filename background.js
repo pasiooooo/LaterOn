@@ -19,11 +19,14 @@ async function mutateItems({ operation, ids, patch = {} }) {
     throw new Error("Invalid item mutation");
   }
   return queueItemWrite(async () => {
-    const stored = await chrome.storage.local.get([STORAGE_KEY, COVERS_KEY, ORDER_KEY, CURRENT_ITEM_KEY]);
+    const stored = await chrome.storage.local.get([STORAGE_KEY, COVERS_KEY, ORDER_KEY, CURRENT_ITEM_KEY, SETTINGS_KEY]);
     const original = stored[STORAGE_KEY] || [];
     const targets = new Set(ids);
+    const removeImmediately = operation === "update" && patch.status === "done" &&
+      normalizeCleanDays(stored[SETTINGS_KEY]?.autoCleanDays) === 0;
+    const deleting = operation === "delete" || removeImmediately;
     let affected = 0;
-    const nextItems = operation === "delete"
+    const nextItems = deleting
       ? original.filter(item => { if (!targets.has(item.id)) return true; affected++; return false; })
       : original.map(item => {
         if (!targets.has(item.id)) return item;
@@ -40,7 +43,7 @@ async function mutateItems({ operation, ids, patch = {} }) {
       });
     const nextCovers = { ...(stored[COVERS_KEY] || {}) };
     const write = { [STORAGE_KEY]: nextItems };
-    if (operation === "delete") {
+    if (deleting) {
       for (const id of targets) delete nextCovers[id];
       write[COVERS_KEY] = nextCovers;
       write[ORDER_KEY] = Object.fromEntries(Object.entries(stored[ORDER_KEY] || {}).map(
@@ -293,18 +296,15 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 // ── 自动清除过期的「已读」收藏 ────────────────────────────────
-// 从「标为已读的那一天」起算，超过设定天数（默认 30 天，30–180 天可调）就自动删掉，
-// 免得读完的东西一直堆在收藏库里。
+// 留空不清除；0 立即清除；正整数从标为已读的时间起算。
 const CLEAN_ALARM = "laterOnAutoClean";
 const DAY_MS = 24 * 60 * 60 * 1000;
-const CLEAN_MIN_DAYS = 30;
-const CLEAN_MAX_DAYS = 180;
-const CLEAN_DEFAULT_DAYS = 30;
 
 function normalizeCleanDays(value) {
+  if (value == null || (typeof value === "string" && !value.trim())) return null;
+  if (typeof value !== "number" && typeof value !== "string") return null;
   const days = Number(value);
-  if (!Number.isFinite(days)) return CLEAN_DEFAULT_DAYS;
-  return Math.min(CLEAN_MAX_DAYS, Math.max(CLEAN_MIN_DAYS, Math.round(days)));
+  return Number.isInteger(days) && days >= 0 ? days : null;
 }
 
 // 兼容老数据：1.40 之前没有 status 字段，只有 read 布尔。
@@ -320,13 +320,15 @@ async function purgeExpiredItems() {
 
 async function purgeExpiredItemsNow() {
   try {
-    const stored = await chrome.storage.local.get([STORAGE_KEY, ORDER_KEY, SETTINGS_KEY, COVERS_KEY]);
+    const stored = await chrome.storage.local.get([STORAGE_KEY, ORDER_KEY, SETTINGS_KEY, COVERS_KEY, CURRENT_ITEM_KEY]);
     const items = stored[STORAGE_KEY] || [];
     const days = normalizeCleanDays((stored[SETTINGS_KEY] || {}).autoCleanDays);
+    if (days === null) return 0;
     const cutoff = Date.now() - days * DAY_MS;
-    // 没有 doneAt 的（本版本之前就标成已读的老收藏）一律不动，避免升级后误删一片。
+    // Only explicit zero removes legacy items without doneAt.
     const expiredIds = new Set(
-      items.filter((item) => isDoneItem(item) && Number(item.doneAt) > 0 && Number(item.doneAt) < cutoff)
+      items.filter((item) => isDoneItem(item) && (days === 0 ||
+        (Number(item.doneAt) > 0 && Number(item.doneAt) <= cutoff)))
         .map((item) => item.id)
     );
     if (!expiredIds.size) return 0;
@@ -342,7 +344,9 @@ async function purgeExpiredItemsNow() {
     for (const [id, data] of Object.entries(covers)) {
       if (!expiredIds.has(id)) nextCovers[id] = data;
     }
-    await chrome.storage.local.set({ [STORAGE_KEY]: kept, [ORDER_KEY]: nextOrders, [COVERS_KEY]: nextCovers });
+    const write = { [STORAGE_KEY]: kept, [ORDER_KEY]: nextOrders, [COVERS_KEY]: nextCovers };
+    if (expiredIds.has(stored[CURRENT_ITEM_KEY])) write[CURRENT_ITEM_KEY] = null;
+    await chrome.storage.local.set(write);
     return expiredIds.size;
   } catch {
     return 0;
@@ -361,7 +365,7 @@ if (chrome.alarms) {
 purgeExpiredItems().catch(() => {});
 // 设置里把天数调小了立即生效（不用等下一次定时）。
 chrome.storage.onChanged?.addListener((changes, area) => {
-  if (area === "local" && changes[SETTINGS_KEY]) purgeExpiredItems().catch(() => {});
+  if (area === "local" && (changes[SETTINGS_KEY] || changes[STORAGE_KEY])) purgeExpiredItems().catch(() => {});
   if (area === "local" && changes[SETTINGS_KEY]) resetActionAppearance().catch(() => {});
 });
 

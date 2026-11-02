@@ -111,7 +111,7 @@ body {
 /* 「多少天后自动清除」的输入框 + 单位 */
 .setting-days { display: flex; align-items: center; gap: 8px; flex: none; color: var(--muted); font-size: 13px; font-weight: 650; }
 .setting-number {
-  width: 84px; border: 1px solid var(--hairline-2); border-radius: 12px;
+  width: 140px; border: 1px solid var(--hairline-2); border-radius: 12px;
   padding: 10px 12px; background: var(--field); color: var(--field-text);
   font-family: inherit; font-size: 13px; font-weight: 650; text-align: center;
 }

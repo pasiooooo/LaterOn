@@ -82,7 +82,8 @@ function gateExtraction() {
   assert.deepStrictEqual(titles(), ['b1', 'b2', 'c1', 'c2']);
   for (const prefix of ['b', 'c']) assert(store.laterOnItems.findIndex(it => it.title === prefix+'1') < store.laterOnItems.findIndex(it => it.title === prefix+'2'), '批次内标签顺序保持');
 
-  // 清理与保存共享后台写队列，期限规则保持原样。
+  // 清理与保存共享后台写队列；显式启用 30 天期限。
+  store.laterOnSettings.autoCleanDays = 30;
   store.laterOnItems = [{ ...page('expired'), id: 'expired', status: 'done', doneAt: Date.now() - 31 * 86400000 }];
   const originalGet = local.get;
   let releasePurge, purgeEntered;

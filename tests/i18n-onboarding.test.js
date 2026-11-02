@@ -26,7 +26,8 @@ assert.deepStrictEqual(
 );
 assert.strictEqual(dictionaries["zh-CN"].guideStepSaveTitle, "一键添加，随时继续浏览");
 assert.strictEqual(dictionaries["zh-CN"].guideStepReadTitle, "全屏管理，侧栏继续浏览");
-assert.match(dictionaries["zh-CN"].guideStepReadHint, /30 天后自动清除/);
+assert.match(dictionaries["zh-CN"].guideStepReadHint, /默认永久保留/);
+assert.match(dictionaries.en.guideStepReadHint, /kept forever by default/);
 
 const libraryHtml = read("library.html");
 const sidepanelHtml = read("sidepanel.html");

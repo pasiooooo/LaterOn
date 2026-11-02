@@ -9,7 +9,7 @@
     askFolderOnBatch: true,    // 一键收藏所有标签前，先弹窗选项目
     askFolderOnSingle: false,  // 收藏当前这一篇前，是否先弹窗选项目（默认关；主动打开才先选项目）
     askFolderOnSingleOptIn: false, // 迁移标记：旧版默认 true 不算用户主动开启
-    autoCleanDays: 30          // 标为已读后多少天自动清除（30–180 天）
+    autoCleanDays: null        // 留空永不清除；0 立即清除；正整数为保留天数
     ,language: "zh-CN"         // zh-CN | en
   };
 

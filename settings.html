@@ -79,9 +79,9 @@
             <label class="switch"><input type="checkbox" data-setting="askFolderOnBatch" /><span class="slider"></span></label>
           </div>
           <div class="setting-row">
-            <div class="setting-label"><strong data-i18n="autoClean">已读网页自动清除</strong><span data-i18n="autoCleanHint">标记为已读后多少天自动删除（从标为已读那天算起），最短 30 天、最长 180 天，默认 30 天</span></div>
+            <div class="setting-label"><strong data-i18n="autoClean">已读网页自动清除</strong><span data-i18n="autoCleanHint">默认留空，永不清除；0 为立即清除；1 或更大的整数为标记已读后保留的天数，不设上限</span></div>
             <div class="setting-days">
-              <input class="setting-number" type="number" min="30" max="180" step="1" data-setting="autoCleanDays" data-i18n-aria-label="autoCleanDaysLabel" aria-label="已读网页自动清除天数" />
+              <input class="setting-number" type="number" min="0" step="1" data-setting="autoCleanDays" data-i18n-aria-label="autoCleanDaysLabel" aria-label="已读网页自动清除天数" data-i18n-placeholder="autoCleanNever" placeholder="永不清除" />
               <span data-i18n="unitDays">天</span>
             </div>
           </div>

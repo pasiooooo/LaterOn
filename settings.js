@@ -5,14 +5,12 @@ const t = (...args) => (window.LaterOnI18n ? window.LaterOnI18n.t(...args) : Str
 // 当前是不是英文界面（影响标点全角/半角和日期格式这类细节）。
 const isEn = () => document.documentElement.lang === "en";
 
-// 「已读收藏自动清除」的天数：最短 30 天、最长 180 天，默认 30 天。
-// 用户手打的数字可能是 5 或 999，这里统一夹回合法区间再存。
-const MIN_CLEAN_DAYS = 30;
-const MAX_CLEAN_DAYS = 180;
-function clampDays(value) {
+// 空值用 null 保存，避免 Number("") 将「永不清除」误变成「立即清除」。
+function normalizeCleanDays(value) {
+  if (value == null || (typeof value === "string" && !value.trim())) return null;
+  if (typeof value !== "number" && typeof value !== "string") return null;
   const days = Number(value);
-  if (!Number.isFinite(days)) return MIN_CLEAN_DAYS;
-  return Math.min(MAX_CLEAN_DAYS, Math.max(MIN_CLEAN_DAYS, Math.round(days)));
+  return Number.isInteger(days) && days >= 0 ? days : null;
 }
 
 async function init() {
@@ -26,7 +24,7 @@ async function init() {
   document.querySelectorAll("[data-setting]").forEach((el) => {
     const value = current[el.dataset.setting];
     if (el.type === "checkbox") el.checked = !!value;
-    else if (el.type === "number") el.value = clampDays(value);
+    else if (el.type === "number") el.value = normalizeCleanDays(value) ?? "";
     else if (el.tagName === "SELECT") el.value = value;
     else if (el.classList.contains("segmented")) {
       el.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b.dataset.value === value));
@@ -38,10 +36,10 @@ async function init() {
     if (el.classList.contains("segmented")) return;
     const handler = () => {
       if (el.type === "number") {
-        // 天数输入：非数字或超出 30–180 就夹回合法范围，并把框里的数改回夹过的值。
-        const clamped = clampDays(el.value);
-        el.value = clamped;
-        settings.set({ [el.dataset.setting]: clamped });
+        if (!el.reportValidity()) return;
+        const days = normalizeCleanDays(el.value);
+        el.value = days ?? "";
+        settings.set({ [el.dataset.setting]: days });
         return;
       }
       const value = el.type === "checkbox" ? el.checked : el.value;
