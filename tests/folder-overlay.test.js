@@ -107,7 +107,7 @@ const PAGES = [
   console.log("\n── 交互：写了新项目名 → 回车一步新建并收藏 ──");
   const shadowNow = () => document.getElementById("lateron-folder-picker").shadowRoot;
   const typeNew = (shadowRoot, name) => {
-    const field = shadowRoot.querySelector(".lon-new-input");
+    const field = shadowRoot.querySelector(".lon-search-input");
     field.value = name;
     field.dispatchEvent(new window.Event("input", { bubbles: true, composed: true }));
     return field;
@@ -137,12 +137,14 @@ const PAGES = [
   check("并收藏到新建的项目里", sent.filter((m) => m.type === "CONFIRM_BATCH_SAVE").at(-1)?.projectId === "new-folder-1");
   await tick(300);
 
-  console.log("\n── 交互：改选项目会丢掉没提交的新名字 ──");
+  console.log("\n── 交互：清空新项目名后可改选已有项目 ──");
   window.__overlay({ theme: "light", selected: "work", folders: FOLDERS, pages: PAGES });
   const pickShadow = shadowNow();
   typeNew(pickShadow, "临时想法");
+  check("无匹配的新名称不会同时显示旧项目", pickShadow.querySelectorAll(".lon-folder").length === 0);
+  typeNew(pickShadow, "");
   pickShadow.querySelectorAll(".lon-folder")[1].dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
-  check("点了项目就清空输入框", pickShadow.querySelector(".lon-new-input").value === "");
+  check("筛选框清空后不再创建新项目", pickShadow.querySelector(".lon-search-input").value === "");
   check("按钮回到「添加到「工作」」", pickShadow.querySelector(".lon-primary").textContent === "添加到「工作」", pickShadow.querySelector(".lon-primary").textContent);
   document.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
   await tick(300);
@@ -176,7 +178,7 @@ const PAGES = [
 
   console.log("\n── 键盘只归浮层，不漏给网页（空格暂停视频的冲突）──");
   window.__overlay({ theme: "light", selected: "work", folders: FOLDERS, pages: PAGES });
-  const gateInput = document.getElementById("lateron-folder-picker").shadowRoot.querySelector(".lon-new-input");
+  const gateInput = document.getElementById("lateron-folder-picker").shadowRoot.querySelector(".lon-search-input");
   const pageSeen = [];
   const pageListener = (event) => pageSeen.push(event.key);
   document.addEventListener("keydown", pageListener);

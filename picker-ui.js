@@ -32,25 +32,25 @@
     const isPopover = !!data.anchor;
     const language = data.language === "en" || (!data.language && document.documentElement.lang === "en") ? "en" : "zh-CN";
     const copy = language === "en" ? {
-      projects: "Choose a project", newProject: "New project name", cancel: "Cancel", moveTitle: "Move this save to which project?",
+      projects: "Choose a project", cancel: "Cancel", moveTitle: "Move this save to which project?",
       saveTitle: "Add to which project?", saveSingleTitle: "Add this page to which project?",
       singleSaved: "This page is already added — confirming will move it to the selected project", singleNew: "Choose a project to add this page",
       batchSaved: (total, saved) => `${total} tabs, including ${saved} already added — confirming will move them to the selected project`,
       batchNew: (total) => `${total} tabs — choose a project to start adding them one by one`, pages: (n) => `View the ${n} pages to be added`,
-      newMove: "Type a new project name and press Enter to move", newSave: "Type a new project name and press Enter to add", inbox: "Inbox",
+      inbox: "Inbox",
       processing: "Working…", createMove: (name) => `Create “${name}” and move`, createSave: (name) => `Create “${name}” and add`,
       moveTo: (name) => `Move to “${name}”`, saveTo: (name) => `Add to “${name}”`, createFailed: "Couldn’t create the project. Try again.",
-      failed: "Something went wrong. Try again.", search: "Filter projects…", noMatch: "No matching projects. Clear the search or create a project below."
+      failed: "Something went wrong. Try again.", search: "Filter or name a new project…", noMatch: "No matching projects. Confirm to create this project.", nameTooLong: "New project names can contain up to 28 characters."
     } : {
-      projects: "选择项目", newProject: "新建项目名称", cancel: "取消", moveTitle: "把这篇放到哪个项目？",
+      projects: "选择项目", cancel: "取消", moveTitle: "把这篇放到哪个项目？",
       saveTitle: "添加到哪个项目？", saveSingleTitle: "把这个网页添加到哪个项目？",
       singleSaved: "这个网页已经添加过——确认后会一并移进你选的项目", singleNew: "选好项目后就会添加这个网页",
       batchSaved: (total, saved) => `共 ${total} 个标签页，其中 ${saved} 个已经添加过——确认后会一并移进你选的项目`,
       batchNew: (total) => `共 ${total} 个标签页，选好项目后就会开始逐个添加`, pages: (n) => `查看将要添加的 ${n} 个网页`,
-      newMove: "输入新项目名，回车直接移入", newSave: "输入新项目名，回车直接添加进去", inbox: "等待整理",
+      inbox: "等待整理",
       processing: "正在处理…", createMove: (name) => `新建「${name}」并移入`, createSave: (name) => `新建「${name}」并添加`,
       moveTo: (name) => `移动到「${name}」`, saveTo: (name) => `添加到「${name}」`, createFailed: "新建项目失败，请重试。",
-      failed: "操作失败，请重试。", search: "输入筛选项目…", noMatch: "没有匹配的项目，清空筛选或在下方新建项目。"
+      failed: "操作失败，请重试。", search: "筛选项目，或输入新项目名…", noMatch: "没有匹配的项目，确认后将新建这个项目。", nameTooLong: "新项目名称最多 28 个字，请缩短后再确认。"
     };
 
     try { window.__laterOnActivePickerClose?.(); } catch {}
@@ -107,11 +107,10 @@
           <ul class="lon-page-list"></ul>
         </details>
         <div class="lon-box">
-          <input class="lon-search-input" type="search" placeholder="${copy.search}" aria-label="${copy.search}" autocomplete="off" />
+          <input class="lon-search-input" type="search" placeholder="${copy.search}" aria-label="${copy.search}" aria-describedby="lateron-project-status" autocomplete="off" />
           <div class="lon-folders" role="radiogroup" aria-label="${copy.projects}">
             <div class="lon-folder-list"></div>
-            <p class="lon-empty" role="status" hidden>${copy.noMatch}</p>
-            <input class="lon-new-input" maxlength="28" placeholder="" aria-label="${copy.newProject}" />
+            <p class="lon-empty" id="lateron-project-status" role="status" hidden>${copy.noMatch}</p>
           </div>
         </div>
         <footer class="lon-foot">
@@ -130,7 +129,6 @@
     const pageList = $(".lon-page-list");
     const folderList = $(".lon-folder-list");
     const searchInput = $(".lon-search-input");
-    const newInput = $(".lon-new-input");
     const confirmBtn = $(".lon-primary");
     const cancelBtn = $(".lon-ghost");
 
@@ -165,21 +163,22 @@
       pageList.append(li);
     });
 
-    newInput.placeholder = isPopover ? copy.newMove : copy.newSave;
-
-    // 输入框里写下的新项目名（空 = 用上面选中的那个项目）。
-    const pendingNewName = () => newInput.value.trim();
+    const queryName = () => searchInput.value.replace(/\s+/g, " ").trim();
     const visibleFolders = () => {
-      const query = searchInput.value.trim().toLocaleLowerCase();
-      return folders.filter(folder => String(folder.name || "").toLocaleLowerCase().includes(query));
+      const query = queryName().toLocaleLowerCase();
+      return folders.filter(folder => String(folder.name || "").replace(/\s+/g, " ").trim().toLocaleLowerCase().includes(query));
     };
+    // Only a nonempty query with no existing matches becomes a new project on confirmation.
+    const pendingNewName = () => visibleFolders().length ? "" : queryName();
     const selectedName = () => {
       if (!selected) return copy.inbox;
       return folders.find((folder) => folder.id === selected)?.name || copy.inbox;
     };
     const applyLabel = () => {
       const name = pendingNewName();
-      confirmBtn.disabled = busy || (!name && !!searchInput.value.trim() && !visibleFolders().length);
+      confirmBtn.disabled = busy || name.length > 28;
+      searchInput.readOnly = busy;
+      searchInput.setAttribute("aria-invalid", String(name.length > 28));
       if (name) {
         confirmBtn.textContent = busy
           ? copy.processing
@@ -219,6 +218,7 @@
       folderList.replaceChildren();
       const visible = visibleFolders();
       $(".lon-empty").hidden = visible.length > 0;
+      $(".lon-empty").textContent = pendingNewName().length > 28 ? copy.nameTooLong : copy.noMatch;
       visible.forEach((folder) => {
         const button = document.createElement("button");
         button.type = "button";
@@ -253,7 +253,6 @@
 
         button.addEventListener("click", () => {
           if (busy) return;
-          newInput.value = "";
           selected = folder.id;
           renderFolders();
         });
@@ -330,7 +329,7 @@
       window.setTimeout(() => host.remove(), 260);
     };
 
-    // 输入框里写了新项目名 → 先建项目，再应用进去。
+    // 没有匹配项目时先创建，成功后选中它；保存失败重试不会重复创建。
     const resolveProjectId = async () => {
       const name = pendingNewName();
       if (!name) return { ok: true, projectId: selected || null };
@@ -339,9 +338,10 @@
       try { project = await create(name); } catch { /* 调用方失效时留在浮层里显示失败 */ }
       if (!project || !project.id) return { ok: false, error: copy.createFailed };
       if (!folders.some((folder) => folder.id === project.id)) {
-        folders = [...folders, { id: project.id, name: project.name, count: 0 }];
+        folders = [...folders, { id: project.id, name: project.name || name, count: 0 }];
       }
       selected = project.id;
+      searchInput.value = folders.find(folder => folder.id === selected).name;
       renderFolders();
       return { ok: true, projectId: project.id };
     };
@@ -386,7 +386,7 @@
 
     // The document_start gate also precedes window capture listeners. Stopping
     // propagation preserves native editing, but requires handling modal keys here.
-    const typingInInput = (event) => event.composedPath().some(node => node === newInput || node === searchInput);
+    const typingInInput = (event) => event.composedPath().includes(searchInput);
 
     function onKeydown(event) {
       if (closed) return;
@@ -430,6 +430,7 @@
     // 否则会误伤页面里正在打字的搜索框等。输入框自己的按键在下面那一层就地兜住。
     function onPopoverKeydown(event) {
       if (closed) return;
+      if (event.isComposing || event.keyCode === 229) return;
       if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
@@ -453,19 +454,6 @@
       if (event.isComposing || event.keyCode === 229) return;
       if (event.key === "Enter") { event.preventDefault(); submitSelection(); }
       if (event.key === "ArrowDown") { event.preventDefault(); folderList.querySelector("button")?.focus(); }
-    });
-    newInput.addEventListener("keyup", swallowTyping);
-    newInput.addEventListener("keypress", swallowTyping);
-    newInput.addEventListener("input", () => { if (!busy) applyLabel(); });
-    newInput.addEventListener("keydown", (event) => {
-      if (event.isComposing || event.keyCode === 229) { swallowTyping(event); return; }
-      if (event.key === "Enter") {
-        event.preventDefault();
-        event.stopPropagation();
-        submitSelection();
-        return;
-      }
-      swallowTyping(event);
     });
 
     confirmBtn.addEventListener("click", submitSelection);
@@ -599,18 +587,10 @@
       .lon-folder-tick { flex: none; width: 14px; color: var(--lon-accent); font-size: 13px; font-weight: 800; opacity: 0; transition: opacity .15s; }
       .lon-folder.is-selected .lon-folder-tick { opacity: 1; }
 
-      .lon-new-input {
-        width: 100%; border: 1px solid var(--lon-line); border-radius: 12px; padding: 11px 13px;
-        background: var(--lon-field); color: var(--lon-ink);
-        font-family: inherit; font-size: 13px; outline: none;
-        transition: border-color .15s, box-shadow .15s;
-      }
-      .lon-new-input::placeholder { color: var(--lon-subtle); }
-      .lon-new-input:focus { border-color: var(--lon-accent); box-shadow: 0 0 0 3px rgba(255,92,53,.14); }
-
       .lon-hint { margin: 0; color: var(--lon-subtle); font-size: 11.5px; text-align: center; }
       .lon-foot { display: flex; gap: 10px; }
       .lon-foot button {
+        min-width: 0; overflow-wrap: anywhere; line-height: 1.5;
         border-radius: 14px; padding: 12px; font-family: inherit; font-size: 13.5px; cursor: pointer;
         transition: filter .15s, background .15s, transform .12s;
       }

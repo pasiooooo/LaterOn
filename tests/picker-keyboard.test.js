@@ -67,7 +67,7 @@ const tick = () => new Promise(resolve => setTimeout(resolve, 0));
     window.eval(read('picker-ui.js'));
     const current = window.openFolderPicker(options);
     previous.close();
-    input = shadow().querySelector('.lon-new-input'); input.focus();
+    input = shadow().querySelector('.lon-search-input'); input.focus();
     key(input, 'keydown', 's'); key(input, 'keyup', 's');
     assert.deepEqual(seen, [], 'Reinjection replaces the old owner without releasing the new gate');
     key(input, 'keydown', 'Escape'); await tick(); key(input, 'keyup', 'Escape');
