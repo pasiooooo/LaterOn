@@ -11,8 +11,6 @@ header { position: sticky; z-index: 5; top: 0; display: flex; align-items: cente
 .brand-icon { display:block; width:25px; height:25px; border-radius:6px; box-shadow:0 4px 12px -5px rgba(255,80,50,.6); }
 .icon-button { display:grid; place-items:center; width:33px; height:33px; border:1px solid var(--line); border-radius:9px; background:var(--field); color:var(--chip-text); }
 .icon-button:hover { color:var(--ink); border-color:var(--subtle); }
-.bookmark-entry { margin-left: auto; margin-right: 8px; color: var(--muted); font-size: 12px; text-decoration: none; }
-.bookmark-entry:hover { color: var(--ink); }
 .icon-button svg { width:16px; fill:none; stroke:currentColor; stroke-linecap:round; stroke-width:1.7; }
 main { padding:14px 13px 30px; }
 .save-panel { display:grid; grid-template-columns:52px minmax(0,1fr) auto; gap:10px; align-items:center; padding:9px; border:1px solid var(--line); border-radius:13px; background:var(--card); box-shadow:0 3px 10px rgba(30,26,20,.035); }

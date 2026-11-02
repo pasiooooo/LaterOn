@@ -8,75 +8,73 @@
   <link rel="icon" href="icon128.png" />
   <link rel="stylesheet" href="theme-vars.css" />
   <link rel="stylesheet" href="dialog.css" />
+  <link rel="stylesheet" href="library.css" />
+  <link rel="stylesheet" href="library-navigation.css" />
   <link rel="stylesheet" href="bookmarks.css" />
   <script src="theme.js"></script>
   <script src="i18n.js"></script>
   <script src="dialog.js"></script>
+  <script src="bookmark-view.js"></script>
   <script src="bookmarks.js" defer></script>
 </head>
-<body>
-  <header class="bookmark-header">
-    <a class="bookmark-brand" href="library.html"><img src="icon128.png" width="36" height="36" alt="" />LaterOn</a>
-    <nav aria-label="Libraries"><a href="library.html" data-bm="reading">阅读库</a><a href="bookmarks.html" aria-current="page" data-bm="name">书签库</a></nav>
-    <a href="settings.html" data-bm="settings">设置</a>
+<body class="bookmark-library">
+<div class="shell">
+  <header class="topbar bookmark-header">
+    <a class="brand" href="library.html"><img class="brand-icon" src="icon128.png" width="40" height="40" alt="" />LaterOn</a>
+    <button id="bookmarkConnection" class="bookmark-connection" type="button" aria-controls="bookmarkSyncSettings" aria-expanded="false"><span class="bookmark-connection-dot" aria-hidden="true"></span><span id="bookmarkConnectionLabel" data-bm="syncTitle">浏览器书签</span></button>
+    <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg><span class="visually-hidden" data-bm="search">搜索书签</span><input id="bookmarkSearch" type="search" autocomplete="off" /><kbd>⌘ K</kbd></label>
   </header>
-  <main class="bookmark-shell">
-    <section class="bookmark-intro">
-      <p class="bookmark-eyebrow" data-bm="eyebrow">长期收藏 · 浏览器双向同步</p>
-      <h1 data-bm="name">书签库</h1>
-      <p data-bm="intro">与浏览器书签保持一致的长期收藏，独立于阅读库，不受已读自动清除影响。</p>
-    </section>
-    <section class="bookmark-sync" aria-labelledby="syncTitle">
-      <div class="sync-copy"><h2 id="syncTitle" data-bm="syncTitle">浏览器书签双向同步</h2><p data-bm="syncHint">默认同步全部书签，也可以只选择一个文件夹及其子文件夹。停用或修改范围不会删除浏览器书签。</p></div>
-      <div class="sync-controls">
-        <button id="bookmarkEnable" type="button" class="primary" data-bm="enable">启用并授权</button>
-        <button id="bookmarkDisable" type="button" data-bm="disable" hidden>停用同步</button>
-        <label for="bookmarkScope" data-bm="scope">同步范围</label>
-        <select id="bookmarkScope"><option value="" data-bm="all">全部书签</option></select>
-        <button id="bookmarkApplyScope" type="button" data-bm="applyScope">应用范围</button>
-        <button id="bookmarkRefresh" type="button" data-bm="refresh">刷新</button>
+  <div class="workspace bookmark-workspace">
+    <aside class="project-sidebar bookmark-sidebar" aria-label="书签文件夹">
+      <nav class="library-switch" aria-label="资料库"><a href="library.html" data-i18n="readingLibrary">阅读库</a><a href="bookmarks.html" aria-current="page" data-i18n="bookmarkLibrary">书签库</a></nav>
+      <h2 class="sidebar-label" data-bm="folders">文件夹</h2>
+      <div id="bookmarkFolders" class="bookmark-folder-tree"></div>
+      <div class="sidebar-footer bookmark-sidebar-footer">
+        <button id="bookmarkSettingsShortcut" class="sidebar-setting" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 7 4 4 4-8m2 4h7M4 17l4 4 4-8m2 4h7"/></svg><span data-bm="syncSettings">同步设置</span></button>
+        <a href="settings.html" class="sidebar-setting"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="m9 3-1 3-3 1-2 5 3 2 1 3 5 4 2-3 3-1 4-5-3-2-1-3-5-4z"/></svg><span data-bm="settings">设置</span></a>
+        <p class="bookmark-permanent-note" data-bm="permanentHint">长期保存，不参与已读自动清除</p>
       </div>
-      <p id="bookmarkStatus" class="bookmark-status" role="status" aria-live="polite"></p>
-    </section>
-    <section id="bookmarkTransfer" class="bookmark-transfer" hidden aria-labelledby="transferTitle">
-      <h2 id="transferTitle" data-bm="transfer">从阅读库存入书签库</h2>
-      <p id="bookmarkTransferSummary"></p>
-      <p data-bm="transferHint">转存会保留阅读库中的原件，日后清除原件也不会删除书签。</p>
-      <label for="bookmarkTransferFolder" data-bm="destination">目标文件夹</label>
-      <select id="bookmarkTransferFolder" class="folder-destination"></select>
-      <button id="bookmarkCopy" class="primary" type="button" data-bm="copy">确认转存</button>
-      <p id="bookmarkTransferResult" role="status" aria-live="polite"></p>
-    </section>
-    <div class="bookmark-workspace">
-      <aside class="bookmark-sidebar" aria-label="Bookmark folders">
-        <h2 data-bm="folders">文件夹</h2>
-        <div id="bookmarkFolders"></div>
-      </aside>
-      <section class="bookmark-content" aria-labelledby="bookmarkViewTitle">
-        <div class="bookmark-toolbar"><h2 id="bookmarkViewTitle" data-bm="all">全部书签</h2><span id="bookmarkCount"></span>
-          <label class="bookmark-search"><span data-bm="search">搜索书签</span><input id="bookmarkSearch" type="search" autocomplete="off" /></label>
+    </aside>
+    <main class="bookmark-content">
+      <details id="bookmarkSyncSettings" class="bookmark-sync">
+        <summary id="syncTitle" data-bm="syncSettings">同步设置</summary>
+        <p data-bm="syncHint">默认同步全部书签，也可以只选择一个文件夹及其子文件夹。停用或修改范围不会删除浏览器书签。</p>
+        <div class="sync-controls">
+          <button id="bookmarkEnable" type="button" class="primary" data-bm="enable">启用并授权</button>
+          <button id="bookmarkDisable" type="button" data-bm="disable" hidden>停用同步</button>
+          <label for="bookmarkScope" data-bm="scope">同步范围</label><select id="bookmarkScope"><option value="" data-bm="all">全部书签</option></select>
+          <button id="bookmarkApplyScope" type="button" data-bm="applyScope">应用范围</button><button id="bookmarkRefresh" type="button" data-bm="refresh">刷新</button>
         </div>
-        <details id="bookmarkAddPanel" class="bookmark-add">
-          <summary data-bm="add">添加网页或文件夹</summary>
-          <form id="bookmarkAddForm">
-            <label for="bookmarkTitle" data-bm="title">名称</label><input id="bookmarkTitle" required maxlength="500" />
-            <label for="bookmarkUrl" data-bm="url">网页地址</label><input id="bookmarkUrl" type="url" placeholder="https://example.com" />
-            <p data-bm="folderHint">地址留空时新建文件夹；填写地址时添加网页。</p>
-            <label for="bookmarkParent" data-bm="destination">目标文件夹</label><select id="bookmarkParent" class="folder-destination" required></select>
-            <button class="primary" type="submit" data-bm="addAction">添加</button>
-          </form>
-        </details>
-        <div id="bookmarkFolderActions" class="folder-actions" hidden><button id="bookmarkRenameFolder" type="button" data-bm="renameFolder">重命名文件夹</button><button id="bookmarkRemoveFolder" type="button" class="danger" data-bm="removeFolder">删除空文件夹</button></div>
-        <form id="bookmarkMoveForm" class="bookmark-transfer" hidden>
-          <h2 id="bookmarkMoveTitle"></h2>
-          <label for="bookmarkMoveFolder" data-bm="destination">目标文件夹</label><select id="bookmarkMoveFolder" class="folder-destination"></select>
-          <button type="submit" class="primary" data-bm="move">移动</button><button id="bookmarkMoveCancel" type="button" data-bm="cancel">取消</button>
-        </form>
-        <p id="bookmarkEmpty" class="bookmark-empty" data-bm="empty">这里还没有书签。</p>
-        <div id="bookmarkList" class="bookmark-list"></div>
+      </details>
+      <p id="bookmarkStatus" class="bookmark-status" role="status" aria-live="polite"></p>
+      <section id="bookmarkTransfer" class="bookmark-transfer" hidden aria-labelledby="transferTitle">
+        <h2 id="transferTitle" data-bm="transfer">从阅读库存入书签库</h2><p id="bookmarkTransferSummary"></p><p data-bm="transferHint">转存会保留阅读库中的原件，日后清除原件也不会删除书签。</p>
+        <div class="bookmark-inline-form"><label for="bookmarkTransferFolder" data-bm="destination">目标文件夹</label><select id="bookmarkTransferFolder" class="folder-destination"></select><button id="bookmarkCopy" class="primary" type="button" data-bm="copy">确认转存</button></div>
+        <p id="bookmarkTransferResult" role="status" aria-live="polite"></p>
       </section>
-    </div>
-    <p class="bookmark-footnote" data-bm="privacy">书签修改直接作用于当前浏览器。此区域不参与阅读库的清空、JSON 备份或 WebDAV 同步；跨设备书签同步由浏览器负责。</p>
-  </main>
+      <nav id="bookmarkBreadcrumbs" class="bookmark-breadcrumbs" aria-label="文件夹路径"></nav>
+      <div class="collection-bar bookmark-collection-header">
+        <div><h1 id="bookmarkViewTitle" data-bm="all">全部书签</h1><p id="bookmarkCount"></p></div>
+        <div class="bookmark-toolbar-actions"><button id="bookmarkLoadPreviews" type="button" data-bm="loadPreviews">补齐当前预览</button><button id="bookmarkNewFolder" type="button" data-bm="newFolder">新建文件夹</button><button id="bookmarkNewPage" class="primary" type="button" data-bm="addPage">添加网页</button></div>
+      </div>
+      <details id="bookmarkAddPanel" class="bookmark-add">
+        <summary data-bm="add">添加网页或文件夹</summary>
+        <form id="bookmarkAddForm">
+          <label for="bookmarkTitle" data-bm="title">名称</label><input id="bookmarkTitle" required maxlength="500" />
+          <label for="bookmarkUrl" data-bm="url">网页地址</label><input id="bookmarkUrl" type="url" placeholder="https://example.com" />
+          <p data-bm="folderHint">地址留空时新建文件夹；填写地址时添加网页。</p>
+          <label for="bookmarkParent" data-bm="destination">目标文件夹</label><select id="bookmarkParent" class="folder-destination" required></select><button class="primary" type="submit" data-bm="addAction">添加</button>
+        </form>
+      </details>
+      <div id="bookmarkFolderActions" class="folder-actions" hidden><button id="bookmarkRenameFolder" type="button" data-bm="renameFolder">重命名文件夹</button><button id="bookmarkRemoveFolder" type="button" class="danger" data-bm="removeFolder">删除空文件夹</button></div>
+      <form id="bookmarkMoveForm" class="bookmark-transfer" hidden><h2 id="bookmarkMoveTitle"></h2><div class="bookmark-inline-form"><label for="bookmarkMoveFolder" data-bm="destination">目标文件夹</label><select id="bookmarkMoveFolder" class="folder-destination"></select><button type="submit" class="primary" data-bm="move">移动</button><button id="bookmarkMoveCancel" type="button" data-bm="cancel">取消</button></div></form>
+      <section id="bookmarkFolderSection" class="bookmark-section"><div class="bookmark-section-heading"><h2 data-bm="folders">文件夹</h2><span id="bookmarkFolderCount"></span></div><div id="bookmarkFolderCards" class="board-grid"></div><button id="bookmarkMoreFolders" class="bookmark-load-more" type="button" data-bm="moreFolders" hidden>更多文件夹</button></section>
+      <section id="bookmarkPageSection" class="bookmark-section"><div class="bookmark-section-heading"><h2 data-bm="pages">网页</h2><span id="bookmarkPageCount"></span></div><div id="bookmarkList" class="grid bookmark-grid"></div><button id="bookmarkMorePages" class="bookmark-load-more" type="button" data-bm="morePages" hidden>更多网页</button></section>
+      <section id="bookmarkEmpty" class="empty" hidden><h2 data-bm="empty">这里还没有书签。</h2><p data-bm="emptyHint">添加网页，或使用文件夹整理长期收藏。</p></section>
+      <p class="bookmark-footnote" data-bm="previewHint">预览优先复用本地封面和摘要。补齐时最多请求当前视图的 12 个网页及封面，不打开标签页、不使用登录凭据。</p>
+      <p class="bookmark-footnote" data-bm="privacy">书签修改直接作用于当前浏览器。此区域不参与阅读库的清空、JSON 备份或 WebDAV 同步；跨设备书签同步由浏览器负责。</p>
+    </main>
+  </div>
+</div>
 </body>
 </html>

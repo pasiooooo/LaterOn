@@ -26,6 +26,7 @@ const tick = () => new Promise(resolve => setTimeout(resolve, 20));
     window.LaterOnDialog = { async confirm() { return confirm; }, async prompt() { return { ok: false }; }, async alert() {} };
     window.eval(fs.readFileSync(path.join(ROOT, 'i18n.js'), 'utf8'));
     try {
+      window.eval(fs.readFileSync(path.join(ROOT, 'bookmark-view.js'), 'utf8'));
       window.eval(fs.readFileSync(path.join(ROOT, 'bookmarks.js'), 'utf8'));
       await tick();
       const $ = selector => window.document.querySelector(selector);
@@ -61,7 +62,7 @@ const tick = () => new Promise(resolve => setTimeout(resolve, 20));
       await tick();
       const native = f.nodes.find(node => node.url === 'https://ui.test/page');
       assert(native);
-      assert.equal($('#bookmarkList').querySelectorAll('img').length, 0, 'Bookmark titles must not be interpreted as HTML');
+      assert.equal($('#bookmarkList').querySelectorAll('img[src="x"]').length, 0, 'Bookmark titles must not be interpreted as HTML');
       let row = [...$('#bookmarkList').children].find(el => el.dataset.id === native.id);
       row.querySelector('[data-action="move"]').click();
       assert.equal($('#bookmarkMoveForm').hidden, false);

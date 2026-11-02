@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="dialog.css" />
     <link rel="stylesheet" href="onboarding.css" />
     <link rel="stylesheet" href="library.css" />
+    <link rel="stylesheet" href="library-navigation.css" />
     <script src="theme.js"></script>
     <script src="i18n.js"></script>
     <script src="dialog.js"></script>
@@ -36,6 +37,7 @@
 
       <div class="workspace">
         <aside class="project-sidebar" data-i18n-aria-label="projectNav" aria-label="项目导航">
+          <nav class="library-switch" aria-label="资料库"><a href="library.html" aria-current="page" data-i18n="readingLibrary">阅读库</a><a href="bookmarks.html" data-i18n="bookmarkLibrary">书签库</a></nav>
           <!-- 「待整理」单独占一块，钉在侧栏最上面：它不是一个普通筛选项，
                而是一个待办——有东西堆在这里就该去归位。有内容时整块高亮。
                仍然带 .project-nav，所以点击切换、拖收藏进来归类的行为都照旧。 -->
@@ -96,7 +98,6 @@
             <div id="projectList" class="project-list"></div>
           </div>
           <div class="sidebar-footer">
-            <a href="bookmarks.html" class="sidebar-setting bookmark-entry"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg><span data-i18n="bookmarkLibrary">书签库</span></a>
             <button id="openArchive" class="sidebar-setting" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v4H3zM5 8v12h14V8M9 12h6"/></svg><span data-i18n="archive">归档</span></button>
             <button id="openSettings" class="sidebar-setting" type="button" title="设置" aria-label="设置">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>

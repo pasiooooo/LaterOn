@@ -88,6 +88,7 @@
          由 boot.js 在加载完成后切换成 media=all。 -->
     <link rel="stylesheet" href="theme-vars.css" media="print" data-boot-style />
     <link rel="stylesheet" href="sidepanel.css" media="print" data-boot-style />
+    <link rel="stylesheet" href="library-navigation.css" media="print" data-boot-style />
     <link rel="stylesheet" href="onboarding.css" media="print" data-boot-style />
     <noscript>
       <!-- 万一脚本被禁用，样式照样要生效（此时没人去切换 media）。 -->
@@ -108,7 +109,6 @@
   <body class="booting">
     <header>
       <div class="brand"><img class="brand-icon" src="icon128.png" width="25" height="25" alt="" />LaterOn</div>
-      <a href="bookmarks.html" target="_blank" class="bookmark-entry" data-i18n="bookmarkLibrary">书签库</a>
       <button id="openLibrary" class="icon-button" data-i18n-title="openLibrary" data-i18n-aria-label="openLibrary" title="打开完整界面" aria-label="打开完整界面">
         <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M8 21H5a2 2 0 0 1-2-2v-3m18 0v3a2 2 0 0 1-2 2h-3"/></svg>
       </button>
@@ -208,6 +208,7 @@
       <!-- 真界面：骨架屏还在的时候整块不占位（body.booting 时隐藏），
            免得「灰色占位」和「真内容」同时出现在屏幕上。 -->
       <div id="appBody">
+      <nav class="library-switch sidepanel-library-switch" aria-label="资料库"><a href="sidepanel.html" aria-current="page" data-i18n="readingLibrary">阅读库</a><a href="bookmarks.html" target="_blank" rel="noopener" data-i18n="bookmarkLibrary">书签库</a></nav>
       <section class="save-panel">
         <div id="currentThumb" class="current-thumb"><img class="thumb-logo" src="article-cover-placeholder.png" alt="" /></div>
         <div class="current-copy">

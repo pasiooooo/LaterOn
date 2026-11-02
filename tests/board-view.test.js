@@ -180,7 +180,7 @@ const text = (el, selector) => el?.querySelector(selector)?.textContent || "";
   check("顶部计数使用“项目”且不混入等待整理", /3 个项目 · 共 5 篇网页 · 4 篇没看完/.test(document.querySelector("#countText").textContent) && !document.querySelector("#countText").textContent.includes("等待整理"), document.querySelector("#countText").textContent);
   // 侧栏：全屏页面里「等待整理」要钉在最上面，而且有内容时整块高亮
   const inbox = document.querySelector(".inbox-card");
-  check("侧栏有「等待整理」这块，而且钉在最上面", !!inbox && document.querySelector(".project-sidebar").firstElementChild === inbox);
+  check("资料库切换在顶端，等待整理仍是阅读库的首个项目入口", !!inbox && document.querySelector(".project-sidebar .project-nav") === inbox && document.querySelector(".project-sidebar").firstElementChild.classList.contains("library-switch"));
   check("点它进的是等待整理范围", inbox.dataset.project === "unfiled");
   check("有等待整理的收藏时整块高亮", inbox.classList.contains("has-items"));
   check("提示写明还有几篇没归位", inbox.querySelector(".inbox-hint").textContent === "1 篇还没归到项目", inbox.querySelector(".inbox-hint").textContent);

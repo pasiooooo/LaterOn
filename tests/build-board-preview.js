@@ -105,6 +105,7 @@ const out = html
   .replace(/<link rel="stylesheet" href="dialog\.css" \/>/, () => inlineStyle("dialog.css"))
   .replace(/<link rel="stylesheet" href="onboarding\.css" \/>/, () => inlineStyle("onboarding.css"))
   .replace(/<link rel="stylesheet" href="library\.css" \/>/, () => inlineStyle("library.css"))
+  .replace(/<link rel="stylesheet" href="library-navigation\.css" \/>/, () => inlineStyle("library-navigation.css"))
   // 假数据要赶在 theme.js 之前：theme.js 自己也会读存储（它比 library.js 先跑）。
   .replace('<script src="theme.js"></script>', () => `${script}\n    ${inlineScript("theme.js")}`)
   .replace('<script src="dialog.js"></script>', () => inlineScript("dialog.js"))

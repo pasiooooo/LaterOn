@@ -22,6 +22,7 @@
       const parts = node.parentId ? [...path, name] : [];
       result.push({ id: node.id, parentId: node.parentId || null, title: node.title || '',
         ...(node.url ? { url: node.url } : {}), path: parts.join(' / '),
+        ...(Number.isFinite(node.dateAdded) ? { dateAdded: node.dateAdded } : {}),
         protected: readonly || isRoot, writable: !node.url && !!node.parentId && !readonly,
         ...(node.folderType ? { folderType: node.folderType } : {}) });
       for (const child of node.children || []) visit(child, parts, readonly, rootId || node.id);
@@ -40,10 +41,12 @@
   }
   async function snapshot(config) {
     const all = flatten(await chrome.bookmarks.getTree());
+    const previews = globalThis.LaterOnBookmarkPreviews ? await LaterOnBookmarkPreviews.read(all) : {};
     const folders = all.filter(node => !node.url && node.parentId);
     const missing = config.scopeId && !folders.some(node => node.id === config.scopeId);
     return { all, state: { enabled: true, scopeId: config.scopeId || null, folders,
-      nodes: missing ? [] : all.filter(node => node.parentId && inScope(node, all, config.scopeId)),
+      nodes: missing ? [] : all.filter(node => node.parentId && inScope(node, all, config.scopeId))
+        .map(node => previews[node.id]?.url === node.url ? { ...node, preview: previews[node.id] } : node),
       error: missing ? 'bookmarkScopeMissing' : null, updatedAt: Date.now() } };
   }
   async function publish(state) {
@@ -115,6 +118,7 @@
         const folders = flatten(await chrome.bookmarks.getTree()).filter(node => !node.url && node.parentId);
         if (config.scopeId && !folders.some(node => node.id === config.scopeId)) fail('bookmarkFolderRequired');
       }
+      if (current.enabled !== config.enabled || current.scopeId !== config.scopeId) globalThis.LaterOnBookmarkPreviews?.cancel();
       await chrome.storage.local.set({ [CONFIG]: config });
       if (config.enabled) chrome.alarms?.create(ALARM, { periodInMinutes: 5 });
       else chrome.alarms?.clear(ALARM);
@@ -167,7 +171,30 @@
     } else fail('bookmarkInvalidAction');
     return afterCommit();
   }
-  const handle = message => enqueue(() => execute(message));
+  async function loadPreviews(message) {
+    const previews = globalThis.LaterOnBookmarkPreviews;
+    if (!previews || !Array.isArray(message.ids) || message.ids.some(id => typeof id !== 'string')) fail('bookmarkInvalidItems');
+    const initial = await enqueue(context), generation = previews.epoch;
+    const nodes = [...new Set(message.ids)].slice(0, 12).map(id => initial.node(id)).filter(node => node.url);
+    const records = await previews.load(nodes, node => enqueue(async () => {
+      const latest = await context(), current = latest.node(node.id);
+      if (current.url !== node.url || generation !== previews.epoch) fail('bookmarkPreviewUnavailable');
+    }));
+    return enqueue(async () => {
+      let latest;
+      try { latest = await context(); } catch {
+        return { ...await refreshNow(), previewResults: { updated: 0, failed: nodes.length, cancelled: true } };
+      }
+      if (generation !== previews.epoch || latest.config.scopeId !== initial.config.scopeId) {
+        return { ...await refreshNow(), previewResults: { updated: 0, failed: nodes.length, cancelled: true } };
+      }
+      const valid = records.filter(record => latest.all.some(node => node.id === record.id && node.url === record.url && inScope(node, latest.all, latest.config.scopeId)));
+      await previews.commit(valid, latest.all, generation);
+      return { ...await refreshNow(), previewResults: { updated: valid.filter(record => !record.error && (record.image || record.description)).length,
+        failed: nodes.length - valid.filter(record => !record.error && (record.image || record.description)).length } };
+    });
+  }
+  const handle = message => message.type === 'BOOKMARKS_PREVIEWS' ? loadPreviews(message) : enqueue(() => execute(message));
   function onNativeChange() {
     if (eventPending || importing) return;
     eventPending = true;
@@ -192,6 +219,7 @@
   registerEvents();
   chrome.permissions?.onAdded?.addListener(() => { registerEvents(); refresh().catch(() => {}); });
   chrome.permissions?.onRemoved?.addListener(() => {
+    globalThis.LaterOnBookmarkPreviews?.cancel();
     for (const [name, handler] of Object.entries(nativeHandlers)) {
       try { chrome.bookmarks?.[name]?.removeListener?.(handler); } catch {}
     }

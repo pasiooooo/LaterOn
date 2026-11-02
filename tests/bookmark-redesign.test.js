@@ -1,0 +1,102 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { JSDOM } = require('jsdom');
+const fixture = require('./bookmark-sync.test');
+const root = path.resolve(__dirname, '..');
+const read = name => fs.readFileSync(path.join(root, name), 'utf8');
+const tick = () => new Promise(resolve => setTimeout(resolve, 20));
+(async () => {
+  for (const language of ['zh-CN','en']) {
+    const f = fixture({ laterOnBookmarkConfig:{ enabled:true,scopeId:null },laterOnSettings:{language} });
+    f.nodes.push({id:'deep-page',parentId:'nested',title:'Deep research',url:'https://deep.test/paper'});
+    f.grant();
+    f.ctx.fetch = async url => new Response(url.endsWith('.png') ? Buffer.from([137,80,78,71]) : '<meta name="description" content="Loaded preview"><meta property="og:image" content="https://images.test/cover.png">', {headers:{'content-type':url.endsWith('.png')?'image/png':'text/html'}});
+    const dom = new JSDOM(read('bookmarks.html'), {runScripts:'outside-only',url:'chrome-extension://fixture/bookmarks.html'});
+    const {window} = dom;
+    window.chrome=f.chrome;
+    window.chrome.runtime.sendMessage=async message=>{try{return{ok:true,state:await f.api.handle(message)}}catch(error){return{ok:false,error:error.message}}};
+    window.LaterOnDialog={async confirm(){return false},async prompt(){return {ok:false}}};
+    try {
+      for (const name of ['i18n.js','bookmark-view.js','bookmarks.js']) window.eval(read(name));
+      await tick();
+      const $=selector=>window.document.querySelector(selector);
+      let navigations=0;
+      $('.bookmark-content').scrollIntoView=options=>{assert.equal(options.block,'start');navigations++;};
+      assert.equal($('.library-switch [aria-current="page"]').getAttribute('href'),'bookmarks.html');
+      assert.equal($('.library-switch a[href="library.html"]').textContent,language==='en'?'Reading':'阅读库');
+      assert.equal($('#bookmarkSyncSettings').open,false,'Connected state is a browsing page, not an expanded settings screen');
+      assert($('#bookmarkStatus').classList.contains('visually-hidden'),'An idle connection does not displace the collection');
+      assert.equal($('#bookmarkBreadcrumbs').hidden,true,'Home does not repeat its own heading as a breadcrumb');
+      assert.equal($('.bookmark-intro'),null);
+      assert.equal($('#bookmarkFolderCards').children.length,2);
+      assert.equal($('#bookmarkList').querySelectorAll('.card').length,4);
+      assert.equal($('#bookmarkList').querySelector('.cover').classList.contains('bookmark-preview'),true);
+      const research=()=>$('#bookmarkFolders li[data-folder-id="scope"]');
+      research().querySelector('.bookmark-folder-nav').click();
+      assert.equal($('#bookmarkViewTitle').textContent,'Research');
+      assert.equal(navigations,1,'Changing folder brings the new collection into view');
+      assert.equal($('#bookmarkBreadcrumbs').hidden,false);
+      assert.equal($('#bookmarkRemoveFolder').disabled,true,'Do not offer deletion for nonempty native folders');
+      assert.equal($('#bookmarkFolderCards').children.length,1);
+      assert.equal($('#bookmarkList').children.length,1,'Folder pages are direct children, not a flattened entire collection');
+      assert.equal([...$('#bookmarkBreadcrumbs').querySelectorAll('button')].map(el=>el.textContent).join('/'),`${language==='en'?'All bookmarks':'全部书签'}/Bookmarks bar/Research`);
+      assert.equal(f.store.laterOnBookmarkView.selected,'scope');
+      research().querySelector('.bookmark-folder-toggle').click();
+      assert.equal(research().querySelector('ul').hidden,true);
+      research().querySelector('.bookmark-folder-toggle').click();
+      assert.equal(research().querySelector('ul').hidden,false);
+      $('#bookmarkSearch').value='deep';$('#bookmarkSearch').dispatchEvent(new window.Event('input'));
+      assert.equal($('#bookmarkList').children.length,1);
+      assert($('#bookmarkList').textContent.includes('Deep research'));
+      $('#bookmarkSearch').value='';$('#bookmarkSearch').dispatchEvent(new window.Event('input'));
+      $('#bookmarkLoadPreviews').click();
+      for(let i=0;i<20 && !$('#bookmarkFolderCards img');i++) await tick();
+      assert($('#bookmarkFolderCards img'),'Folder boards show cached previews from descendant pages');
+      assert($('#bookmarkList .cover img'),'Page cards render the fetched cover');
+      assert(!$('#bookmarkLoadPreviews').disabled || !$('#bookmarkLoadPreviews').textContent.includes('…'));
+      $('#bookmarkScope').value='scope';$('#bookmarkScope').dispatchEvent(new window.Event('change'));$('#bookmarkApplyScope').click();
+      await tick();
+      assert(!$('#bookmarkBreadcrumbs').textContent.includes('Bookmarks bar'),'Out-of-scope native ancestors are not breadcrumb destinations');
+      assert(!$('#bookmarkFolders').textContent.includes('Other bookmarks'));
+      $('#bookmarkNewFolder').click();
+      assert.equal($('#bookmarkAddPanel').open,true);
+      assert.equal($('#bookmarkUrl').hidden,true);
+      assert.equal($('#bookmarkUrl').required,false);
+      $('#bookmarkConnection').click();
+      assert.equal($('#bookmarkSyncSettings').open,true);
+      assert.equal($('#bookmarkConnection').getAttribute('aria-expanded'),'true');
+    } finally {dom.window.close();}
+  }
+  for(const file of ['library.html','sidepanel.html']) {
+    const dom=new JSDOM(read(file));
+    assert(dom.window.document.querySelector('.library-switch [aria-current="page"][data-i18n="readingLibrary"]'));
+    assert(dom.window.document.querySelector('.library-switch a[href="bookmarks.html"]'));
+    assert(!dom.window.document.querySelector('.sidebar-footer a[href="bookmarks.html"]'),'The only bookmark entry is not hidden in a footer');
+    dom.window.close();
+  }
+  const batch = fixture({laterOnBookmarkConfig:{enabled:true,scopeId:null},laterOnBookmarkView:{selected:'2',expanded:['2']}});
+  batch.nodes.push(...Array.from({length:24},(_,i)=>({id:`batch-${i}`,parentId:'2',title:`Page ${i}`,url:`https://example.test/${i}`})));
+  batch.grant();
+  batch.ctx.fetch=async()=>new Response('<meta name="description" content="Summary without a cover">',{headers:{'content-type':'text/html'}});
+  const batches=[], batchDom=new JSDOM(read('bookmarks.html'),{runScripts:'outside-only',url:'chrome-extension://fixture/bookmarks.html'});
+  try {
+    const {window}=batchDom;window.chrome=batch.chrome;
+    window.chrome.runtime.sendMessage=async message=>{if(message.type==='BOOKMARKS_PREVIEWS')batches.push([...message.ids]);return{ok:true,state:await batch.api.handle(message)}};
+    for(const name of ['i18n.js','bookmark-view.js','bookmarks.js'])window.eval(read(name));
+    await tick();
+    assert.equal(window.document.querySelector('#bookmarkViewTitle').textContent,'Other bookmarks','Saved folder selection is restored');
+    const load=()=>window.document.querySelector('#bookmarkLoadPreviews');
+    load().click();
+    for(let i=0;i<50&&load().textContent.includes('…');i++)await tick();
+    load().click();
+    for(let i=0;i<50&&load().textContent.includes('…');i++)await tick();
+    assert.equal(batches.length,2);
+    assert.equal(batches[0].length,12);
+    assert.equal(batches[1].length,12);
+    assert(!batches[1].some(id=>batches[0].includes(id)),'Pages without site covers must not monopolize every preview batch');
+  } finally {batchDom.window.close();}
+  assert(read('bookmarks.html').includes('href="library.css"'),'Use the actual reading-library visual foundation');
+  assert.match(read('bookmarks.css'),/\.bookmark-card h2[^}]*overflow:\s*visible[^}]*height:\s*auto[^}]*line-height:\s*1\.65/);
+  console.log('PASS bookmark redesign: sibling entries, collapsed settings, real hierarchy, breadcrumbs, previews, descendant search, persistent navigation and text-height overrides');
+})().catch(error=>{console.error(error);process.exitCode=1;});
