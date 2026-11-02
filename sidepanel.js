@@ -24,6 +24,7 @@ let localStorageSlow = false;
 let cacheSaveTimer = null;
 let sidePanelWindowId = null;
 let sidePanelReady = false;
+let readingDataReady = false;
 
 // 侧栏自己所在窗口的 id 是异步取的（`chrome.windows.getCurrent()`），
 // 而完整界面的握手请求可能比它先到。把这次查询存成 Promise，
@@ -122,6 +123,9 @@ const empty = document.querySelector("#emptyState");
 const template = document.querySelector("#itemTemplate");
 const saveButton = document.querySelector("#saveCurrent");
 const status = document.querySelector("#status");
+
+// Restore shared page facts immediately; collection loading only controls membership.
+loadCurrentPage();
 
 // 先让浏览器完成一帧绘制骨架屏，再启动数据读取和真实列表渲染。
 // 如果这里直接同步 init()，首屏缓存很快时骨架会在第一次 paint 前就被移除，
@@ -281,7 +285,7 @@ async function init() {
   // 不等待它，避免一次冷 storage 读取把侧栏首屏拖到几秒之后。
   languagePromise.then(() => {
     window.LaterOnI18n?.applyStatic();
-    if (currentItem) syncSaveButtonState(!!currentItemId);
+    if (currentItem) applyCurrentPage(currentItem, loadGeneration, { followProject: false });
     if (sidePanelReady || cacheHit) {
       render();
       renderProjectFilters();
@@ -327,8 +331,6 @@ async function init() {
     }
     reportOpenSpeed(seg, bootStart, cacheHit);
     sidePanelReady = true;
-    // loadCurrentPage() 会同步重置顶部状态，因此先启动它，再放回这条更重要的读取提示。
-    loadCurrentPage();
     status.textContent = cacheHit
       ? tr("noRefreshShowingCache")
       : tr("loadFailedRetry");
@@ -341,6 +343,7 @@ async function init() {
   // 早期版本把封面 base64 直接塞在条目里，能塞到好几兆，读完必然慢。
   try { seg.bytes = JSON.stringify(stored[STORAGE_KEY] || []).length; } catch { /* 量不出来就不量 */ }
   items = normalizeItems(migrated || stored[STORAGE_KEY]);
+  readingDataReady = true;
   archivedProjectIds = new Set((stored[PROJECTS_KEY] || []).filter((project) => project.archived).map((project) => project.id));
   projects = (stored[PROJECTS_KEY] || []).filter((project) => !project.archived);
   activeProject = normalizeProject(stored[ACTIVE_PROJECT_KEY]);
@@ -364,14 +367,13 @@ async function init() {
   sidePanelReady = true;
   // 如果这次打开是因为在别处点开了一篇，直接把那篇滚到可视区域里。
   applyCurrentAndLocate();
-  // 顶部「当前网页」那一栏不再拖住打开流程：它要唤醒后台抓页面信息，
-  // 冷启动可能几秒，让它在后台自己补，列表早就画完了。
-  loadCurrentPage();
+  if (currentItem?.url) syncCurrentTabItem(currentItem.url);
 }
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes[STORAGE_KEY]) {
     items = normalizeItems(changes[STORAGE_KEY].newValue || []);
+    readingDataReady = true;
     render();
     renderProjectFilters();
     // 阅读状态等数据刷新不能按旧标签页覆盖用户刚选择的项目。
@@ -505,6 +507,7 @@ async function loadCurrentPage({ invalidate = false } = {}) {
     if (generation !== loadGeneration) return;
     currentPageQuerying = false;
     resetCurrentPage();
+    document.querySelector("#currentSource").removeAttribute("data-i18n");
     document.querySelector("#currentSource").textContent = error.message;
   }
 }
@@ -513,6 +516,8 @@ function applyCurrentPage(result, generation, options) {
   if (generation !== loadGeneration) return;
   currentItem = { ...result, title: result.title || result.url };
   syncCurrentTabItem(currentItem.url, options);
+  document.querySelector("#currentTitle").removeAttribute("data-i18n");
+  document.querySelector("#currentSource").removeAttribute("data-i18n");
   document.querySelector("#currentTitle").textContent = currentItem.title;
   document.querySelector("#currentSource").textContent = currentItem.source;
   if (currentItem.image) setCurrentThumb(currentItem.image); else resetCurrentThumb();
@@ -533,18 +538,20 @@ function resetCurrentPage() {
   currentTabId = null;
   saveButton.disabled = true;
   saveButton.classList.remove("done", "saved");
-  saveButton.querySelector("span").textContent = "＋";
   saveButton.querySelector(".save-label").textContent = tr("saveCurrent");
+  saveButton.title = tr("saveCurrent");
+  saveButton.setAttribute("aria-label", tr("saveCurrent"));
   document.querySelector("#currentTitle").textContent = tr("currentPage");
+  document.querySelector("#currentTitle").dataset.i18n = "currentPage";
   document.querySelector("#currentSource").textContent = tr("currentLoading");
+  document.querySelector("#currentSource").dataset.i18n = "currentLoading";
   resetCurrentThumb();
 }
 
 function syncSaveButtonState(isSaved) {
   saveButton.classList.remove("done");
   saveButton.classList.toggle("saved", isSaved);
-  saveButton.disabled = currentPageQuerying || isSaved || !currentItem;
-  saveButton.querySelector("span").textContent = isSaved ? "✓" : "＋";
+  saveButton.disabled = !sidePanelReady || !readingDataReady || currentPageQuerying || isSaved || !currentItem;
   saveButton.querySelector(".save-label").textContent = tr(isSaved ? "currentAdded" : "saveCurrent");
   saveButton.title = tr(isSaved ? "currentAdded" : "saveCurrent");
   saveButton.setAttribute("aria-label", tr(isSaved ? "currentAdded" : "saveCurrent"));

@@ -6,6 +6,7 @@
   <meta name="referrer" content="no-referrer" />
   <title>LaterOn · 书签库</title>
   <link rel="icon" href="icon128.png" />
+  <script src="appearance.js"></script>
   <link rel="stylesheet" href="theme-vars.css" />
   <link rel="stylesheet" href="dialog.css" />
   <link rel="stylesheet" href="library.css" />
@@ -44,7 +45,7 @@
       <section id="bookmarkCurrentPage" class="save-panel" hidden>
         <div id="bookmarkCurrentThumb" class="current-thumb"><img class="thumb-logo" src="article-cover-placeholder.png" alt="" /></div>
         <div class="current-copy"><p id="bookmarkCurrentSource" data-bm="loadingCurrent">正在读取当前网页…</p><h1 id="bookmarkCurrentTitle" data-bm="currentPage">当前页面</h1></div>
-        <button id="bookmarkSaveCurrent" class="bookmark-save-current" type="button" disabled data-bm="saveCurrent">添加</button>
+        <button id="bookmarkSaveCurrent" class="current-save" type="button" disabled><span class="save-mark" aria-hidden="true"><svg class="save-add" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><svg class="save-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span><span class="save-label" data-bm="saveCurrent">添加</span></button>
       </section>
       <div id="bookmarkSidepanelSearch" hidden></div>
       <div id="bookmarkSidepanelControls" hidden><button id="bookmarkToggleFolders" type="button" aria-controls="bookmarkSidepanelFolders" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h7l2 2h9v11H3zM3 7V4h7l2 3"/></svg><span id="bookmarkSidepanelFolderLabel" data-bm="all">全部书签</span><span aria-hidden="true">⌄</span></button><div id="bookmarkSidepanelCount"></div><details id="bookmarkSidepanelTools"><summary data-bm="moreActions">更多操作</summary></details></div>

@@ -1,18 +1,17 @@
+@layer sidepanel {
+html.sidepanel-surface { --panel-header-height:58px; --panel-gutter:13px; --panel-main-top:14px; --panel-bottom:30px; scroll-behavior:auto; scrollbar-gutter:stable; }
 /* 颜色全部来自 theme-vars.css（和全屏共用）：这里不再自己定义 :root 变量，
    否则这份写死的浅色值会和 [data-theme="dark"] 的覆盖冲突、把深色盖回浅色。 */
-* { box-sizing: border-box; }
 /* padding 必须显式清零：head 里的首屏兜底样式给 body 留了 12px/16px 的空，
    不清掉的话吸顶导航栏够不到面板两缘（毛玻璃块两头缺一截，滚动时露馅）。 */
-body { min-width: 280px; margin: 0; padding: 0; background: var(--paper); color: var(--ink); }
-button, input { font: inherit; }
-button { cursor: pointer; }
-header { position: sticky; z-index: 5; top: 0; display: flex; align-items: center; justify-content: space-between; height: 58px; margin: 0; padding: 0 15px; border-bottom: 1px solid var(--hairline-2); background: var(--topbar-bg); backdrop-filter: blur(15px); }
-.brand { display:flex; align-items:center; gap:7px; font-size:17px; font-weight:850; letter-spacing:-.5px; }
+body { min-width: 280px; margin: 0; padding: 0; background: var(--paper); color: var(--ink); font:var(--weight-regular) 13px/var(--leading-body) var(--font-ui); -webkit-font-smoothing:antialiased; }
+header { position: sticky; z-index: 5; top: 0; display: flex; align-items: center; justify-content: space-between; height: var(--panel-header-height); margin: 0; padding: 0 15px; border-bottom: 1px solid var(--hairline-2); background: var(--topbar-bg); backdrop-filter: blur(15px); }
+.brand { display:flex; align-items:center; gap:7px; font-size:17px; font-weight: var(--weight-brand); letter-spacing:-.5px; }
 .brand-icon { display:block; width:25px; height:25px; border-radius:6px; box-shadow:0 4px 12px -5px rgba(255,80,50,.6); }
-.icon-button { display:grid; place-items:center; width:33px; height:33px; border:1px solid var(--line); border-radius:9px; background:var(--field); color:var(--chip-text); }
+.icon-button { display:grid; place-items:center; width:33px; height:33px; flex:none; padding:0; border:1px solid var(--line); border-radius:9px; background:var(--field); color:var(--chip-text); }
 .icon-button:hover { color:var(--ink); border-color:var(--subtle); }
-.icon-button svg { width:16px; fill:none; stroke:currentColor; stroke-linecap:round; stroke-width:1.7; }
-main { padding:14px 13px 30px; }
+.icon-button svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-linecap:round; stroke-linejoin:round; stroke-width:var(--icon-stroke); }
+main { padding:var(--panel-main-top) var(--panel-gutter) var(--panel-bottom); }
 .save-panel { display:grid; grid-template-columns:52px minmax(0,1fr) auto; gap:10px; align-items:center; padding:9px; border:1px solid var(--line); border-radius:13px; background:var(--card); box-shadow:0 3px 10px rgba(30,26,20,.035); }
 .current-thumb { display:grid; place-items:center; width:52px; height:52px; overflow:hidden; border-radius:9px; background:linear-gradient(145deg,#33312e,#777169); background-position:center; background-size:cover; }
 /* 顶部「当前页面」小预览：没抓到封面时在深色底上居中放一枚 Logo。 */
@@ -20,20 +19,23 @@ main { padding:14px 13px 30px; }
 .current-thumb.has-cover .thumb-logo { display:none; }
 .current-copy { min-width:0; }
 .current-copy p { overflow:hidden; margin:0 0 4px; color:var(--muted); font-size:10px; text-overflow:ellipsis; white-space:nowrap; }
-.current-copy h1 { display:-webkit-box; overflow:hidden; margin:0; font-size:12px; line-height:1.4; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
-#saveCurrent { display:flex; align-items:center; gap:4px; border:1px solid transparent; border-radius:9px; padding:8px 9px; background:var(--active-bg); color:var(--active-text); font-size:11px; font-weight:700; transition:background .15s,color .15s,border-color .15s; }
-#saveCurrent:disabled { opacity:.35; cursor:wait; }
-#saveCurrent.done { background:#2d7a4f; }
-#saveCurrent.saved { border-color:var(--line); background:var(--accent-soft); color:var(--accent); }
-#saveCurrent.saved:disabled { opacity:1; cursor:default; }
-#status { min-height:13px; margin:5px 3px 2px; color:var(--accent); font-size:10px; }
-.search { display:flex; align-items:center; margin-top:8px; padding:9px 10px; border:1px solid var(--line); border-radius:10px; background:var(--field); }
-.search svg { width:15px; fill:none; stroke:var(--muted); stroke-linecap:round; stroke-width:1.8; }
+.current-copy h1 { display:-webkit-box; overflow:hidden; margin:0; font-size:12px; font-weight:var(--weight-bold); line-height:var(--leading-title); -webkit-box-orient:vertical; -webkit-line-clamp:2; }
+.current-save { display:flex; align-items:center; justify-content:center; gap:4px; flex:none; min-height:34px; border:1px solid transparent; border-radius:9px; padding:8px 9px; background:var(--active-bg); color:var(--active-text); font-size:11px; font-weight:var(--weight-bold); line-height:var(--leading-body); white-space:nowrap; transition:background .15s,color .15s,border-color .15s; }
+.current-save:disabled { opacity:.45; cursor:default; }
+.current-save.saved { border-color:var(--line); background:var(--accent-soft); color:var(--accent); }
+.current-save.saved:disabled { opacity:1; }
+.save-mark { display:grid; place-items:center; width:12px; height:12px; flex:none; }
+.save-mark svg { display:block; width:12px; height:12px; fill:none; stroke:currentColor; stroke-width:var(--icon-stroke); stroke-linecap:round; stroke-linejoin:round; }
+.current-save:not(.saved) .save-check, .current-save.saved .save-add { display:none; }
+#status { margin:8px 3px 0; color:var(--accent); font-size:10px; line-height:var(--leading-body); }
+#status:empty { display:none; }
+.search { display:flex; align-items:center; margin-top:12px; padding:9px 10px; border:1px solid var(--line); border-radius:var(--control-radius); background:var(--field); }
+.search svg { width:15px; height:15px; flex:none; fill:none; stroke:var(--muted); stroke-linecap:round; stroke-linejoin:round; stroke-width:var(--icon-stroke); }
 .search input { min-width:0; width:100%; border:0; outline:0; padding:0 7px; background:transparent; color:var(--ink); font-size:11px; }
 .filter-row { display:flex; align-items:center; justify-content:space-between; margin:12px 1px 9px; }
 .filters { display:flex; gap:3px; }
 .filter { border:0; border-radius:99px; padding:5px 9px; background:transparent; color:var(--chip-text); font-size:10px; }
-.filter.active { background:var(--btn-soft); color:var(--ink); font-weight:700; }
+.filter.active { background:var(--btn-soft); color:var(--ink); font-weight: var(--weight-bold); }
 #itemCount { color:var(--subtle); font-size:10px; }
 .project-filters { display:flex; gap:5px; overflow-x:auto; margin:0 -13px 10px; padding:0 13px 3px; scrollbar-width:none; }
 .project-filters::-webkit-scrollbar { display:none; }
@@ -41,7 +43,7 @@ main { padding:14px 13px 30px; }
 .project-filter:hover { border-color:var(--subtle); color:var(--ink); }
 .project-filter.active { border-color:var(--active-bg); background:var(--active-bg); color:var(--active-text); }
 .project-filter .project-name { overflow:hidden; text-overflow:ellipsis; }
-.project-filter strong { color:var(--subtle); font-size:8px; font-weight:600; }
+.project-filter strong { color:var(--subtle); font-size:8px; font-weight: var(--weight-semibold); }
 .project-filter.active strong { color:rgba(255,255,255,.6); }
 .items { display:flex; flex-direction:column; gap:8px; }
 .item { position:relative; overflow:hidden; border:1px solid var(--line); border-radius:12px; background:var(--card); transition:border-color .15s, transform .15s; }
@@ -74,23 +76,23 @@ main { padding:14px 13px 30px; }
 .copy { min-width:0; padding:10px 29px 9px 11px; }
 .meta { display:grid; grid-template-columns:14px minmax(0,1fr) auto auto; align-items:center; column-gap:4px; min-width:0; width:100%; color:var(--subtle); font-size:9px; white-space:nowrap; }
 .meta img { width:14px; height:14px; border-radius:50%; object-fit:cover; }
-.meta .source { display:block; overflow:hidden; min-width:0; max-width:100%; color:var(--field-text); font-weight:650; text-overflow:ellipsis; white-space:nowrap; }
+.meta .source { display:block; overflow:hidden; min-width:0; max-width:100%; color:var(--field-text); font-weight: var(--weight-semibold); text-overflow:ellipsis; white-space:nowrap; }
 .meta time { justify-self:end; min-width:max-content; white-space:nowrap; }
 /* 日期和「·」平时显示；鼠标移上来（铅笔浮出）时淡出，把右上角让给铅笔和垃圾桶。 */
 .meta time, .meta .dot { transition:opacity .16s ease; }
-.item:hover .meta time, .item:hover .meta .dot { opacity:0; }
-.copy h2 { display:-webkit-box; overflow:hidden; margin:7px 0 5px; font-size:12px; line-height:1.4; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
-.description { display:-webkit-box; overflow:hidden; margin:0; color:var(--muted); font-size:9.5px; line-height:1.45; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
+.item:hover .meta time, .item:hover .meta .dot, .item:focus-within .meta time, .item:focus-within .meta .dot { opacity:0; }
+.copy h2 { display:-webkit-box; overflow:hidden; margin:7px 0 5px; font-size:12px; font-weight:var(--weight-bold); line-height:var(--leading-title); -webkit-box-orient:vertical; -webkit-line-clamp:2; }
+.description { display:-webkit-box; overflow:hidden; height:auto; margin:0; color:var(--muted); font-size:9.5px; line-height:var(--leading-body); -webkit-box-orient:vertical; -webkit-line-clamp:2; }
 .edit, .delete { position:absolute; top:7px; display:grid; place-items:center; width:25px; height:25px; border:0; border-radius:7px; background:var(--glass-strong); color:var(--subtle); opacity:0; }
 /* 铅笔放回右上角（和垃圾桶一排在手边，更顺手）。代价是它会盖住右边的日期，
    所以卡片一悬停就把日期连同中间那个「·」淡出——用 opacity 而不是 display，
    位置还占着，标题和来源不会因为少了一个词而左右跳动。 */
 .edit { right:35px; }
 .delete { right:6px; }
-.item:hover .edit, .item:hover .delete { opacity:1; }
+.item:hover .edit, .item:hover .delete, .item:focus-within .edit, .item:focus-within .delete { opacity:1; }
 .edit:hover { background:var(--btn-soft); color:var(--ink); }
 .delete:hover { background:var(--accent-soft); color:var(--accent); }
-.edit svg, .delete svg { width:14px; fill:none; stroke:currentColor; stroke-linecap:round; stroke-linejoin:round; stroke-width:1.6; }
+.edit svg, .delete svg { width:14px; fill:none; stroke:currentColor; stroke-linecap:round; stroke-linejoin:round; stroke-width: var(--icon-stroke); }
 /* 与全屏页面共用同一套右键菜单视觉；侧栏只保留打开、编辑、删除三项。 */
 .folder-menu {
   position:fixed; z-index:80; min-width:172px; padding:6px;
@@ -107,14 +109,14 @@ main { padding:14px 13px 30px; }
   transition:background .12s, color .12s;
 }
 .folder-menu-item:hover, .folder-menu-item:focus-visible { outline:0; background:var(--btn-soft); color:var(--ink); }
-.folder-menu-item svg { width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+.folder-menu-item svg { width:15px; height:15px; fill:none; stroke:currentColor; stroke-width: var(--icon-stroke); stroke-linecap:round; stroke-linejoin:round; }
 .folder-menu-item.danger { color:#d94841; }
 .folder-menu-item.danger:hover { background:rgba(217,72,65,.1); color:#c93a2c; }
 [data-theme="dark"] .folder-menu-item.danger { color:#ff8272; }
 [data-theme="dark"] .folder-menu-item.danger:hover { background:rgba(255,110,90,.16); color:#ff9b8c; }
 /* ── 骨架屏 ──────────────────────────────────────────────
    数据还没到位时，先按真实界面的完整轮廓画一份灰色占位：
-   顶部收藏条 → 搜索框 → 筛选 → 项目 → 卡片。每块的尺寸都对真界面，
+   只为筛选、项目和卡片预留位置；顶部控件始终保持真实结构。
    真内容一到就是「原地填实」，不会整块跳一下、也不会两副样子叠着出现。
    颜色全走主题变量，深色模式自动跟着变。 */
 /* 骨架屏在场时，真界面整块不占位（等真内容画出来再露面）。 */
@@ -131,16 +133,6 @@ body.booting #appBody { display:none; }
 }
 @keyframes skShimmer { to { transform:translateX(100%); } }
 
-/* ① 顶部「收藏当前网页」那一栏 */
-.skel-save {
-  display:grid; grid-template-columns:52px minmax(0,1fr) 54px; gap:10px; align-items:center;
-  padding:9px; border:1px solid var(--line); border-radius:13px; background:var(--card);
-}
-.sk-thumb-sm { width:52px; height:52px; border-radius:9px; }
-.skel-lines { display:grid; gap:6px; }
-.sk-btn { height:30px; border-radius:9px; }
-/* ② 搜索框 */
-.sk-search { height:36px; margin-top:8px; border-radius:10px; }
 /* ③ 全部 / 未读 / 已读 + 右侧篇数 */
 .skel-filters { display:flex; align-items:center; gap:3px; margin:12px 1px 9px; }
 .sk-pill { width:40px; height:22px; border-radius:99px; }
@@ -188,7 +180,7 @@ body.booting #appBody { display:none; }
   display:inline-flex; align-items:center; justify-content:center;
   padding:5px 10px; border:0; border-radius:99px;
   background:var(--btn-soft); color:var(--chip-text);
-  font-size:9.5px; font-weight:700; line-height:1.3; white-space:nowrap;
+  font-size:9.5px; font-weight: var(--weight-bold); line-height:1.3; white-space:nowrap;
   box-shadow:0 3px 10px rgba(0,0,0,.16);
   opacity:0;
   transition: opacity .16s ease, background .15s, color .15s;
@@ -211,7 +203,7 @@ body.booting #appBody { display:none; }
   position: absolute; top: 7px; left: 7px; z-index: 3;
   padding: 2px 8px; border-radius: 99px;
   background: var(--accent); color: #fff;
-  font-size: 9px; font-weight: 700; letter-spacing: .2px;
+  font-size: 9px; font-weight: var(--weight-bold); letter-spacing: .2px;
   pointer-events: none;
 }
 .empty { padding:45px 20px; color:var(--muted); text-align:center; }
@@ -222,6 +214,7 @@ body.booting #appBody { display:none; }
 
 /* 拖宽侧边栏后，自动切换为完整界面的纵向卡片。 */
 @media (min-width:620px) {
+  html.sidepanel-surface { --panel-header-height:64px; --panel-gutter:22px; --panel-main-top:20px; --panel-bottom:40px; }
   header { height:64px; padding:0 22px; }
   main { padding:20px 22px 40px; }
   .save-panel { grid-template-columns:64px minmax(0,1fr) auto; padding:11px; }
@@ -243,6 +236,10 @@ body.booting #appBody { display:none; }
   .edit, .delete { top:auto; bottom:9px; opacity:1; }
   /* 网格模式的按钮在右下角，离日期很远，所以那里不用让位。 */
   .edit { right:38px; left:auto; }
-  .item:hover .meta time, .item:hover .meta .dot { opacity:1; }
+  .item:hover .meta time, .item:hover .meta .dot, .item:focus-within .meta time, .item:focus-within .meta .dot { opacity:1; }
   .delete { right:9px; }
+}
+
+@media (hover:none) { .edit, .delete { opacity:1; } }
+
 }

@@ -305,14 +305,14 @@ function boot({ store, pendingGet = false, cache = null, bootStartOffsetMs = 0, 
   const envG = boot({ store: slowStore, pendingGet: true });
   const skel = envG.document.querySelector("#bootSkeleton");
   check("没数据时显示骨架屏", !!skel);
-  check("骨架屏里有「收藏当前网页」那一栏的轮廓", !!skel?.querySelector(".skel-save"));
-  check("骨架屏里有搜索框的轮廓", !!skel?.querySelector(".sk-search"));
+  check("当前网页始终使用真实控件，不切换骨架", !!envG.document.querySelector(".save-panel") && !skel?.querySelector(".skel-save"));
+  check("搜索框始终使用真实控件，不切换骨架", !!envG.document.querySelector("#searchInput") && !skel?.querySelector(".sk-search"));
   check("骨架屏里有筛选按钮的轮廓", skel?.querySelectorAll(".skel-filters .sk-pill").length === 3);
   check("骨架屏里有项目的轮廓", skel?.querySelectorAll(".skel-chips .sk-chip").length === 3);
   check("骨架屏里有 5 张卡片的轮廓", skel?.querySelectorAll(".skel-item").length === 5, `${skel?.querySelectorAll(".skel-item").length} 张`);
   check("卡片轮廓跟真卡片一样是 92px 封面 + 文字行", !!skel?.querySelector(".skel-item .sk-thumb"));
-  check("真内容整块包在 #appBody 里（骨架屏在场时不占位）",
-    !!envG.document.querySelector("#appBody #items") && !!envG.document.querySelector("#appBody .save-panel"));
+  check("只有列表等待数据；当前页和双库切换不被骨架隐藏",
+    !!envG.document.querySelector("#appBody #items") && !envG.document.querySelector("#appBody .save-panel") && !envG.document.querySelector("#appBody .library-switch"));
   check("CSS 里写了「骨架屏在场就隐藏真界面」", /body\.booting\s+#appBody\s*\{\s*display:\s*none/.test(css));
   check("页面一开始带 .booting 标记", envG.document.body.classList.contains("booting"));
 
@@ -396,20 +396,18 @@ function boot({ store, pendingGet = false, cache = null, bootStartOffsetMs = 0, 
     })(),
     (envSlowLs.window.localStorage.getItem("laterOnPanelCache") || "").slice(0, 60));
 
-  // ═══ ⑪ 首屏「零依赖」：不加载任何外部 CSS/JS 也能画出骨架屏 ═══
-  console.log("\n── ⑪ 首屏不依赖外部文件：外部样式表改为异步，骨架屏样式内联在 HTML 里 ──");
-  // 外部样式表是「阻塞渲染」的：浏览器要等它们全部到齐才画第一个像素。
-  // 只要还有一个漏网的（没有 data-boot-style），慢起来就又会是一整块白。
+  // Core presentation is ready before the first paint; only optional styles defer.
+  console.log("\n── ⑪ 公共样式与主题在首帧就绪，避免双库切换时几何与字体跳变 ──");
   const headOnly = html.slice(0, html.indexOf("</head>"));
   const noscriptFree = headOnly.replace(/<noscript>[\s\S]*?<\/noscript>/g, "");
   const cssLinks = [...noscriptFree.matchAll(/<link[^>]+rel="stylesheet"[^>]*>/g)].map((m) => m[0]);
-  check("head 里的外部样式表全部改成异步（data-boot-style + media=print）",
-    cssLinks.length > 0 && cssLinks.every((tag) => tag.includes("data-boot-style") && tag.includes('media="print"')),
+  check("主题、侧栏和切换控件的核心样式不异步替换",
+    ["theme-vars.css", "sidepanel.css", "library-navigation.css"].every(name => cssLinks.some(tag => tag.includes(`href="${name}"`) && !tag.includes('media="print"'))),
     cssLinks.map((t) => (t.match(/href="([^"]+)"/) || [])[1]).join("、"));
   check("内联了首屏兜底样式（不依赖外部 CSS 也能画出骨架屏）",
     /<style id="bootCriticalStyle">[\s\S]*?#bootSkeleton[\s\S]*?\.sk-line[\s\S]*?<\/style>/.test(headOnly));
-  check("兜底样式里包含深浅两套配色（跟随系统）",
-    /prefers-color-scheme: dark/.test(headOnly));
+  check("首帧采用缓存主题色，而非另选一套系统深浅配色",
+    headOnly.indexOf('src="appearance.js"') < headOnly.indexOf('id="bootCriticalStyle"') && /var\(--boot-paper/.test(headOnly));
   check("[hidden] 的隐藏规则显式写出来了（否则 .boot-tip 的 display 会盖掉它）",
     /#bootTip\[hidden\]\s*{\s*display:\s*none/.test(headOnly));
   check("theme.js 使用 defer，编辑弹窗按需加载",

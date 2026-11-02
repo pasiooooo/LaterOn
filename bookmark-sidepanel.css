@@ -1,24 +1,22 @@
+@layer bookmark-panel {
 /* Share the reading side panel's actual base CSS, not the desktop page's mobile layout. */
 html.bookmark-sidepanel { scroll-behavior: auto; }
 .bookmark-sidepanel body { min-width: 280px; background: var(--paper); }
 .bookmark-sidepanel .shell { min-height: 100vh; }
-.bookmark-sidepanel .bookmark-header { display: flex; height: 58px; padding: 0 15px; }
+.bookmark-sidepanel .bookmark-header { display: flex; height: var(--panel-header-height); padding: 0 15px; }
 .bookmark-sidepanel .brand { font-size: 17px; letter-spacing: -.5px; }
 .bookmark-sidepanel .brand-icon { width: 25px; height: 25px; border-radius: 6px; }
 .bookmark-sidepanel .bookmark-connection { display: none; }
 .bookmark-sidepanel #bookmarkOpenFull { min-height: 33px; }
 .bookmark-sidepanel #bookmarkOpenFull svg { width: 16px; height: 16px; }
-.bookmark-sidepanel #bookmarkSidepanelNavigation { padding: 12px 13px 0; }
+.bookmark-sidepanel #bookmarkSidepanelNavigation { padding: var(--panel-main-top) var(--panel-gutter) 0; }
 .bookmark-sidepanel nav.library-switch { margin: 0; }
 .bookmark-sidepanel .workspace { display: block; min-height: 0; }
-.bookmark-sidepanel .bookmark-content { padding: 14px 13px 30px; scroll-margin-top: 68px; }
+.bookmark-sidepanel .bookmark-content { padding: 12px var(--panel-gutter) var(--panel-bottom); scroll-margin-top: calc(var(--panel-header-height) + 10px); }
 .bookmark-sidepanel #bookmarkCurrentPage { margin-bottom: 12px; }
-.bookmark-sidepanel .current-copy h1 { line-height: 1.6; }
-.bookmark-sidepanel .bookmark-save-current { padding: 8px 9px; border: 1px solid transparent; border-radius: 9px; background: var(--active-bg); color: var(--active-text); font-size: 11px; font-weight: 700; }
-.bookmark-sidepanel .bookmark-save-current:disabled { background: var(--btn-soft); color: var(--muted); opacity: .65; }
 .bookmark-sidepanel #bookmarkCurrentThumb { position: relative; }
 .bookmark-sidepanel .bookmark-current-cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.bookmark-sidepanel #bookmarkSidepanelSearch .search { width: 100%; margin: 0; border-radius: 10px; padding: 9px 10px; }
+.bookmark-sidepanel #bookmarkSidepanelSearch .search { width: 100%; margin: 0; }
 .bookmark-sidepanel #bookmarkSidepanelSearch input { font-size: 11px; }
 .bookmark-sidepanel .search kbd { display: none; }
 .bookmark-sidepanel #bookmarkSidepanelControls { position: relative; display: flex; align-items: center; gap: 7px; margin: 11px 0; }
@@ -26,7 +24,7 @@ html.bookmark-sidepanel { scroll-behavior: auto; }
 .bookmark-sidepanel #bookmarkToggleFolders > svg { flex: none; width: 14px; height: 14px; }
 .bookmark-sidepanel #bookmarkSidepanelFolderLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bookmark-sidepanel #bookmarkSidepanelCount { flex: 1; min-width: 0; }
-.bookmark-sidepanel #bookmarkCount { margin: 0; color: var(--subtle); font-size: 9px; line-height: 1.7; }
+.bookmark-sidepanel #bookmarkCount { margin: 0; color: var(--subtle); font-size: 10px; line-height: var(--leading-body); }
 .bookmark-sidepanel #bookmarkSidepanelTools { flex: none; }
 .bookmark-sidepanel #bookmarkSidepanelTools > summary { padding: 5px; color: var(--muted); font-size: 10px; cursor: pointer; }
 .bookmark-sidepanel #bookmarkSidepanelTools > :not(summary) { position: relative; }
@@ -39,11 +37,11 @@ html.bookmark-sidepanel { scroll-behavior: auto; }
 .bookmark-sidepanel .bookmark-sidebar { position: static; display: block; width: auto; height: auto; padding: 8px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
 .bookmark-sidepanel .bookmark-sidebar > .sidebar-label { display: none; }
 .bookmark-sidepanel .bookmark-folder-tree { max-height: 240px; margin: 0; }
-.bookmark-sidepanel .bookmark-folder-nav { font-size: 11px !important; }
+.bookmark-sidepanel .bookmark-folder-nav { font-size: 11px; }
 .bookmark-sidepanel .bookmark-collection-header { margin: 0; padding: 0; }
 .bookmark-sidepanel .bookmark-collection-header h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .bookmark-sidepanel .bookmark-breadcrumbs { gap: 0; margin: 0 0 9px; }
-.bookmark-sidepanel .bookmark-breadcrumb { font-size: 10px !important; min-height: 27px; padding: 3px; }
+.bookmark-sidepanel .bookmark-breadcrumb { font-size: 10px; min-height: 27px; padding: 3px; }
 .bookmark-sidepanel .bookmark-sync, .bookmark-sidepanel .bookmark-add, .bookmark-sidepanel .bookmark-transfer { padding: 12px; margin-bottom: 12px; }
 .bookmark-sidepanel #bookmarkAddForm { grid-template-columns: minmax(0,1fr); gap: 7px; }
 .bookmark-sidepanel #bookmarkAddForm > * { grid-column: 1; min-width: 0; max-width: 100%; }
@@ -63,22 +61,41 @@ html.bookmark-sidepanel { scroll-behavior: auto; }
 .bookmark-sidepanel .board-cell .bookmark-site-mark { font-size: 13px; }
 .bookmark-sidepanel .board-cell .bookmark-site-label { display: none; }
 .bookmark-sidepanel .bookmark-grid { display: flex; flex-direction: column; gap: 8px; }
-.bookmark-sidepanel .bookmark-card { display: grid; grid-template-columns: 92px minmax(0,1fr); min-height: 106px; border-radius: 12px; animation: none; }
-.bookmark-sidepanel .bookmark-card:hover { transform: translateY(-1px); }
+.bookmark-sidepanel .bookmark-card { display: grid; grid-template-columns: 92px minmax(0,1fr); min-height: 106px; border:1px solid var(--line); border-radius: 12px; background:var(--card); box-shadow:none; animation: none; transition:border-color .15s,transform .15s; }
+.bookmark-sidepanel .bookmark-card:hover { border-color:var(--subtle); transform: translateY(-1px); }
 .bookmark-sidepanel .bookmark-card > .cover-link { grid-column: 1; grid-row: 1; min-width: 0; }
 .bookmark-sidepanel .bookmark-card .cover { height: 100%; min-height: 106px; aspect-ratio: auto; border-radius: 0; }
 .bookmark-sidepanel .bookmark-card .card-body { grid-column: 2; grid-row: 1; padding: 10px 11px 8px; }
-.bookmark-sidepanel .bookmark-card .source-row { font-size: 9px; line-height: 1.8; padding-right: 70px; white-space: nowrap; transition: opacity .15s; }
-.bookmark-sidepanel .bookmark-card h2 { font-size: 12px; line-height: 1.6; margin: 6px 0 5px; }
-.bookmark-sidepanel .bookmark-card .description { font-size: 9.5px; line-height: 1.6; margin-bottom: 5px; -webkit-line-clamp: 2; }
+.bookmark-sidepanel .bookmark-card .source-row { font-size: 9px; font-weight:var(--weight-semibold); color:var(--field-text); line-height: var(--leading-body); padding-right: 70px; white-space: nowrap; transition: opacity .15s; }
+.bookmark-sidepanel .bookmark-card h2 { font-size: 12px; font-weight:var(--weight-bold); line-height: var(--leading-title); margin: 7px 0 5px; }
+.bookmark-sidepanel .bookmark-card .description { font-size: 9.5px; line-height: var(--leading-body); margin-bottom: 5px; -webkit-line-clamp: 2; }
 .bookmark-sidepanel .bookmark-card footer { border: 0; padding-top: 3px; }
-.bookmark-sidepanel .bookmark-card-folder { font-size: 9.5px !important; line-height: 1.6; }
-.bookmark-sidepanel .bookmark-actions { top: 5px; right: 5px; gap: 3px; }
-.bookmark-sidepanel .bookmark-actions button { width: 23px; min-height: 23px; padding: 5px; }
-.bookmark-sidepanel .bookmark-actions svg { width: 13px; height: 13px; }
+.bookmark-sidepanel .bookmark-card-folder { font-size: 9.5px; line-height: var(--leading-body); }
+.bookmark-sidepanel .bookmark-actions { top: 7px; right: 6px; gap: 4px; opacity:0; }
+.bookmark-sidepanel .bookmark-actions button { width: 25px; min-height:25px; height:25px; padding:0; border-radius:7px; background:var(--glass-strong); color:var(--subtle); box-shadow:none; }
+.bookmark-sidepanel .bookmark-actions svg { width: 14px; height: 14px; }
+.bookmark-sidepanel .bookmark-card:hover .bookmark-actions, .bookmark-sidepanel .bookmark-card:focus-within .bookmark-actions { opacity:1; }
 .bookmark-sidepanel .bookmark-card:hover .source-row, .bookmark-sidepanel .bookmark-card:focus-within .source-row { opacity: 0; }
 .bookmark-sidepanel .bookmark-site-mark { font-size: 30px; }
 .bookmark-sidepanel .bookmark-site-label { font-size: 8px; }
 .bookmark-sidepanel .bookmark-footnote { font-size: 9px; line-height: 1.8; }
 .bookmark-sidepanel .bookmark-status { font-size: 10px; margin-bottom: 8px; }
 .bookmark-sidepanel select { max-width: 100%; min-width: 0; }
+@media (min-width:620px) { .bookmark-sidepanel .bookmark-header { padding:0 22px; } }
+@media (min-width:620px) {
+  .bookmark-sidepanel .bookmark-grid { display:grid; grid-template-columns:repeat(auto-fill,202px); justify-content:start; gap:16px; }
+  .bookmark-sidepanel .bookmark-card { display:flex; min-height:0; border-radius:14px; }
+  .bookmark-sidepanel .bookmark-card .cover { min-height:0; height:auto; aspect-ratio:1.62; }
+  .bookmark-sidepanel .bookmark-card .card-body { min-height:145px; padding:14px 15px 42px; }
+  .bookmark-sidepanel .bookmark-card .source-row { font-size:10px; padding-right:0; }
+  .bookmark-sidepanel .bookmark-card h2 { margin:10px 0 7px; font-size:14px; }
+  .bookmark-sidepanel .bookmark-card .description { font-size:10.5px; -webkit-line-clamp:3; }
+  .bookmark-sidepanel .bookmark-actions { top:auto; bottom:9px; right:9px; opacity:1; }
+  .bookmark-sidepanel .bookmark-card:hover .source-row, .bookmark-sidepanel .bookmark-card:focus-within .source-row { opacity:1; }
+}
+@media (hover:none) {
+  .bookmark-sidepanel .bookmark-actions { opacity:1; }
+  .bookmark-sidepanel .bookmark-card .source-row { opacity:1; padding-right:83px; }
+}
+
+}

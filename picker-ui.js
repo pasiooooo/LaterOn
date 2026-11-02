@@ -493,7 +493,7 @@
         letter-spacing: normal; word-spacing: normal; text-align: left;
         text-transform: none; text-indent: 0; white-space: normal; direction: ltr;
         color: var(--lon-ink); -webkit-font-smoothing: antialiased;
-        --lon-card: #fdfcfa;
+        --lon-card: #ffffff;
         --lon-ink: #171614;
         --lon-muted: #8a857c;
         --lon-subtle: #aaa69d;
@@ -551,7 +551,7 @@
 
       .lon-pages { border: 1px solid var(--lon-line); border-radius: 14px; background: var(--lon-soft); padding: 10px 13px; }
       .lon-pages[hidden] { display: none; }
-      .lon-pages > summary { display: flex; align-items: center; gap: 7px; cursor: pointer; color: var(--lon-muted); font-size: 12.5px; font-weight: 650; list-style: none; }
+      .lon-pages > summary { display: flex; align-items: center; gap: 7px; cursor: pointer; color: var(--lon-muted); font-size: 12.5px; font-weight: 600; list-style: none; }
       .lon-pages > summary::-webkit-details-marker { display: none; }
       .lon-chev { color: var(--lon-subtle); font-size: 10px; transition: transform .18s ease; }
       .lon-pages[open] .lon-chev { transform: rotate(90deg); }
@@ -566,7 +566,7 @@
       .lon-search-input::placeholder { color: var(--lon-muted); }
       .lon-empty { margin: 8px; color: var(--lon-muted); font-size: 12px; }
       .lon-empty[hidden] { display: none; }
-      .lon-box-label { margin: 0; color: var(--lon-subtle); font-size: 10.5px; font-weight: 750; letter-spacing: 1px; text-transform: uppercase; }
+      .lon-box-label { margin: 0; color: var(--lon-subtle); font-size: 10.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
       .lon-folders { display: flex; flex-direction: column; gap: 6px; max-height: 230px; overflow: auto; padding: 2px; margin: -2px; }
       .lon-folder-list { display: flex; flex-direction: column; gap: 6px; }
       .lon-folder {
@@ -582,7 +582,7 @@
       .lon-folder-icon { display: block; flex: none; width: 30px; height: 30px; border-radius: 9px; overflow: hidden; background: transparent; }
       .lon-folder-thumb { width: 100%; height: 100%; object-fit: cover; display: block; }
       .lon-folder-ph { width: 100%; height: 100%; display: grid; place-items: center; border-radius: 9px; background: linear-gradient(140deg, #ffd9cc, #ffb39a); color: #fff; font-size: 13px; font-weight: 800; }
-      .lon-folder-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; font-weight: 650; }
+      .lon-folder-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; font-weight: 600; }
       .lon-folder-count { flex: none; color: var(--lon-subtle); font-size: 11.5px; font-weight: 700; }
       .lon-folder-tick { flex: none; width: 14px; color: var(--lon-accent); font-size: 13px; font-weight: 800; opacity: 0; transition: opacity .15s; }
       .lon-folder.is-selected .lon-folder-tick { opacity: 1; }
@@ -594,11 +594,11 @@
         border-radius: 14px; padding: 12px; font-family: inherit; font-size: 13.5px; cursor: pointer;
         transition: filter .15s, background .15s, transform .12s;
       }
-      .lon-ghost { flex: 1; border: 1px solid var(--lon-line); background: transparent; color: var(--lon-ink); font-weight: 650; }
+      .lon-ghost { flex: 1; border: 1px solid var(--lon-line); background: transparent; color: var(--lon-ink); font-weight: 600; }
       .lon-ghost:hover { background: var(--lon-soft); }
       .lon-primary {
         flex: 1.7; border: 0; background: linear-gradient(140deg, #ff7a52, #ff4f2e);
-        color: #fff; font-weight: 750; box-shadow: var(--lon-btn-shadow);
+        color: #fff; font-weight: 700; box-shadow: var(--lon-btn-shadow);
       }
       .lon-primary:hover:not(:disabled) { filter: brightness(1.05); }
       .lon-primary:active:not(:disabled) { transform: scale(.985); }

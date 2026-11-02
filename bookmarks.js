@@ -50,7 +50,7 @@
     }
   };
   const $ = selector => document.querySelector(selector);
-  let language = 'zh-CN', state = { enabled: false, nodes: [], folders: [] }, busy = false, selected = '', scopeDirty = false, feedback = '';
+  let language = window.LaterOnAppearance?.get().language === 'en' ? 'en' : 'zh-CN', state = { enabled: false, nodes: [], folders: [] }, busy = false, selected = '', scopeDirty = false, feedback = '';
   let moving = null, pendingIds = [], expanded = new Set(), expansionReady = false, limit = 48, folderLimit = 24, previewBusy = false, viewResult = { previewIds: [] };
   let compact = null;
   const VIEW_KEY = window.LaterOnBookmarkSidepanel?.enabled ? 'laterOnBookmarkSidepanelView' : 'laterOnBookmarkView';
@@ -311,6 +311,7 @@
     document.querySelector('.bookmark-sidebar').setAttribute('aria-label', t('folders'));
     document.querySelectorAll('[data-bm]').forEach(el => { el.textContent = t(el.dataset.bm); });
     document.querySelectorAll('[data-bm-title]').forEach(el => { el.title = t(el.dataset.bmTitle); el.setAttribute('aria-label', el.title); });
+    compact?.relabel();
     $('#bookmarkSearch').setAttribute('aria-label', t('search'));
     $('#bookmarkSearch').placeholder = t('search');
     const saved = (await chrome.storage.local.get(VIEW_KEY))[VIEW_KEY];

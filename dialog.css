@@ -1,3 +1,4 @@
+@layer dialogs {
 /* 共享的自定义弹窗（取代浏览器原生 confirm / alert）。
    视觉与「选项目」浮层保持一致：同圆角、同阴影、同橙色渐变按钮。
    颜色取 theme-vars.css 的变量并带兜底值，因此没引入主题变量的页面也能正常显示。 */
@@ -92,7 +93,7 @@
   margin: 0;
   color: var(--lod-ink);
   font-size: 17px;
-  font-weight: 800;
+  font-weight: var(--weight-brand);
   letter-spacing: -.3px;
   line-height: 1.35;
   word-break: break-word;
@@ -110,7 +111,7 @@
 .lod-fields { display: grid; gap: 12px; }
 .lod-fields[hidden] { display: none; }
 .lod-field { display: grid; gap: 6px; }
-.lod-field-label { color: var(--lod-muted); font-size: 11.5px; font-weight: 650; letter-spacing: .2px; }
+.lod-field-label { color: var(--lod-muted); font-size: 11.5px; font-weight: var(--weight-semibold); letter-spacing: .2px; }
 .lod-input, .lod-textarea {
   width: 100%;
   border: 1px solid var(--lod-line);
@@ -148,7 +149,7 @@
 .lod-cover-btn {
   border: 1px solid var(--lod-line); border-radius: 11px; padding: 7px 13px;
   background: var(--lod-soft); color: var(--lod-ink);
-  font-size: 12px; font-weight: 650; cursor: pointer; transition: background .15s, border-color .15s;
+  font-size: 12px; font-weight: var(--weight-semibold); cursor: pointer; transition: background .15s, border-color .15s;
 }
 .lod-cover-btn:hover:not(:disabled) { border-color: var(--accent, #ff5c35); color: var(--accent, #ff5c35); }
 .lod-cover-btn:disabled { opacity: .45; cursor: default; }
@@ -183,13 +184,13 @@
   position: absolute; left: 3px; top: 3px;
   display: grid; place-items: center; width: 15px; height: 15px;
   border-radius: 50%; background: var(--accent, #ff5c35); color: #fff;
-  font-size: 9.5px; font-weight: 800; line-height: 1;
+  font-size: 9.5px; font-weight: var(--weight-brand); line-height: 1;
 }
 .lod-pick-x {
   position: absolute; right: 2px; top: 2px;
   display: grid; place-items: center; width: 15px; height: 15px;
   border-radius: 50%; background: rgba(20,18,14,.68); color: #fff;
-  font-size: 11px; font-weight: 700; line-height: 1;
+  font-size: 11px; font-weight: var(--weight-bold); line-height: 1;
 }
 .lod-pick-x:hover { background: var(--lod-danger); }
 /* 插入位置的指示线：绝对定位（不参与排版），拖动中挪它不会让缩略图跟着动 */
@@ -219,7 +220,7 @@
   border: 1px solid var(--lod-line);
   background: transparent;
   color: var(--lod-ink);
-  font-weight: 650;
+  font-weight: var(--weight-semibold);
 }
 .lod-cancel:hover { background: var(--lod-soft); }
 .lod-cancel[hidden] { display: none; }
@@ -228,7 +229,7 @@
   border: 0;
   background: linear-gradient(140deg, #ff7a52, #ff4f2e);
   color: #fff;
-  font-weight: 750;
+  font-weight: var(--weight-bold);
   box-shadow: 0 8px 20px -8px rgba(255,79,46,.9);
 }
 .lod-root[data-tone="danger"] .lod-ok {
@@ -249,4 +250,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .lod-backdrop, .lod-panel { transition-duration: .01ms; }
+}
+
 }

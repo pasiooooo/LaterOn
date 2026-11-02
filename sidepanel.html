@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="sidepanel-surface">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,47 +9,33 @@
     <title>LaterOn · 项目型网页管理</title>
     <link rel="icon" href="icon128.png" type="image/png" />
 
-    <!-- ── 首屏「零依赖」样式 ─────────────────────────────────
-         这段样式内联在这里，是浏览器画出第一批内容所需要的全部 CSS。
-         为什么必须有它：外部样式表是「阻塞渲染」的——浏览器要等它们全部到齐
-         才肯画第一个像素。万一浏览器迟迟送不来（扩展资源也偶发卡住），
-         那段时间就是一整块白，连「正在打开…」都不会出现。
-         现在有了这段内联样式，外部样式表可以放心改成异步加载：
-         先靠这段把骨架屏和提示条画出来，外部样式表到了再接管（它排在后面，
-         同名规则会覆盖这里的兜底版本，效果和以前完全一样）。 -->
+    <script src="appearance.js"></script>
+
+    <!-- 首屏兜底采用正式侧栏的主题和字体；核心样式在首帧前就绪，
+         其余内容加载时只显示列表骨架，不替换顶部公共控件。 -->
     <style id="bootCriticalStyle">
+      @layer critical, base, library, bookmarks, navigation, settings, sidepanel, bookmark-panel, dialogs, onboarding;
+      @layer critical {
       :root { color-scheme: light dark; }
       html, body { margin: 0; padding: 0; }
       body {
-        padding: 12px 16px 20px;
-        background: #f7f6f4;
-        color: #23211e;
-        font: 13px/1.5 -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
-      }
-      @media (prefers-color-scheme: dark) {
-        body { background: #16161a; color: #e9e7e4; }
+        padding: 0;
+        background: var(--paper, var(--boot-paper, #f4f2ec));
+        color: var(--ink, var(--boot-ink, #171614));
+        font: 400 13px/1.5 Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
       }
       /* 骨架屏在场时真界面不占位（等真内容画出来再露面）。 */
       body.booting #appBody { display: none; }
 
       #bootSkeleton { display: grid; gap: 10px; }
-      .sk { background: #e4e1dd; border-radius: 8px; }
-      @media (prefers-color-scheme: dark) { .sk { background: #26262c; } }
-      .skel-save {
-        display: grid; grid-template-columns: 52px minmax(0, 1fr) 54px; gap: 10px; align-items: center;
-        padding: 9px; border-radius: 13px; background: #fff;
-      }
-      .skel-lines { display: grid; gap: 6px; }
-      .sk-btn { height: 30px; border-radius: 9px; }
-      .sk-thumb-sm { width: 52px; height: 52px; border-radius: 9px; }
-      .sk-search { height: 36px; margin-top: 8px; border-radius: 10px; }
+      .sk { background: var(--cover-bg, var(--boot-cover, #e4e0d7)); border-radius: 8px; }
       .skel-filters { display: flex; align-items: center; gap: 3px; margin: 12px 1px 9px; }
       .sk-pill { width: 40px; height: 22px; border-radius: 99px; }
       .sk-count { width: 30px; height: 10px; margin-left: auto; border-radius: 5px; }
       .skel-chips { display: flex; gap: 5px; margin: 0 0 10px; }
       .sk-chip { height: 26px; border-radius: 8px; }
       .skel-list { display: grid; gap: 8px; }
-      .skel-item { display: grid; grid-template-columns: 92px minmax(0, 1fr); overflow: hidden; border-radius: 12px; background: #fff; }
+      .skel-item { display: grid; grid-template-columns: 92px minmax(0, 1fr); overflow: hidden; border-radius: 12px; background: var(--card, var(--boot-card, #ffffff)); }
       .sk-thumb { width: 92px; height: 92px; border-radius: 0; }
       .skel-copy { display: grid; gap: 6px; align-content: center; padding: 11px 16px; }
       .sk-line { height: 11px; border-radius: 5px; }
@@ -61,14 +47,11 @@
       .sk-line.w40 { width: 40%; } .sk-line.w38 { width: 38%; } .sk-line.w35 { width: 35%; } .sk-line.w32 { width: 32%; }
       .sk-line.w30 { width: 30%; }
       .sk-chip.w60 { width: 60px; } .sk-chip.w80 { width: 80px; } .sk-chip.w50 { width: 50px; }
-      @media (prefers-color-scheme: dark) {
-        .skel-save, .skel-item { background: #1d1d22; }
-      }
       /* 顶部标题栏（在 appBody 之外，启动时也能立刻显示出来认认脸） */
-      header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-      .brand { font-size: 16px; font-weight: 600; letter-spacing: .2px; }
+      header { display: flex; align-items: center; justify-content: space-between; height: 58px; padding: 0 15px; }
+      .brand { display: flex; align-items: center; gap: 7px; font-size: 17px; font-weight: 800; letter-spacing: -.5px; }
       .brand-icon { display: block; width: 25px; height: 25px; border-radius: 6px; }
-      #openLibrary { width: 28px; height: 28px; border: 0; background: transparent; color: inherit; }
+      #openLibrary { display: grid; place-items: center; width: 33px; height: 33px; padding: 0; border: 1px solid var(--line, transparent); border-radius: 9px; background: var(--field, var(--boot-card)); color: inherit; }
       #openLibrary svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 
       /* 「正在打开…」提示条。注意 [hidden]：浏览器自带的隐藏规则敌不过我们自己写的
@@ -78,17 +61,13 @@
       #bootTipTime { color: #a09a92; font-size: 10px; }
       #bootTipHint { display: block; color: #a09a92; font-size: 10px; line-height: 1.6; }
       #bootTip .boot-dot { width: 6px; height: 6px; border-radius: 50%; background: #ff5c35; }
-      @media (prefers-color-scheme: dark) {
-        #bootTip { color: #8f8b86; }
-        #bootTipTime, #bootTipHint { color: #77736f; }
       }
     </style>
 
-    <!-- 下面三个样式表故意「先不生效」（media=print）：这样它们不阻塞首屏渲染，
-         由 boot.js 在加载完成后切换成 media=all。 -->
-    <link rel="stylesheet" href="theme-vars.css" media="print" data-boot-style />
-    <link rel="stylesheet" href="sidepanel.css" media="print" data-boot-style />
-    <link rel="stylesheet" href="library-navigation.css" media="print" data-boot-style />
+    <!-- 公共主题和侧栏核心样式在首帧前就绪，避免切换时字体、尺寸和按钮样式跳变。 -->
+    <link rel="stylesheet" href="theme-vars.css" />
+    <link rel="stylesheet" href="sidepanel.css" />
+    <link rel="stylesheet" href="library-navigation.css" />
     <link rel="stylesheet" href="onboarding.css" media="print" data-boot-style />
     <noscript>
       <!-- 万一脚本被禁用，样式照样要生效（此时没人去切换 media）。 -->
@@ -119,18 +98,25 @@
       <div id="slowBanner" class="slow-banner" role="status" hidden></div>
 
       <!-- 骨架屏：数据还没到时，按真实界面的轮廓先画一份灰色占位
-           （顶部收藏条 / 搜索框 / 筛选 / 项目 / 卡片），形状和真界面对齐，
+           （筛选 / 项目 / 卡片），形状和真界面对齐，
            真内容一来就是「原地填实」，不会整块跳一下。第一次 render() 时整体撤掉。 -->
-      <div id="bootSkeleton" aria-hidden="true">
-        <div class="skel-save">
-          <div class="sk sk-thumb-sm"></div>
-          <div class="skel-lines">
-            <div class="sk sk-line w40 xs"></div>
-            <div class="sk sk-line w75"></div>
-          </div>
-          <div class="sk sk-btn"></div>
+      <nav class="library-switch sidepanel-library-switch" aria-label="资料库"><a href="sidepanel.html" aria-current="page" data-i18n="readingLibrary">阅读库</a><a href="bookmarks.html?surface=sidepanel" data-i18n="bookmarkLibrary">书签库</a></nav>
+      <section class="save-panel">
+        <div id="currentThumb" class="current-thumb"><img class="thumb-logo" src="article-cover-placeholder.png" alt="" /></div>
+        <div class="current-copy">
+          <p id="currentSource" data-i18n="currentLoading">正在读取当前网页…</p>
+          <h1 id="currentTitle" data-i18n="currentPage">当前页面</h1>
         </div>
-        <div class="sk sk-search"></div>
+        <button id="saveCurrent" class="current-save" type="button" disabled><span class="save-mark" aria-hidden="true"><svg class="save-add" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><svg class="save-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span><span class="save-label" data-i18n="saveCurrent">添加</span></button>
+      </section>
+      <p id="status" role="status"></p>
+
+      <label class="search">
+        <svg viewBox="0 0 24 24"><path d="m21 21-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg>
+        <input id="searchInput" type="search" data-i18n-placeholder="search" placeholder="搜索网页" autocomplete="off" />
+      </label>
+
+      <div id="bootSkeleton" aria-hidden="true">
         <div class="skel-filters">
           <div class="sk sk-pill"></div>
           <div class="sk sk-pill"></div>
@@ -208,21 +194,7 @@
       <!-- 真界面：骨架屏还在的时候整块不占位（body.booting 时隐藏），
            免得「灰色占位」和「真内容」同时出现在屏幕上。 -->
       <div id="appBody">
-      <nav class="library-switch sidepanel-library-switch" aria-label="资料库"><a href="sidepanel.html" aria-current="page" data-i18n="readingLibrary">阅读库</a><a href="bookmarks.html?surface=sidepanel" data-i18n="bookmarkLibrary">书签库</a></nav>
-      <section class="save-panel">
-        <div id="currentThumb" class="current-thumb"><img class="thumb-logo" src="article-cover-placeholder.png" alt="" /></div>
-        <div class="current-copy">
-          <p id="currentSource" data-i18n="currentLoading">正在读取当前网页…</p>
-          <h1 id="currentTitle" data-i18n="currentPage">当前页面</h1>
-        </div>
-        <button id="saveCurrent" disabled><span>＋</span><span class="save-label" data-i18n="saveCurrent">添加</span></button>
-      </section>
-      <p id="status" role="status"></p>
 
-      <label class="search">
-        <svg viewBox="0 0 24 24"><path d="m21 21-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg>
-        <input id="searchInput" type="search" data-i18n-placeholder="search" placeholder="搜索网页" autocomplete="off" />
-      </label>
 
       <div class="filter-row">
         <div class="filters">

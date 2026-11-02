@@ -97,6 +97,6 @@ const tick = () => new Promise(resolve => setTimeout(resolve, 20));
     assert(!batches[1].some(id=>batches[0].includes(id)),'Pages without site covers must not monopolize every preview batch');
   } finally {batchDom.window.close();}
   assert(read('bookmarks.html').includes('href="library.css"'),'Use the actual reading-library visual foundation');
-  assert.match(read('bookmarks.css'),/\.bookmark-card h2[^}]*overflow:\s*visible[^}]*height:\s*auto[^}]*line-height:\s*1\.65/);
+  assert.match(read('bookmarks.css'),/\.bookmark-card h2[^}]*overflow:\s*visible[^}]*height:\s*auto[^}]*line-height:\s*var\(--leading-title\)/);
   console.log('PASS bookmark redesign: sibling entries, collapsed settings, real hierarchy, breadcrumbs, previews, descendant search, persistent navigation and text-height overrides');
 })().catch(error=>{console.error(error);process.exitCode=1;});

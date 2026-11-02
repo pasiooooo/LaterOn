@@ -381,7 +381,7 @@
       movedToPosition: "Moved “{name}” to position {n}", movedIntoProject: "Moved into “{name}”", newProjectHint: "You’ll enter the new project as soon as it is created.",
     }
   };
-  let language = "zh-CN";
+  let language = window.LaterOnAppearance?.get().language === "en" ? "en" : "zh-CN";
   function format(value, vars) { return String(value).replace(/\{(\w+)\}/g, (_, k) => vars?.[k] ?? `{${k}}`); }
   function t(key, vars) { return format((dictionaries[language] || dictionaries["zh-CN"])[key] || dictionaries["zh-CN"][key] || key, vars); }
   async function getLanguage() {
@@ -395,6 +395,7 @@
       await chrome.storage.local.set({ [KEY]: { ...(result[KEY] || {}), language } });
     } catch {}
     document.documentElement.lang = language === "en" ? "en" : "zh-CN";
+    window.LaterOnAppearance?.update({ language });
     applyStatic();
     window.dispatchEvent(new CustomEvent("lateron-language-change", { detail: language }));
     return language;
@@ -407,6 +408,7 @@
     document.querySelectorAll("[data-i18n-aria-label]").forEach((el) => { el.setAttribute("aria-label", t(el.dataset.i18nAriaLabel)); });
   }
   // 暴露首轮读取 Promise，让侧栏复用它，避免同一页面重复唤醒 storage。
-  const ready = getLanguage().then(applyStatic);
+  document.addEventListener?.("DOMContentLoaded", applyStatic, { once: true });
+  const ready = getLanguage().then(() => { window.LaterOnAppearance?.update({ language }); applyStatic(); });
   window.LaterOnI18n = { t, getLanguage, setLanguage, applyStatic, dictionaries, ready };
 })();

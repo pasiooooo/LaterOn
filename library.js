@@ -1025,7 +1025,7 @@ function createProjectBoard() {
 
   const plus = document.createElement("span");
   plus.className = "board-create-plus";
-  plus.textContent = "+";
+  plus.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
   plus.setAttribute("aria-hidden", "true");
   const label = document.createElement("strong");
   label.textContent = tr("newProject");

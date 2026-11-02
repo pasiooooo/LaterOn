@@ -1,4 +1,4 @@
-* { box-sizing: border-box; }
+@layer settings {
 html, body { margin: 0; }
 body {
   min-height: 100vh;
@@ -22,7 +22,7 @@ body {
    它现在是个链接（点了回全屏首页），所以把下划线去掉、光标给成手型。 */
 .settings-brand {
   display: flex; align-items: center; gap: 10px;
-  color: var(--ink); font-size: 22px; font-weight: 850; letter-spacing: -.8px; white-space: nowrap;
+  color: var(--ink); font-size: 22px; font-weight: var(--weight-brand); letter-spacing: -.8px; white-space: nowrap;
   text-decoration: none; cursor: pointer;
 }
 .settings-brand .logo {
@@ -34,14 +34,14 @@ body {
   display: inline-flex; align-items: center; gap: 7px;
   border: 1px solid var(--hairline-2); border-radius: 14px; padding: 9px 15px;
   background: var(--glass-strong); color: var(--chip-text);
-  font-size: 13px; font-weight: 650; text-decoration: none; white-space: nowrap;
+  font-size: 13px; font-weight: var(--weight-semibold); text-decoration: none; white-space: nowrap;
   box-shadow: var(--shadow-sm); transition: color .15s, border-color .15s;
 }
 .settings-back:hover { color: var(--ink); border-color: var(--card-line); }
-.settings-back svg { width: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.settings-back svg { width: 15px; fill: none; stroke: currentColor; stroke-width: var(--icon-stroke); stroke-linecap: round; stroke-linejoin: round; }
 /* 页头：「设置」标题的大本营，放在正文里当页面导航基准。 */
 .settings-title { margin: 34px 0 22px; }
-.settings-title h1 { margin: 0; font-size: 30px; font-weight: 850; letter-spacing: -1.1px; }
+.settings-title h1 { margin: 0; font-size: 30px; font-weight: var(--weight-brand); letter-spacing: -1.1px; }
 .settings-title p { margin: 8px 0 0; color: var(--muted); font-size: 13.5px; }
 /* 窗口很窄时先省掉品牌文字，避免和返回按钮撞在一起。 */
 @media (max-width: 560px) {
@@ -57,11 +57,11 @@ body {
   border: 1px solid var(--card-line); border-radius: var(--radius);
   background: var(--card); box-shadow: var(--shadow-sm);
 }
-.settings-group h2 { margin: 0 0 6px; font-size: 12px; font-weight: 750; letter-spacing: 1px; text-transform: uppercase; color: var(--subtle); }
+.settings-group h2 { margin: 0 0 6px; font-size: 12px; font-weight: var(--weight-bold); letter-spacing: 1px; text-transform: uppercase; color: var(--subtle); }
 .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 14px 0; }
 .setting-row + .setting-row { border-top: 1px solid var(--hairline); }
 .setting-label { min-width: 0; }
-.setting-label strong { display: block; font-size: 14px; font-weight: 650; }
+.setting-label strong { display: block; font-size: 14px; font-weight: var(--weight-semibold); }
 .setting-label span { display: block; margin-top: 4px; color: var(--muted); font-size: 12.5px; line-height: 1.6; }
 .setting-note { margin: 0 0 6px; color: var(--muted); font-size: 12.5px; line-height: 1.7; }
 /* 窄窗口：标签和控制件上下排列，避免挤成两竖条看不清。 */
@@ -78,7 +78,7 @@ body {
 }
 .settings-diagnostics > summary {
   cursor: pointer; list-style: none;
-  color: var(--muted); font-size: 12.5px; font-weight: 700;
+  color: var(--muted); font-size: 12.5px; font-weight: var(--weight-bold);
 }
 .settings-diagnostics > summary::-webkit-details-marker { display: none; }
 .settings-diagnostics > summary::before { content: "▸"; display: inline-block; margin-right: 7px; transition: transform .18s ease; }
@@ -89,7 +89,7 @@ body {
 .settings-diagnostics .setting-row + .setting-row { border-top: 1px solid var(--hairline-2); }
 
 .segmented { display: inline-flex; padding: 4px; border-radius: 13px; background: var(--chip); border: 1px solid var(--hairline-2); }
-.segmented button { border: 0; border-radius: 9px; padding: 7px 14px; background: transparent; color: var(--chip-text); font-size: 12.5px; font-weight: 650; transition: background .15s, color .15s; white-space: nowrap; cursor: pointer; }
+.segmented button { border: 0; border-radius: 9px; padding: 7px 14px; background: transparent; color: var(--chip-text); font-size: 12.5px; font-weight: var(--weight-semibold); transition: background .15s, color .15s; white-space: nowrap; cursor: pointer; }
 .segmented button:hover { color: var(--ink); }
 .segmented button.active { background: var(--active-bg); color: var(--active-text); box-shadow: var(--shadow-sm); }
 
@@ -109,15 +109,15 @@ body {
 [data-theme="dark"] .setting-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath d='m2 4 4 4 4-4' fill='none' stroke='%23cfc9c0'/%3E%3C/svg%3E"); }
 
 /* 「多少天后自动清除」的输入框 + 单位 */
-.setting-days { display: flex; align-items: center; gap: 8px; flex: none; color: var(--muted); font-size: 13px; font-weight: 650; }
+.setting-days { display: flex; align-items: center; gap: 8px; flex: none; color: var(--muted); font-size: 13px; font-weight: var(--weight-semibold); }
 .setting-number {
   width: 140px; border: 1px solid var(--hairline-2); border-radius: 12px;
   padding: 10px 12px; background: var(--field); color: var(--field-text);
-  font-family: inherit; font-size: 13px; font-weight: 650; text-align: center;
+  font-family: inherit; font-size: 13px; font-weight: var(--weight-semibold); text-align: center;
 }
 .setting-number:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 
-.setting-action { border: 1px solid var(--hairline-2); border-radius: 12px; padding: 9px 16px; background: var(--field); color: var(--ink); font-size: 13px; font-weight: 650; cursor: pointer; transition: background .15s, border-color .15s; }
+.setting-action { border: 1px solid var(--hairline-2); border-radius: 12px; padding: 9px 16px; background: var(--field); color: var(--ink); font-size: 13px; font-weight: var(--weight-semibold); cursor: pointer; transition: background .15s, border-color .15s; }
 .setting-action:hover { background: var(--btn-soft); }
 .setting-action.danger { color: #df4c31; border-color: rgba(223,76,49,.3); background: var(--accent-soft); }
 .setting-action.danger:hover { background: rgba(223,76,49,.16); }
@@ -127,7 +127,7 @@ body {
 
 /* WebDAV configuration follows the existing settings card and theme. */
 .webdav-fields { display: grid; grid-template-columns: 1fr; gap: 8px; }
-.webdav-fields label { margin-top: 7px; font-size: 12.5px; font-weight: 650; }
+.webdav-fields label { margin-top: 7px; font-size: 12.5px; font-weight: var(--weight-semibold); }
 .webdav-fields input {
   width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid var(--hairline-2);
   border-radius: 10px; background: var(--paper); color: var(--ink); font: inherit; font-size: 13px;
@@ -144,7 +144,7 @@ body {
 
 /* Pasted URL lists stay available for correction when a line or write fails. */
 .url-import { padding: 12px 0 18px; border-top: 1px solid var(--hairline); }
-.url-import summary { cursor: pointer; font-size: 14px; font-weight: 650; }
+.url-import summary { cursor: pointer; font-size: 14px; font-weight: var(--weight-semibold); }
 #urlImportForm { margin-top: 14px; }
 #urlImportForm label { display: block; }
 #urlImportText {
@@ -155,3 +155,5 @@ body {
 #urlImportText:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 #urlImportSubmit { margin-top: 8px; }
 #urlImportSubmit:disabled, #importBtn:disabled { opacity: .5; cursor: default; }
+
+}

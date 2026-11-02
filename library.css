@@ -1,4 +1,4 @@
-* { box-sizing: border-box; }
+@layer library {
 /* scrollbar-gutter: stable —— 给滚动条**永远**留出那条槽位。
    不写它的话：收藏一多、内容超过一屏，页面右侧冒出滚动条，可用宽度少 15px；
    而 .workspace 是 margin:auto 居中的，于是整页（含左侧栏）横向平移 7.5px——
@@ -12,8 +12,6 @@ body {
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
 }
-button, input, select { font: inherit; }
-button, select { cursor: pointer; }
 .shell { min-height: 100vh; }
 .topbar {
   position: sticky; z-index: 10; top: 0;
@@ -23,10 +21,10 @@ button, select { cursor: pointer; }
   background: var(--topbar-bg);
   backdrop-filter: blur(22px) saturate(160%);
 }
-.brand { display: flex; gap: 10px; align-items: center; color: var(--ink); font-size: 22px; font-weight: 850; letter-spacing: -.8px; text-decoration: none; }
+.brand { display: flex; gap: 10px; align-items: center; color: var(--ink); font-size: 22px; font-weight: var(--weight-brand); letter-spacing: -.8px; text-decoration: none; }
 .brand-icon { display: block; width: 40px; height: 40px; border-radius: 11px; box-shadow: 0 7px 16px -6px rgba(255,80,50,.6); }
 nav { display: flex; gap: 4px; padding: 4px; border-radius: 99px; background: var(--chip); border: 1px solid var(--hairline-2); box-shadow: var(--shadow-sm); }
-.nav-item { border: 0; border-radius: 99px; padding: 8px 18px; background: transparent; color: var(--chip-text); font-size: 13px; font-weight: 650; transition: color .15s, background .15s; }
+.nav-item { border: 0; border-radius: 99px; padding: 8px 18px; background: transparent; color: var(--chip-text); font-size: 13px; font-weight: var(--weight-semibold); transition: color .15s, background .15s; }
 .nav-item:hover { color: var(--ink); }
 .nav-item.active { background: var(--active-bg); color: var(--active-text); box-shadow: 0 4px 12px -4px rgba(0,0,0,.4); }
 .search {
@@ -35,7 +33,7 @@ nav { display: flex; gap: 4px; padding: 4px; border-radius: 99px; background: va
   padding: 9px 12px; box-shadow: var(--shadow-sm); transition: border-color .15s, box-shadow .15s;
 }
 .search:focus-within { border-color: var(--card-line); box-shadow: 0 0 0 4px rgba(255,92,53,.1); }
-.search svg { width: 17px; fill: none; stroke: var(--muted); stroke-linecap: round; stroke-width: 1.8; }
+.search svg { width: 17px; fill: none; stroke: var(--muted); stroke-linecap: round; stroke-width: var(--icon-stroke); }
 .search input { min-width: 0; flex: 1; border: 0; outline: 0; padding: 0 8px; background: transparent; font-size: 13px; color: var(--ink); }
 kbd { border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; color: var(--subtle); background: var(--field-soft); font-size: 10px; }
 .workspace { display: grid; grid-template-columns: 248px minmax(0,1fr); max-width: 1680px; min-height: calc(100vh - 78px); margin: auto; }
@@ -54,13 +52,13 @@ kbd { border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; color
   position: relative; display: flex;
   margin: 4px 0 0 27px; padding: 5px 0 4px 14px;
 }
-.sidebar-label { margin: 0 10px 9px; color: var(--muted); font-size: 11px; font-weight: 720; letter-spacing: .04em; }
+.sidebar-label { margin: 0 10px 9px; color: var(--muted); font-size: 11px; font-weight: var(--weight-bold); letter-spacing: .04em; }
 .project-nav {
   /* 第一列 = 缩略图宽度；列间距必须显式写：缩略图是实心方块，
      不给间距的话文字会直接贴在图上（图标时代它自带一圈留白，看不出来）。 */
   display: grid; grid-template-columns: 36px minmax(0,1fr) auto; column-gap: 11px; align-items: center; width: 100%;
   min-height: 48px; border: 0; border-radius: 15px; padding: 6px 9px; background: transparent;
-  color: var(--field-text); font-size: 13.5px; font-weight: 640; text-align: left;
+  color: var(--field-text); font-size: 13.5px; font-weight: var(--weight-semibold); text-align: left;
   transition: background .16s ease, color .16s ease, transform .16s ease, box-shadow .16s ease;
 }
 .project-nav:hover { background: var(--glass-strong); color: var(--ink); }
@@ -70,7 +68,7 @@ kbd { border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; color
 /* 自己写了 display 就得自己管 hidden：浏览器自带的 [hidden]{display:none} 敌不过作者样式。
    「待整理」那一行就是靠这个属性收起来的。 */
 .project-nav[hidden] { display: none; }
-.project-nav.active { background: var(--accent-soft); color: var(--ink); font-weight: 720; box-shadow: inset 0 0 0 1px rgba(255,92,53,.09); }
+.project-nav.active { background: var(--accent-soft); color: var(--ink); font-weight: var(--weight-bold); box-shadow: inset 0 0 0 1px rgba(255,92,53,.09); }
 .project-nav.active .nav-icon { color: var(--accent); opacity: 1; }
 .project-nav.active strong { color: var(--accent); opacity: 1; }
 .project-nav.drop-target { outline: none; background: var(--accent-soft); color: #c84427; box-shadow: inset 0 0 0 2px rgba(255,92,53,.5); }
@@ -103,7 +101,7 @@ kbd { border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; color
 .all-icon svg.nav-art-icon { width: 25px; height: 25px; fill: currentColor; stroke: none; }
 .inbox-body { display: grid; min-width: 0; }
 /* 注意优先级：.project-nav strong 也会命中 .inbox-title，所以这里要写两级才盖得住 */
-.inbox-card .inbox-title { color: inherit; font-size: 13.5px; font-weight: 720; letter-spacing: -.15px; }
+.inbox-card .inbox-title { color: inherit; font-size: 13.5px; font-weight: var(--weight-bold); letter-spacing: -.15px; }
 .inbox-hint {
   overflow: hidden; margin-top: 2px; color: var(--subtle);
   font-size: 10.5px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap;
@@ -113,7 +111,7 @@ kbd { border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; color
 .inbox-count {
   display: grid; place-items: center; min-width: 24px; height: 22px; padding: 0 7px;
   border-radius: 99px; background: var(--field-soft); color: var(--subtle);
-  font-size: 11px; font-weight: 750; transition: background .15s, color .15s;
+  font-size: 11px; font-weight: var(--weight-bold); transition: background .15s, color .15s;
 }
 .inbox-card.has-items .inbox-count { background: var(--accent); color: #fff; }
 .inbox-card.active .inbox-count { background: rgba(255,92,53,.14); color: var(--accent); }
@@ -127,7 +125,7 @@ kbd { border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; color
 .project-ph {
   display: grid; place-items: center; width: 100%; height: 100%;
   background: linear-gradient(140deg, #ffd9cc, #ffb39a); color: #fff;
-  font-size: 13px; font-weight: 800; line-height: 1;
+  font-size: 13px; font-weight: var(--weight-brand); line-height: 1;
 }
 /* 选中行是深色底，缩略图别跟着变淡，否则照片糊成一块 */
 .project-nav.active .project-thumb { opacity: 1; }
@@ -135,16 +133,16 @@ kbd { border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; color
    图标都是 36px 的圆角方块、内边距一致、篇数都是同一个小圆标，
    所以两行左右两端是对齐的——「平级」看起来才成立。 */
 /* 图标方块 36px，栅格第一列也得是 36px，否则图标会挤出去、和「待整理」对不齐 */
-.top-entry { padding: 6px 9px; grid-template-columns: 36px minmax(0,1fr) auto; gap: 11px; font-weight: 680; letter-spacing: -.1px; }
+.top-entry { padding: 6px 9px; grid-template-columns: 36px minmax(0,1fr) auto; gap: 11px; font-weight: var(--weight-semibold); letter-spacing: -.1px; }
 .all-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: var(--field-soft); color: var(--muted); transition: background .15s, color .15s, box-shadow .15s; }
 .all-icon svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 .project-nav:hover .all-icon { background: var(--field-soft); color: var(--ink); }
 .project-nav.active .all-icon { background: var(--accent); color: #fff; box-shadow: 0 5px 13px -6px rgba(255,92,53,.7); }
 /* 侧栏里所有篇数都用同一个小圆标（顶部两个入口 + 项目行） */
-.project-nav .nav-count { display: grid; place-items: center; min-width: 23px; height: 22px; padding: 0 6px; border-radius: 99px; background: transparent; color: var(--subtle); font-size: 10.5px; font-weight: 720; transition: background .15s, color .15s; }
+.project-nav .nav-count { display: grid; place-items: center; min-width: 23px; height: 22px; padding: 0 6px; border-radius: 99px; background: transparent; color: var(--subtle); font-size: 10.5px; font-weight: var(--weight-bold); transition: background .15s, color .15s; }
 .project-nav:hover .nav-count { background: var(--glass-soft); color: var(--ink); }
 .project-nav.active .nav-count { background: rgba(255,92,53,.14); color: var(--accent); }
-.project-nav strong { color: var(--subtle); font-size: 9px; font-weight: 600; }
+.project-nav strong { color: var(--subtle); font-size: 9px; font-weight: var(--weight-semibold); }
 /* 项目行：主体按钮 + 右侧「⋯」更多按钮 */
 .project-row { position: relative; display: flex; align-items: center; }
 /* 子级项目略小、略轻：保留封面识别度，但不再和顶层入口争层级。 */
@@ -152,7 +150,7 @@ kbd { border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; color
   position: relative; z-index: 1;
   grid-template-columns: 32px minmax(0,1fr) auto; column-gap: 9px;
   min-height: 44px; border-radius: 13px; padding: 5px 7px;
-  font-size: 12.75px; font-weight: 610;
+  font-size: 12.75px; font-weight: var(--weight-semibold);
 }
 .projects-section .project-row .project-nav { padding-right: 28px; }
 .projects-section .project-thumb { width: 32px; height: 32px; border-radius: 10px; }
@@ -173,7 +171,7 @@ kbd { border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; color
   position: fixed; z-index: -1; top: 0; left: -10000px; margin: 0;
   pointer-events: none; opacity: 1;
 }
-.folder-drag-preview .project-nav { background: var(--card); color: var(--ink); font-weight: 700; box-shadow: var(--shadow-md); }
+.folder-drag-preview .project-nav { background: var(--card); color: var(--ink); font-weight: var(--weight-bold); box-shadow: var(--shadow-md); }
 .folder-drag-preview .project-nav strong { color: var(--muted); opacity: 1; }
 .folder-drag-preview .project-more { display: none; }
 .folder-drop-line {
@@ -224,10 +222,10 @@ kbd { border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; color
 .project-list::-webkit-scrollbar { width: 6px; }
 .project-list::-webkit-scrollbar-thumb { background: var(--hairline-2); border-radius: 3px; }
 .sidebar-footer { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--hairline-2); }
-.sidebar-setting { display: flex; align-items: center; gap: 11px; width: 100%; min-height: 44px; border: 0; border-radius: 14px; padding: 6px 12px; background: transparent; color: var(--muted); font-size: 13px; font-weight: 640; text-align: left; transition: background .15s, color .15s; }
+.sidebar-setting { display: flex; align-items: center; gap: 11px; width: 100%; min-height: 44px; border: 0; border-radius: 14px; padding: 6px 12px; background: transparent; color: var(--muted); font-size: 13px; font-weight: var(--weight-semibold); text-align: left; transition: background .15s, color .15s; }
 .sidebar-setting:hover { background: var(--glass-strong); color: var(--ink); }
-.sidebar-setting svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.sidebar-slogan { margin: 7px 12px 0; color: var(--subtle); font-size: 10.5px; font-weight: 500; line-height: 1.55; letter-spacing: .01em; opacity: .72; }
+.sidebar-setting svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: var(--icon-stroke); stroke-linecap: round; stroke-linejoin: round; }
+.sidebar-slogan { margin: 7px 12px 0; color: var(--subtle); font-size: 10.5px; font-weight: var(--weight-medium); line-height: 1.55; letter-spacing: .01em; opacity: .72; }
 
 @media (prefers-reduced-motion: reduce) {
   .project-nav, .inbox-icon, .all-icon, .project-more, .sidebar-setting, .board-create { transition: none; }
@@ -244,7 +242,7 @@ kbd { border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; color
 .folder-menu.is-open { opacity: 1; transform: none; }
 .folder-menu-title {
   overflow: hidden; margin: 2px 4px 6px; padding: 0 7px;
-  color: var(--subtle); font-size: 10px; font-weight: 750; letter-spacing: .9px;
+  color: var(--subtle); font-size: 10px; font-weight: var(--weight-bold); letter-spacing: .9px;
   text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap;
 }
 .folder-menu-item {
@@ -254,7 +252,7 @@ kbd { border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; color
   transition: background .12s, color .12s;
 }
 .folder-menu-item:hover { background: var(--btn-soft); color: var(--ink); }
-.folder-menu-item svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.folder-menu-item svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: var(--icon-stroke); stroke-linecap: round; stroke-linejoin: round; }
 .folder-menu-item.danger { color: #d94841; }
 .folder-menu-item.danger:hover { background: rgba(217,72,65,.1); color: #c93a2c; }
 [data-theme="dark"] .folder-menu-item.danger { color: #ff8272; }
@@ -262,7 +260,7 @@ kbd { border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; color
 
 main { min-width:0; padding:36px clamp(24px,4vw,60px) 120px; }
 .collection-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 16px; }
-.collection-bar p { margin: 0; color: var(--muted); font-size: 12.5px; font-weight: 500; }
+.collection-bar p { margin: 0; color: var(--muted); font-size: 12.5px; font-weight: var(--weight-medium); }
 .collection-right { display: flex; align-items: center; gap: 10px; }
 select {
   appearance: none; -webkit-appearance: none;
@@ -292,9 +290,8 @@ select:hover { border-color: var(--card-line); }
      拖拽让位用的行内 transform 整个盖掉（表现：拖了但卡片纹丝不动），
      连带 .card:hover 的「悬停抬起」也一并失效。
      backwards 只在动画开始前应用首帧；to 帧的值本就和默认样式一致，去掉 forwards 不会有跳变。 */
-  animation: cardIn .4s ease backwards;
+  animation: none;
 }
-@keyframes cardIn { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
 .card:hover { transform: translateY(-6px); box-shadow: var(--shadow-md); border-color: var(--card-line); }
 /* 整张卡片的普通点击会打开文章，因此静止时用点击指针；
    只有真正进入拖拽后才变成抓取手势，避免“显示手掌却点了没反应”。 */
@@ -336,13 +333,13 @@ select:hover { border-color: var(--card-line); }
 .card-body { padding: 15px 15px 13px; }
 .source-row { display: grid; grid-template-columns: 17px minmax(0,1fr) auto auto; align-items: center; column-gap: 5px; min-width: 0; width: 100%; color: var(--muted); font-size: 11px; white-space: nowrap; }
 .favicon { width: 17px; height: 17px; border-radius: 50%; background: var(--cover-bg); object-fit: cover; }
-.source-name { display: block; overflow: hidden; min-width: 0; max-width: 100%; color: var(--chip-text); font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.source-name { display: block; overflow: hidden; min-width: 0; max-width: 100%; color: var(--chip-text); font-weight: var(--weight-semibold); text-overflow: ellipsis; white-space: nowrap; }
 .source-row time { justify-self: end; min-width: max-content; white-space: nowrap; }
 .title-link { color: inherit; text-decoration: none; }
 .card h2 { display: -webkit-box; overflow: hidden; min-height: 44px; margin: 11px 0 7px; font-size: 14.5px; line-height: 1.5; letter-spacing: -.2px; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .description { display: -webkit-box; overflow: hidden; height: 52px; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 footer { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 8px; margin-top: 13px; padding-top: 11px; border-top: 1px solid var(--hairline); }
-.read-toggle { border: 0; border-radius: 99px; padding: 6px 11px; background: var(--btn-soft); color: var(--chip-text); font-size: 10.5px; font-weight: 600; transition: background .15s, color .15s; }
+.read-toggle { border: 0; border-radius: 99px; padding: 6px 11px; background: var(--btn-soft); color: var(--chip-text); font-size: 10.5px; font-weight: var(--weight-semibold); transition: background .15s, color .15s; }
 /* 鼠标放到按钮上：整颗变主题色高亮（侧栏那颗同款按钮也是这个效果）。 */
 .read-toggle:hover, .read-toggle:focus-visible { background: var(--accent); color: #fff; }
 /* 卡片上的「所属项目」下拉：控件本身看着小巧（和以前一样），
@@ -352,7 +349,7 @@ footer { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-it
 .project-select { min-width: 0; width: 132%; border: 0; border-radius: 8px; padding: 7px 18px 7px 6px; background-color: var(--field-soft); background-position: right 6px center; color: var(--chip-text); font-size: 12.5px; text-overflow: ellipsis; transform: scale(.76); transform-origin: left center; }
 .delete { display: grid; place-items: center; width: 29px; height: 29px; border: 0; border-radius: 9px; background: transparent; color: var(--subtle); transition: background .15s, color .15s; }
 .delete:hover { background: var(--accent-soft); color: #df4c31; }
-.edit svg, .delete svg { width: 16px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6; }
+.edit svg, .delete svg { width: 16px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: var(--icon-stroke); }
 
 /* 卡片右上角的「改写标题 / 摘要」铅笔：平时收着，鼠标移到卡片上才浮出来，
    这样既不占地方，也不挡封面。封面区域本身是能点开文章的链接，
@@ -402,20 +399,21 @@ footer { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-it
   /* 拖拽让位靠行内 transform 平移，所以这里要有 transform 过渡才看得出「让开」 */
   transition: transform .2s cubic-bezier(.2,.7,.3,1);
   /* 和卡片一样只用 backwards：forwards 会盖掉行内 transform（见 .card 的注释） */
-  animation: cardIn .4s ease backwards;
+  animation: none;
 }
 .board-create {
   align-self: start; display: grid; place-items: center; align-content: center; gap: 10px;
   width: 100%; aspect-ratio: 1.42; border: 1.5px dashed var(--hairline-2); border-radius: 14px;
   background: color-mix(in srgb, var(--card) 38%, transparent); color: var(--muted);
-  font: inherit; cursor: pointer; animation: cardIn .4s ease backwards;
+  font: inherit; cursor: pointer; animation: none;
   transition: border-color .2s, background .2s, color .2s, transform .2s cubic-bezier(.2,.7,.3,1);
 }
 .board-create:hover { border-color: color-mix(in srgb, var(--accent) 62%, var(--hairline-2)); background: var(--accent-soft); color: var(--accent); transform: translateY(-2px); }
 .board-create:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 72%, transparent); outline-offset: 3px; }
-.board-create-plus { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: var(--field-soft); color: currentColor; font-size: 27px; font-weight: 350; line-height: 1; transition: transform .2s, background .2s; }
+.board-create-plus { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: var(--field-soft); color: currentColor; line-height: 1; transition: transform .2s, background .2s; }
+.board-create-plus svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:var(--icon-stroke); stroke-linecap:round; stroke-linejoin:round; }
 .board-create:hover .board-create-plus { background: color-mix(in srgb, var(--accent) 12%, var(--card)); transform: scale(1.06); }
-.board-create strong { font-size: 12px; font-weight: 680; letter-spacing: .01em; }
+.board-create strong { font-size: 12px; font-weight: var(--weight-semibold); letter-spacing: .01em; }
 /* 拖拽中：让位要跟手，默认 .2s 会显得拖沓；animation:none 是双保险——
    万一某块的入场动画还没播完，动画仍在覆盖 transform，这里直接掐断。 */
 .board-grid.is-reordering .board-card { animation: none; transition: transform .16s cubic-bezier(.2,.8,.2,1); }
@@ -453,7 +451,7 @@ footer { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-it
 /* 封面加载不出来、或这个类目还一篇都没有时：什么都不放，只留一块淡色底 */
 .board-body { padding: 11px 2px 0; }
 /* 标题是 Pinterest 那种「紧贴封面下方、字号偏大」的写法 */
-.board-name { overflow: hidden; margin: 0; font-size: 14.5px; font-weight: 770; letter-spacing: -.28px; text-overflow: ellipsis; white-space: nowrap; }
+.board-name { overflow: hidden; margin: 0; font-size: 14.5px; font-weight: var(--weight-bold); letter-spacing: -.28px; text-overflow: ellipsis; white-space: nowrap; }
 /* 简介：手写的用正常灰，自动生成的再淡一档，暗示「这只是概览，可以自己写一句」。
    高度跟着内容走：一句就占一行，别为了「整排对齐」硬撑成两行——
    那是留白，不是对齐（一份简介往往就一行，下面空一行看着像没写完）。 */
@@ -463,7 +461,7 @@ footer { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-it
   -webkit-box-orient: vertical; -webkit-line-clamp: 2;
 }
 .board-note.is-auto { color: var(--subtle); }
-.board-meta { margin: 5px 0 0; color: var(--subtle); font-size: 10.5px; font-weight: 600; }
+.board-meta { margin: 5px 0 0; color: var(--subtle); font-size: 10.5px; font-weight: var(--weight-semibold); }
 /* 改简介的铅笔：平时收着，鼠标移到图板上才浮出来（贴在封面右上角） */
 .board-edit {
   position: absolute; top: 10px; right: 10px; z-index: 5;
@@ -478,12 +476,12 @@ footer { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-it
 .board-edit:hover { background: #fff; color: var(--ink); }
 [data-theme="dark"] .board-edit:hover { background: #26241f; color: #fff; }
 .board-edit:focus-visible { outline: 2px solid var(--accent, #ff5c35); outline-offset: 2px; }
-.board-edit svg { width: 14px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6; }
+.board-edit svg { width: 14px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: var(--icon-stroke); }
 @media (hover: none) { .board-edit { opacity: 1; transform: none; pointer-events: auto; } }
 
 .empty { max-width: 440px; margin: 90px auto; text-align: center; }
 .empty-icon { display: block; width: 76px; height: 76px; margin: auto; padding: 0; border-radius: 24px; object-fit: cover; background: transparent; box-shadow: var(--shadow-sm); }
-.empty h2 { margin: 20px 0 8px; font-family: Georgia, "Songti SC", serif; font-size: 28px; font-weight: 500; }
+.empty h2 { margin: 20px 0 8px; font-family: var(--font-ui); font-size: 28px; font-weight: var(--weight-bold); }
 .empty p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
 .toast { position: fixed; right: 25px; bottom: 25px; transform: translateY(20px); border-radius: 14px; padding: 12px 16px; background: var(--toast-bg); color: var(--active-text); font-size: 12px; box-shadow: var(--shadow-md); opacity: 0; pointer-events: none; transition: .25s; }
 .toast.show { transform: translateY(0); opacity: 1; }
@@ -496,14 +494,14 @@ footer { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-it
   border: 1px solid rgba(255,255,255,.14); border-radius: 999px;
   background: rgba(27,27,25,.94); color: #fff;
   box-shadow: 0 10px 30px rgba(0,0,0,.24);
-  font: 600 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font: var(--weight-semibold) 13px/1.5 var(--font-ui);
   letter-spacing: normal; text-align: left; text-overflow: ellipsis; white-space: nowrap;
   transform: translateX(18px) scale(.96);
   transition: opacity 240ms ease, transform 240ms cubic-bezier(.22,1,.36,1);
 }
 .toast.pill-toast::before {
   content: "✓"; position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
-  color: #4fe2b5; font-size: 12px; font-weight: 800;
+  color: #4fe2b5; font-size: 12px; font-weight: var(--weight-brand);
 }
 .toast.pill-toast.show { opacity: 1; transform: translateX(0) scale(1); }
 
@@ -538,7 +536,7 @@ footer { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-it
 
 /* 选择模式与批量操作 */
 .collection-left { display: flex; align-items: center; gap: 14px; }
-.select-mode { border: 1px solid var(--hairline-2); border-radius: 99px; padding: 7px 16px; background: var(--glass-strong); color: var(--chip-text); font-size: 12.5px; font-weight: 650; box-shadow: var(--shadow-sm); transition: background .15s, color .15s, box-shadow .15s; }
+.select-mode { border: 1px solid var(--hairline-2); border-radius: 99px; padding: 7px 16px; background: var(--glass-strong); color: var(--chip-text); font-size: 12.5px; font-weight: var(--weight-semibold); box-shadow: var(--shadow-sm); transition: background .15s, color .15s, box-shadow .15s; }
 .select-mode:hover { background: var(--field); }
 .select-mode.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 6px 16px -6px rgba(255,80,50,.6); }
 .grid.selecting .card { cursor: pointer; }
@@ -561,7 +559,7 @@ footer { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-it
   position: absolute; top: 12px; left: 12px; z-index: 4;
   padding: 3px 9px; border-radius: 99px;
   background: var(--accent); color: #fff;
-  font-size: 10px; font-weight: 700; letter-spacing: .3px;
+  font-size: 10px; font-weight: var(--weight-bold); letter-spacing: .3px;
   box-shadow: 0 4px 12px -4px rgba(255,80,50,.6);
   pointer-events: none;
 }
@@ -584,11 +582,11 @@ footer { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-it
   transition: opacity .28s ease, transform .28s cubic-bezier(.2,.8,.3,1), visibility .28s;
 }
 .bulk-bar.is-open { opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0); }
-.bulk-count { display: flex; align-items: center; height: 40px; padding: 0 18px; border-radius: 999px; background: rgba(255,255,255,.14); color: #fff; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.bulk-count { display: flex; align-items: center; height: 40px; padding: 0 18px; border-radius: 999px; background: rgba(255,255,255,.14); color: #fff; font-size: 13px; font-weight: var(--weight-bold); white-space: nowrap; }
 .bulk-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center; }
 .bulk-actions button {
   height: 40px; border: 0; border-radius: 999px; padding: 0 16px;
-  background: rgba(255,255,255,.13); color: #fff; font-size: 13px; font-weight: 650;
+  background: rgba(255,255,255,.13); color: #fff; font-size: 13px; font-weight: var(--weight-semibold);
   display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
   transition: background .15s, transform .12s, filter .15s;
 }
@@ -599,6 +597,8 @@ footer { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-it
 .bulk-actions button.danger { background: rgba(255,92,53,.22); color: #ffb6a6; }
 .bulk-actions button.danger:hover { background: rgba(255,92,53,.34); }
 .bulk-actions .bulk-project { min-width: 122px; justify-content: space-between; }
-.bulk-project svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: .72; }
+.bulk-project svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: var(--icon-stroke); stroke-linecap: round; stroke-linejoin: round; opacity: .72; }
 
 .sidebar-setting.active { background: var(--glass-strong); color: var(--ink); }
+
+}

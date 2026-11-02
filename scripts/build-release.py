@@ -20,6 +20,7 @@ RUNTIME_FILES = (
     "manifest.json",
     "article-cover-placeholder.png",
     "background.js",
+    "appearance.js",
     "bookmark-sync.js",
     "bookmark-previews.js",
     "bookmark-view.js",

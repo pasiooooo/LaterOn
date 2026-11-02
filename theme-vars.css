@@ -1,6 +1,18 @@
+@layer critical, base, library, bookmarks, navigation, settings, sidepanel, bookmark-panel, dialogs, onboarding;
+
 :root {
   color-scheme: light;
-  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-ui: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-brand: 800;
+  --leading-body: 1.5;
+  --leading-title: 1.5;
+  --control-radius: 10px;
+  --icon-stroke: 1.8;
+  font-family: var(--font-ui);
   --ink: #171614;
   --muted: #8a857c;
   --paper: #f4f2ec;
@@ -79,4 +91,18 @@
   --active-bg: rgba(255,255,255,.16);
   --active-text: #ffffff;
   --toast-bg: rgba(45,42,38,.96);
+}
+
+@layer base {
+  * { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; scrollbar-gutter: stable; }
+  body { font-family: var(--font-ui); font-weight: var(--weight-regular); line-height: var(--leading-body); }
+  button, input, select, textarea { font: inherit; }
+  button, select { cursor: pointer; }
+  button:disabled, select:disabled { cursor: default; }
+  h1, h2, h3, strong, b { font-weight: var(--weight-bold); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  }
 }

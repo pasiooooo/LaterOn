@@ -22,7 +22,8 @@
   }
 
   function applyTheme(rawTheme) {
-    document.documentElement.dataset.theme = resolveTheme(rawTheme || "light");
+    if (window.LaterOnAppearance) window.LaterOnAppearance.update({ theme: ["light", "dark", "system"].includes(rawTheme) ? rawTheme : "light" });
+    else document.documentElement.dataset.theme = resolveTheme(rawTheme || "light");
   }
 
   async function get() {
@@ -53,12 +54,21 @@
     });
   }
 
-  // 进入页面即应用主题（本地存储很快，仅极轻微闪烁）。
-  get().then((settings) => applyTheme(settings.theme));
-  watch((settings) => applyTheme(settings.theme));
+  // Cached presentation is already painted; storage only calibrates authoritative settings.
+  let generation = 0;
+  const apply = settings => {
+    if (window.LaterOnAppearance) window.LaterOnAppearance.update({
+      theme: ["light", "dark", "system"].includes(settings.theme) ? settings.theme : "light",
+      language: settings.language === "en" ? "en" : "zh-CN"
+    });
+    else applyTheme(settings.theme);
+  };
+  const initial = generation;
+  get().then(settings => { if (generation === initial) apply(settings); }).catch(() => {});
+  watch(settings => { generation++; apply(settings); });
   if (window.matchMedia) {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => get().then((s) => { if (s.theme === "system") applyTheme("system"); });
+    const onChange = () => get().then((s) => { if (s.theme === "system") applyTheme("system"); }).catch(() => {});
     if (media.addEventListener) media.addEventListener("change", onChange);
     else if (media.addListener) media.addListener(onChange);
   }

@@ -25,8 +25,8 @@
   }
 
   // ── 异步样式表 ────────────────────────────────────────────
-  // <head> 里的样式表是 media="print"（先不生效），这样它们不阻塞首屏渲染：
-  // 浏览器可以先把内联样式支撑的骨架屏画出来。这里等它们一下载好就切换成生效。
+  // Only optional styles (such as onboarding) are deferred. Shared core styles
+  // are render-blocking so the two sidebar surfaces never paint different geometry.
   function activateStyles() {
     const links = document.querySelectorAll("link[data-boot-style]");
     for (const link of links) {

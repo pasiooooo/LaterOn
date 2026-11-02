@@ -2,7 +2,7 @@
 (() => {
   const enabled = new URL(location.href).searchParams.get('surface') === 'sidepanel';
   if (enabled) {
-    document.documentElement.classList.add('bookmark-sidepanel');
+    document.documentElement.classList.add('bookmark-sidepanel', 'sidepanel-surface');
     for (const id of ['bookmarkSidepanelBase', 'bookmarkSidepanelStyle']) document.getElementById(id).media = 'all';
   }
   function mount({ t, getSelected, onAdd, onError }) {
@@ -42,8 +42,14 @@
       const saved = url && currentState.nodes.find(node => node.url && webUrl(node.url) === url);
       $('#bookmarkCurrentTitle').textContent = currentMetadata?.title || currentTab?.title || t('currentPage');
       $('#bookmarkCurrentSource').textContent = currentMetadata?.source || (url ? new URL(url).hostname : t('unsupportedCurrent'));
+      if (currentTab) {
+        $('#bookmarkCurrentTitle').removeAttribute('data-bm'); $('#bookmarkCurrentSource').removeAttribute('data-bm');
+      }
       $('#bookmarkSaveCurrent').disabled = querying || !url || !writable || busy || !!saved;
-      $('#bookmarkSaveCurrent').textContent = t(saved ? 'alreadyBookmarked' : 'saveCurrent');
+      $('#bookmarkSaveCurrent').classList.toggle('saved', !!saved);
+      const label = t(saved ? 'alreadyBookmarked' : 'saveCurrent');
+      $('#bookmarkSaveCurrent .save-label').textContent = label;
+      $('#bookmarkSaveCurrent').title = label; $('#bookmarkSaveCurrent').setAttribute('aria-label', label);
       const image = currentMetadata?.image;
       const cover = webUrl(image) || (typeof image === 'string' && image.length <= 768 * 1024 && /^data:image\/(?:png|jpeg|webp|gif|avif);base64,[a-z0-9+/=\s]+$/i.test(image) ? image : '');
       const thumb = $('#bookmarkCurrentThumb');
@@ -114,7 +120,7 @@
       finally { opening = false; }
     });
     loadCurrent();
-    return { navigated, render({ state, busy: nextBusy, writable: nextWritable, title, pages }) {
+    return { navigated, relabel: renderCurrent, render({ state, busy: nextBusy, writable: nextWritable, title, pages }) {
       currentState = state; busy = nextBusy; writable = nextWritable;
       $('#bookmarkSidepanelFolderLabel').textContent = title;
       $('#bookmarkToggleFolders').title = title;
