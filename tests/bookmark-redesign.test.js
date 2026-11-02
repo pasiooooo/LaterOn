@@ -71,7 +71,7 @@ const tick = () => new Promise(resolve => setTimeout(resolve, 20));
   for(const file of ['library.html','sidepanel.html']) {
     const dom=new JSDOM(read(file));
     assert(dom.window.document.querySelector('.library-switch [aria-current="page"][data-i18n="readingLibrary"]'));
-    assert(dom.window.document.querySelector('.library-switch a[href="bookmarks.html"]'));
+    assert(dom.window.document.querySelector(`.library-switch a[href="${file==='sidepanel.html'?'bookmarks.html?surface=sidepanel':'bookmarks.html'}"]`));
     assert(!dom.window.document.querySelector('.sidebar-footer a[href="bookmarks.html"]'),'The only bookmark entry is not hidden in a footer');
     dom.window.close();
   }

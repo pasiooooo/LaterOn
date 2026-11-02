@@ -4,4 +4,4 @@ nav.library-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; fl
 .library-switch a:hover { color: var(--ink); background: var(--btn-soft); }
 .library-switch a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); font-weight: 750; }
 .library-switch a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-nav.sidepanel-library-switch { margin: 12px 15px; }
+nav.sidepanel-library-switch { margin: 0 0 12px; }

@@ -23,6 +23,8 @@ RUNTIME_FILES = (
     "bookmark-sync.js",
     "bookmark-previews.js",
     "bookmark-view.js",
+    "bookmark-sidepanel.js",
+    "bookmark-sidepanel.css",
     "bookmark-transfer.js",
     "bookmarks.html",
     "bookmarks.css",

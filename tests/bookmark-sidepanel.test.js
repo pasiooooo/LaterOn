@@ -1,0 +1,117 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { JSDOM } = require('jsdom');
+const vm = require('node:vm');
+const fixture = require('./bookmark-sync.test');
+const read = name => fs.readFileSync(path.resolve(__dirname, '..', name), 'utf8');
+const tick = () => new Promise(resolve => setTimeout(resolve, 25));
+const event = () => ({ listeners: [], addListener(fn) { this.listeners.push(fn); }, removeListener(fn) { this.listeners = this.listeners.filter(entry => entry !== fn); }, emit(...args) { this.listeners.forEach(fn => fn(...args)); } });
+
+(async () => {
+  const reading = new JSDOM(read('sidepanel.html'));
+  const entry = reading.window.document.querySelector('.library-switch [data-i18n="bookmarkLibrary"]');
+  assert.equal(entry.getAttribute('href'), 'bookmarks.html?surface=sidepanel', 'Bookmark switch stays within the browser side panel');
+  assert(!entry.hasAttribute('target'), 'Switching library does not create a tab');
+  reading.window.close();
+  for (const language of ['zh-CN', 'en']) {
+    const f = fixture({ laterOnSettings: { language }, laterOnBookmarkConfig: { enabled: true, scopeId: null }, laterOnBookmarkView: { selected: 'scope', expanded: ['1', 'scope'] } });
+    f.grant();
+    let active = { id: 9, windowId: 4, active: true, title: 'Current article', url: 'https://current.test/article' };
+    const opened = [], closed = [], calls = [];
+    f.chrome.tabs = { async query() { return [active]; }, async create(data) { opened.push(data); return { id: 10 }; }, onActivated: event(), onUpdated: event() };
+    f.chrome.sidePanel = { async close(data) { closed.push(data); } };
+    const dom = new JSDOM(read('bookmarks.html'), { runScripts: 'outside-only', url: 'chrome-extension://fixture/bookmarks.html?surface=sidepanel' });
+    const { window } = dom;
+    window.chrome = f.chrome;
+    window.chrome.runtime.sendMessage = async message => { calls.push(message); try { return { ok: true, state: await f.api.handle(message) }; } catch (error) { return { ok: false, error: error.message }; } };
+    window.LaterOnDialog = { async confirm() { return true; }, async prompt() { return { ok: false }; } };
+    try {
+      for (const file of ['bookmark-sidepanel.js', 'i18n.js', 'bookmark-view.js', 'bookmarks.js']) window.eval(read(file));
+      await tick();
+      const $ = selector => window.document.querySelector(selector);
+      assert(window.document.documentElement.classList.contains('bookmark-sidepanel'));
+      assert.equal($('.library-switch a[data-i18n="readingLibrary"]').getAttribute('href'), 'sidepanel.html');
+      assert.equal($('.library-switch').parentElement.id, 'bookmarkSidepanelNavigation');
+      assert.equal($('.bookmark-sidebar').hidden, true, 'The full-page folder sidebar is a collapsed inline navigator');
+      assert.equal($('#bookmarkCurrentTitle').textContent, 'Current article');
+      assert.equal($('#bookmarkSaveCurrent').disabled, false);
+      assert.equal(opened.length, 0, 'Opening the bookmark side panel never opens its full page');
+      assert.equal($('#bookmarkViewTitle').textContent, language === 'en' ? 'All bookmarks' : '全部书签', 'Desktop folder selection does not leak into the compact surface');
+      $('#bookmarkToggleFolders').click();
+      assert.equal($('.bookmark-sidebar').hidden, false);
+      const folder = $('#bookmarkFolders li[data-folder-id="scope"] > .bookmark-tree-row > .bookmark-folder-nav');
+      folder.focus(); folder.click();
+      assert.equal($('.bookmark-sidebar').hidden, true, 'Selecting a folder returns space to the bookmark list');
+      assert.equal(window.document.activeElement, $('#bookmarkToggleFolders'), 'Collapsing the tree keeps keyboard focus visible');
+      assert.equal(f.store.laterOnBookmarkSidepanelView.selected, 'scope');
+      assert.equal(f.store.laterOnBookmarkView.selected, 'scope');
+      $('#bookmarkSaveCurrent').click();
+      assert.equal($('#bookmarkAddPanel').open, true);
+      assert.equal($('#bookmarkTitle').value, 'Current article');
+      assert.equal($('#bookmarkUrl').value, active.url);
+      assert.equal($('#bookmarkParent').value, 'scope');
+      assert(!calls.some(call => call.type === 'BOOKMARKS_CREATE'), 'Quick add first asks for a native folder');
+      $('#bookmarkAddForm').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+      await tick();
+      assert(f.nodes.some(node => node.parentId === 'scope' && node.url === active.url));
+      assert.equal($('#bookmarkSaveCurrent').disabled, true, 'An already bookmarked page is not saved twice by quick add');
+      assert.equal(f.store.laterOnItems.length, 1, 'Adding a bookmark does not add reading items');
+      active = { ...active, id: 12, title: 'Next article', url: 'https://next.test/' };
+      f.chrome.tabs.onActivated.emit({ tabId: 12, windowId: 4 }); await tick();
+      assert.equal($('#bookmarkCurrentTitle').textContent, 'Next article');
+      const originalQuery = f.chrome.tabs.query, pending = [];
+      f.chrome.tabs.query = () => new Promise(resolve => pending.push(resolve));
+      f.chrome.tabs.onActivated.emit({ tabId: 20, windowId: 4 });
+      f.chrome.tabs.onActivated.emit({ tabId: 21, windowId: 4 });
+      f.chrome.tabs.onActivated.emit({ tabId: 30, windowId: 99 });
+      assert.equal(pending.length, 2, 'Other browser windows do not reset this side panel');
+      pending[1]([{ ...active, title: 'Newest tab' }]); await tick();
+      pending[0]([{ ...active, title: 'Stale tab' }]); await tick();
+      assert.equal($('#bookmarkCurrentTitle').textContent, 'Newest tab', 'A stale tab query cannot overwrite a newer selection');
+      f.chrome.tabs.query = originalQuery;
+      active = { ...active, url: 'chrome://settings/', title: 'Settings' };
+      f.chrome.tabs.onUpdated.emit(12, { url: active.url }, active); await tick();
+      assert.equal($('#bookmarkSaveCurrent').disabled, true);
+      const create = f.chrome.tabs.create;
+      f.chrome.tabs.create = async () => { throw new Error('Create failed'); };
+      $('#bookmarkOpenFull').click(); await tick();
+      assert.equal(closed.length, 0, 'A failed full-page handoff must leave the side panel open');
+      assert.equal(opened.length, 0);
+      assert($('#bookmarkStatus').textContent.includes(language === 'en' ? 'Could not open' : '未能打开'));
+      f.chrome.tabs.create = create;
+      $('#bookmarkOpenFull').click(); await tick();
+      assert.equal(opened.length, 1);
+      const url = new URL(opened[0].url);
+      assert.equal(url.pathname, '/bookmarks.html');
+      assert.equal(url.searchParams.get('folder'), 'scope');
+      assert.equal(url.searchParams.has('surface'), false);
+      assert.equal(closed.length, 1);
+      assert.equal(closed[0].windowId, 4);
+    } finally { dom.window.close(); }
+  }
+  const desktop = fixture({ laterOnBookmarkConfig: { enabled: true, scopeId: null }, laterOnBookmarkView: { selected: 'scope', expanded: [] } });
+  desktop.grant();
+  const full = new JSDOM(read('bookmarks.html'), { runScripts: 'outside-only', url: 'chrome-extension://fixture/bookmarks.html?folder=nested' });
+  try {
+    full.window.chrome = desktop.chrome;
+    full.window.chrome.runtime.sendMessage = async message => ({ ok: true, state: await desktop.api.handle(message) });
+    for (const file of ['bookmark-sidepanel.js', 'i18n.js', 'bookmark-view.js', 'bookmarks.js']) full.window.eval(read(file));
+    await tick();
+    assert.equal(full.window.LaterOnBookmarkSidepanel.enabled, false);
+    assert.equal(full.window.document.querySelector('#bookmarkViewTitle').textContent, 'Nested', 'Explicit full-page handoff keeps the folder context');
+    assert.equal(full.window.document.querySelector('#bookmarkSidepanelNavigation').hidden, true);
+    assert.equal(full.window.document.querySelector('#bookmarkSidepanelBase').media, 'not all');
+  } finally { full.window.close(); }
+  for (const page of ['sidepanel.html', 'library.html']) {
+    const navigated = [], created = [];
+    const context = vm.createContext({ URL, window: { location: { href: `chrome-extension://fixture/${page}`, assign(url) { navigated.push(url); } } }, chrome: { runtime: { getURL: file => `chrome-extension://fixture/${file}` }, tabs: { async create(data) { created.push(data.url); } } } });
+    vm.runInContext(read('bookmark-transfer.js'), context);
+    await context.window.LaterOnBookmarkTransfer.open(['reading', 'reading']);
+    const url = new URL((page === 'sidepanel.html' ? navigated : created)[0]);
+    assert.equal(url.searchParams.get('items'), '["reading"]');
+    assert.equal(url.searchParams.get('surface'), page === 'sidepanel.html' ? 'sidepanel' : null);
+    assert.equal((page === 'sidepanel.html' ? created : navigated).length, 0, 'Reading-to-bookmark transfer keeps its original surface');
+  }
+  console.log('PASS bookmark sidepanel: in-panel switch, compact navigation, independent view, current-page save, native isolation, tab changes and explicit full-page handoff');
+})().catch(error => { console.error(error); process.exitCode = 1; });

@@ -120,7 +120,7 @@
       const folderNodes = (selected ? model.children.get(selected) || [] : model.roots).filter(node => !node.url && (!queryText || matches(node)));
       boards.replaceChildren();
       for (const node of folderNodes.slice(0, folderLimit)) {
-        const board = button('', () => options.onNavigate(node.id), 'board-card bookmark-folder-card'); board.dataset.id = node.id;
+        const board = button('', () => options.onNavigate(node.id), 'board-card bookmark-folder-card'); board.dataset.id = node.id; board.title = node.title;
         const mosaic = document.createElement('div'); mosaic.className = 'board-cover';
         const summary = model.summary(node.id), previews = summary.previews;
         mosaic.dataset.count = String(previews.length);

@@ -48,6 +48,9 @@ const fixture = function(images) {
   native.remove=async id=>{const node=nodes.find(node=>node.id===id);if(nodes.some(node=>node.parentId===id))throw Error('Not empty');nodes.splice(nodes.indexOf(node),1);native.onRemoved.emit(id,{node})};
   const changes=event();
   window.chrome={bookmarks:native,permissions:{async contains(){return true},async request(){return true},onAdded:event(),onRemoved:event()},storage:{local:{async get(keys){return Object.fromEntries((Array.isArray(keys)?keys:[keys]).filter(key=>key in fixtureStore).map(key=>[key,structuredClone(fixtureStore[key])]))},async set(patch){Object.assign(fixtureStore,structuredClone(patch));changes.emit(Object.fromEntries(Object.entries(patch).map(([key,value])=>[key,{newValue:value}])),'local')}},onChanged:changes},runtime:{onMessage:event(),onStartup:event(),onInstalled:event(),getURL:p=>new URL(p,location.href).href,async sendMessage(message){try{return{ok:true,state:await LaterOnBookmarkSync.handle(message)}}catch(error){return{ok:false,error:error.message}}}},alarms:{create(){},clear(){},onAlarm:event()}};
+  window.fixtureOpened=[];window.fixtureClosed=[];
+  window.chrome.tabs={async query(){return[{id:88,windowId:4,active:true,title:'正在浏览的研究网页',url:'https://example.com/current'}]},async create(data){fixtureOpened.push(data);return{id:89}},onActivated:event(),onUpdated:event()};
+  window.chrome.sidePanel={async close(data){fixtureClosed.push(data)}};
   window.fetch=async url=>String(url).endsWith('.png')?new Response(Uint8Array.from(atob(images[0].split(',')[1]),char=>char.charCodeAt(0)),{headers:{'content-type':'image/png'}}):new Response('<meta name="description" content="Offline preview fixture"><meta property="og:image" content="https://images.example.test/preview.png">',{headers:{'content-type':'text/html'}});
 };
 fs.writeFileSync(path.join(OUT,'fixture.js'),`(${fixture.toString()})(${JSON.stringify(images)});`);

@@ -1,6 +1,7 @@
 (() => {
   const words = {
     'zh-CN': {
+      openFull: '打开完整界面', openFullFailed: '完整界面未能打开，请重试。', loadingCurrent: '正在读取当前网页…', currentPage: '当前页面', saveCurrent: '添加', alreadyBookmarked: '已收藏', unsupportedCurrent: '请切换到可添加的 HTTP / HTTPS 网页', moreActions: '更多操作',
       syncSettings: '同步设置', permanentHint: '长期保存，不参与已读自动清除', expand: '展开文件夹', collapse: '收起文件夹', pages: '网页', morePages: '更多网页', moreFolders: '更多文件夹', folderStats: '{n} 个网页 · {folders} 个子文件夹', viewStats: '{folders} 个文件夹 · {n} 个网页', pageHint: '保留在浏览器书签中的长期收藏', emptyHint: '添加网页，或使用文件夹整理长期收藏。', addPage: '添加网页', newFolder: '新建文件夹', connected: '浏览器书签 · 已连接', notConnected: '连接浏览器书签', needsAttention: '书签同步需要处理', loadPreviews: '补齐当前预览', loadingPreviews: '正在加载预览…', previewHint: '预览优先复用本地封面和摘要。补齐时最多请求当前视图的 12 个网页及封面，不打开标签页、不使用登录凭据。', previewDone: '已补齐 {n} 个预览，{failed} 个保留本地或站点封面。', previewCancelled: '同步范围或权限已变化，未保存过期预览。', bookmarkPreviewUnavailable: '部分站点无法读取预览，已保留本地或站点封面。', name: '书签库', reading: '阅读库', settings: '设置', eyebrow: '长期收藏 · 浏览器双向同步',
       intro: '与浏览器书签保持一致的长期收藏，独立于阅读库，不受已读自动清除影响。',
       syncTitle: '浏览器书签双向同步', syncHint: '默认同步全部书签，也可以只选择一个文件夹及其子文件夹。停用或修改范围不会删除浏览器书签。',
@@ -24,6 +25,7 @@
       bookmarkInvalidItems: '没有可转存的网页。', bookmarkItemMissing: '部分阅读库网页已被删除。', failed: '操作未完成，请刷新后重试。'
     },
     en: {
+      openFull: 'Open full library', openFullFailed: 'Could not open the full library. Try again.', loadingCurrent: 'Reading the current page…', currentPage: 'Current page', saveCurrent: 'Add', alreadyBookmarked: 'Bookmarked', unsupportedCurrent: 'Switch to an HTTP or HTTPS page to add it', moreActions: 'More',
       syncSettings: 'Sync settings', permanentHint: 'Kept permanently. Never auto-removed.', expand: 'Expand folder', collapse: 'Collapse folder', pages: 'Pages', morePages: 'More pages', moreFolders: 'More folders', folderStats: '{n} pages · {folders} subfolders', viewStats: '{folders} folders · {n} pages', pageHint: 'Kept in your browser bookmarks', emptyHint: 'Add a page or organize your lasting collection into folders.', addPage: 'Add page', newFolder: 'New folder', connected: 'Browser bookmarks · Connected', notConnected: 'Connect browser bookmarks', needsAttention: 'Bookmark sync needs attention', loadPreviews: 'Load missing previews', loadingPreviews: 'Loading previews…', previewHint: 'Reuse local covers and summaries first. Loading previews requests up to 12 pages and their covers in this view, without opening tabs or using login credentials.', previewDone: 'Loaded {n} previews; {failed} kept their local or site cover.', previewCancelled: 'Scope or access changed. Outdated previews were discarded.', bookmarkPreviewUnavailable: 'Some sites do not provide a readable preview. Local or site covers were kept.', name: 'Bookmarks', reading: 'Reading', settings: 'Settings', eyebrow: 'KEEP FOR LATER · BROWSER SYNC',
       intro: 'A lasting home for browser bookmarks, separate from the Reading library and never removed by read-page cleanup.',
       syncTitle: 'Two-way browser bookmark sync', syncHint: 'Sync all bookmarks by default, or a folder and its descendants. Disabling sync or changing its scope never deletes browser bookmarks.',
@@ -50,7 +52,8 @@
   const $ = selector => document.querySelector(selector);
   let language = 'zh-CN', state = { enabled: false, nodes: [], folders: [] }, busy = false, selected = '', scopeDirty = false, feedback = '';
   let moving = null, pendingIds = [], expanded = new Set(), expansionReady = false, limit = 48, folderLimit = 24, previewBusy = false, viewResult = { previewIds: [] };
-  const VIEW_KEY = 'laterOnBookmarkView';
+  let compact = null;
+  const VIEW_KEY = window.LaterOnBookmarkSidepanel?.enabled ? 'laterOnBookmarkSidepanelView' : 'laterOnBookmarkView';
   try {
     const values = JSON.parse(new URL(location.href).searchParams.get('items') || '[]');
     if (Array.isArray(values)) pendingIds = [...new Set(values.filter(value => typeof value === 'string'))];
@@ -114,6 +117,7 @@
     for (const selector of ['#bookmarkNewPage', '#bookmarkNewFolder']) $(selector).disabled = busy || !available || !destinations().length;
     $('#bookmarkLoadPreviews').disabled = previewBusy || !available || !previewIds().length;
     $('#bookmarkLoadPreviews').textContent = t(previewBusy ? 'loadingPreviews' : 'loadPreviews');
+    compact?.render({ state, busy, writable: available && destinations().length > 0, title: $('#bookmarkViewTitle').textContent, pages: viewResult.totalPages || 0 });
   }
   function persistView() {
     chrome.storage.local.set({ [VIEW_KEY]: { selected, expanded: [...expanded] } }).catch(() => {});
@@ -123,6 +127,7 @@
     for (const parent of window.LaterOnBookmarkView.index(state.nodes, state.scopeId).trail(id)) expanded.add(parent.id);
     if (destinations().some(folder => folder.id === selected)) $('#bookmarkParent').value = selected;
     render(); persistView();
+    compact?.navigated();
     $('.bookmark-content').scrollIntoView?.({ block: 'start', behavior: 'instant' });
   }
   const view = window.LaterOnBookmarkView.create({ tree: $('#bookmarkFolders'), breadcrumbs: $('#bookmarkBreadcrumbs'),
@@ -293,6 +298,9 @@
       state = changes.laterOnBookmarkState.newValue; feedback = ''; render();
     }
   });
+  compact = window.LaterOnBookmarkSidepanel?.mount({ t, getSelected: () => selected, onAdd: tab => {
+    openAdd(false); $('#bookmarkTitle').value = tab.title || tab.url; $('#bookmarkUrl').value = tab.url;
+  }, onError: () => { feedback = t('openFullFailed'); controls(); } });
   (async () => {
     language = await window.LaterOnI18n.getLanguage();
     if (language !== 'en') language = 'zh-CN';
@@ -302,10 +310,13 @@
     document.querySelector('.library-switch').setAttribute('aria-label', `${t('reading')} / ${t('name')}`);
     document.querySelector('.bookmark-sidebar').setAttribute('aria-label', t('folders'));
     document.querySelectorAll('[data-bm]').forEach(el => { el.textContent = t(el.dataset.bm); });
+    document.querySelectorAll('[data-bm-title]').forEach(el => { el.title = t(el.dataset.bmTitle); el.setAttribute('aria-label', el.title); });
     $('#bookmarkSearch').setAttribute('aria-label', t('search'));
     $('#bookmarkSearch').placeholder = t('search');
     const saved = (await chrome.storage.local.get(VIEW_KEY))[VIEW_KEY];
     if (saved) { selected = typeof saved.selected === 'string' ? saved.selected : ''; if (Array.isArray(saved.expanded)) { expanded = new Set(saved.expanded); expansionReady = true; } }
+    const requestedFolder = new URL(location.href).searchParams.get('folder');
+    if (requestedFolder !== null) selected = requestedFolder;
     render();
     await action(() => send({ type: 'BOOKMARKS_GET' }));
   })().catch(() => { feedback = t('failed'); controls(); });

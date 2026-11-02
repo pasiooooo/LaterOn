@@ -11,6 +11,9 @@
   <link rel="stylesheet" href="library.css" />
   <link rel="stylesheet" href="library-navigation.css" />
   <link rel="stylesheet" href="bookmarks.css" />
+  <link rel="stylesheet" href="sidepanel.css" media="not all" id="bookmarkSidepanelBase" />
+  <link rel="stylesheet" href="bookmark-sidepanel.css" media="not all" id="bookmarkSidepanelStyle" />
+  <script src="bookmark-sidepanel.js"></script>
   <script src="theme.js"></script>
   <script src="i18n.js"></script>
   <script src="dialog.js"></script>
@@ -21,9 +24,11 @@
 <div class="shell">
   <header class="topbar bookmark-header">
     <a class="brand" href="library.html"><img class="brand-icon" src="icon128.png" width="40" height="40" alt="" />LaterOn</a>
+    <button id="bookmarkOpenFull" class="icon-button" type="button" hidden data-bm-title="openFull"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M8 21H5a2 2 0 0 1-2-2v-3m18 0v3a2 2 0 0 1-2 2h-3"/></svg></button>
     <button id="bookmarkConnection" class="bookmark-connection" type="button" aria-controls="bookmarkSyncSettings" aria-expanded="false"><span class="bookmark-connection-dot" aria-hidden="true"></span><span id="bookmarkConnectionLabel" data-bm="syncTitle">浏览器书签</span></button>
     <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg><span class="visually-hidden" data-bm="search">搜索书签</span><input id="bookmarkSearch" type="search" autocomplete="off" /><kbd>⌘ K</kbd></label>
   </header>
+  <div id="bookmarkSidepanelNavigation" hidden></div>
   <div class="workspace bookmark-workspace">
     <aside class="project-sidebar bookmark-sidebar" aria-label="书签文件夹">
       <nav class="library-switch" aria-label="资料库"><a href="library.html" data-i18n="readingLibrary">阅读库</a><a href="bookmarks.html" aria-current="page" data-i18n="bookmarkLibrary">书签库</a></nav>
@@ -36,6 +41,14 @@
       </div>
     </aside>
     <main class="bookmark-content">
+      <section id="bookmarkCurrentPage" class="save-panel" hidden>
+        <div id="bookmarkCurrentThumb" class="current-thumb"><img class="thumb-logo" src="article-cover-placeholder.png" alt="" /></div>
+        <div class="current-copy"><p id="bookmarkCurrentSource" data-bm="loadingCurrent">正在读取当前网页…</p><h1 id="bookmarkCurrentTitle" data-bm="currentPage">当前页面</h1></div>
+        <button id="bookmarkSaveCurrent" class="bookmark-save-current" type="button" disabled data-bm="saveCurrent">添加</button>
+      </section>
+      <div id="bookmarkSidepanelSearch" hidden></div>
+      <div id="bookmarkSidepanelControls" hidden><button id="bookmarkToggleFolders" type="button" aria-controls="bookmarkSidepanelFolders" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h7l2 2h9v11H3zM3 7V4h7l2 3"/></svg><span id="bookmarkSidepanelFolderLabel" data-bm="all">全部书签</span><span aria-hidden="true">⌄</span></button><div id="bookmarkSidepanelCount"></div><details id="bookmarkSidepanelTools"><summary data-bm="moreActions">更多操作</summary></details></div>
+      <div id="bookmarkSidepanelFolders" hidden></div>
       <details id="bookmarkSyncSettings" class="bookmark-sync">
         <summary id="syncTitle" data-bm="syncSettings">同步设置</summary>
         <p data-bm="syncHint">默认同步全部书签，也可以只选择一个文件夹及其子文件夹。停用或修改范围不会删除浏览器书签。</p>
