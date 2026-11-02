@@ -121,8 +121,8 @@ const stored = (id) => store.laterOnItems.find((item) => item.id === id);
   check("菜单标题是这一篇的标题", menu()?.querySelector(".folder-menu-title")?.textContent === "文章一", menu()?.querySelector(".folder-menu-title")?.textContent);
   const labels = menuLabels();
   // 「标为已读」和「移动到项目」刻意不放进来：卡片上本来就有这两个按钮。
-  check("四项：新标签页打开 / 编辑 / 多选 / 删除",
-    labels.join(" · ") === "在新标签页打开 · 编辑标题与摘要 · 多选 · 删除", labels.join(" · "));
+  check("五项：新标签页打开 / 编辑 / 书签转存 / 多选 / 删除",
+    labels.join(" · ") === "在新标签页打开 · 编辑标题与摘要 · 存入书签库 · 多选 · 删除", labels.join(" · "));
   check("用的是和图板项目菜单同一个 .folder-menu 样式", /^\.folder-menu\s*\{/m.test(libraryCss));
 
   console.log("\n── 第 2 步：点「多选」→ 进入多选模式并勾上这一篇 ──");

@@ -1,4 +1,4 @@
-importScripts("url-utils.js", "reading-position-background.js", "webdav-sync-core.js", "webdav-directory.js", "webdav-sync.js", "import-metadata-background.js", "import-urls-background.js", "tab-batch-background.js");
+importScripts("url-utils.js", "reading-position-background.js", "webdav-sync-core.js", "webdav-directory.js", "webdav-sync.js", "import-metadata-background.js", "import-urls-background.js", "tab-batch-background.js", "bookmark-sync.js");
 const normalizeUrl = LaterOnUrl.normalize;
 
 const STORAGE_KEY = "laterOnItems";
@@ -13,7 +13,7 @@ function queueItemWrite(task) {
   itemWriteQueue = pending.catch(() => {});
   return pending;
 }
-// 网页修改与删除共用添加/自动清理的队列，始终从最新存储按 id 修改。
+// 网页修改与删除共用写队列。
 async function mutateItems({ operation, ids, patch = {} }) {
   if (!["delete", "update"].includes(operation) || !Array.isArray(ids) || ids.some(id => typeof id !== "string")) {
     throw new Error("Invalid item mutation");

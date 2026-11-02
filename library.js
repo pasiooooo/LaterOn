@@ -2091,6 +2091,7 @@ function openItemMenu(itemId, x, y) {
     title,
     menuItem(tr("itemOpen"), "open", () => openItemInNewTab(item)),
     menuItem(tr("itemEdit"), "pencil", () => editItem(item)),
+    menuItem(tr("bookmarkTransfer"), "note", () => window.LaterOnBookmarkTransfer?.open([item.id])),
     menuItem(picked ? tr("itemDeselect") : tr("itemSelect"), picked ? "deselect" : "multi", () => startMultiSelect(item.id, card, !picked)),
     menuItem(tr("delete"), "trash", () => deleteItem(item.id), true)
   );
@@ -2492,6 +2493,7 @@ document.querySelector("#bulkUnread")?.addEventListener("click", () => bulkUpdat
 document.querySelector("#bulkOpenWindow")?.addEventListener("click", bulkOpenInNewWindow);
 document.querySelector("#bulkProject")?.addEventListener("click", openBulkProjectPicker);
 document.querySelector("#bulkDelete")?.addEventListener("click", bulkDelete);
+document.querySelector("#bulkBookmark")?.addEventListener("click", () => window.LaterOnBookmarkTransfer?.open([...selectedIds]));
 document.querySelector("#bulkDone")?.addEventListener("click", () => setSelectMode(false));
 
 function formatTime(timestamp) {

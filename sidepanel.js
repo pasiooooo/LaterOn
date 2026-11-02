@@ -872,6 +872,7 @@ function showItemContextMenu(item, x, y) {
   menu.append(
     sidepanelMenuItem(tr("openInNewTab"), "open", () => openItemInNewTab(item)),
     sidepanelMenuItem(tr("itemEdit"), "pencil", () => editItem(item)),
+    sidepanelMenuItem(tr("bookmarkTransfer"), "open", () => window.LaterOnBookmarkTransfer?.open([item.id])),
     sidepanelMenuItem(tr("delete"), "trash", () => deleteItem(item.id), true)
   );
   document.body.append(menu);

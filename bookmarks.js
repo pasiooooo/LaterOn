@@ -1,0 +1,262 @@
+(() => {
+  const words = {
+    'zh-CN': {
+      name: '书签库', reading: '临时阅读', settings: '设置', eyebrow: '长期收藏 · 浏览器双向同步',
+      intro: '与浏览器书签保持一致的长期收藏，独立于临时阅读，不受已读自动清除影响。',
+      syncTitle: '浏览器书签双向同步', syncHint: '默认同步全部书签，也可以只选择一个文件夹及其子文件夹。停用或修改范围不会删除浏览器书签。',
+      enable: '启用并授权', disable: '停用同步', scope: '同步范围', all: '全部书签', applyScope: '应用范围', refresh: '刷新',
+      folders: '文件夹', search: '搜索书签', add: '添加网页或文件夹', title: '名称', url: '网页地址', destination: '目标文件夹',
+      folderHint: '地址留空时新建文件夹；填写地址时添加网页。', addAction: '添加', empty: '这里还没有书签。', noMatches: '没有匹配的书签。',
+      transfer: '从临时阅读存入书签库', transferHint: '转存会保留临时阅读中的原件，日后清除原件也不会删除书签。',
+      copy: '确认转存', transferCount: '待转存 {n} 个网页。启用同步后，选择目标文件夹并确认。', transferComplete: '转存已完成，临时阅读中的原件已保留。',
+      copyResult: '新增 {added} 个，已存在 {existing} 个，失败 {failed} 个。',
+      renameFolder: '重命名文件夹', removeFolder: '删除空文件夹', edit: '编辑', move: '移动', remove: '删除', cancel: '取消', save: '保存',
+      moveTitle: '移动「{name}」', deleteTitle: '删除「{name}」？', deleteHint: '这会同时从浏览器书签中删除，无法撤销。临时阅读中的原件不受影响。',
+      active: '已连接浏览器书签，两个方向的修改实时反映。', disabled: '尚未启用。授权后按所选范围展示书签，不会自动把临时阅读写入浏览器书签。',
+      working: '正在处理…', success: '已保存到浏览器书签。', count: '{n} 个网页', readonly: '浏览器管理 / 只读',
+      privacy: '书签修改直接作用于当前浏览器。此区域不参与临时阅读的清空、JSON 备份或 WebDAV 同步；跨设备书签同步由浏览器负责。',
+      bookmarkPermission: '未获得书签权限，请点击「启用并授权」。', bookmarkDisabled: '请先启用书签同步。',
+      bookmarkOutOfScope: '目标已移动、删除或不在当前同步范围，请刷新后重试。', bookmarkScopeMissing: '所选同步文件夹已不存在。请重新选择同步范围，当前不会改为同步全部。',
+      bookmarkFolderRequired: '请选择仍然存在的文件夹。', bookmarkProtected: '浏览器根目录、同步范围根目录或受管理的书签不能修改。',
+      bookmarkInvalidMove: '不能把文件夹移入自身或子文件夹。', bookmarkNotEmpty: '只能删除空文件夹。批量删除文件夹内容请使用浏览器书签管理器。',
+      bookmarkTitleRequired: '请输入名称。', bookmarkInvalidUrl: '请输入完整的 HTTP 或 HTTPS 网页地址。',
+      bookmarkRefreshFailed: '刷新未完成。原生书签可能已保存，请先刷新确认，不要重复提交。',
+      bookmarkInvalidItems: '没有可转存的网页。', bookmarkItemMissing: '部分临时网页已被删除。', failed: '操作未完成，请刷新后重试。'
+    },
+    en: {
+      name: 'Bookmarks', reading: 'Reading', settings: 'Settings', eyebrow: 'KEEP FOR LATER · BROWSER SYNC',
+      intro: 'A lasting home for browser bookmarks, separate from temporary reading and never removed by read-page cleanup.',
+      syncTitle: 'Two-way browser bookmark sync', syncHint: 'Sync all bookmarks by default, or a folder and its descendants. Disabling sync or changing its scope never deletes browser bookmarks.',
+      enable: 'Enable & grant access', disable: 'Disable sync', scope: 'Sync scope', all: 'All bookmarks', applyScope: 'Apply scope', refresh: 'Refresh',
+      folders: 'FOLDERS', search: 'Search bookmarks', add: 'Add a page or folder', title: 'Name', url: 'Page URL', destination: 'Destination folder',
+      folderHint: 'Leave the URL blank to create a folder; enter a URL to add a page.', addAction: 'Add', empty: 'No bookmarks here yet.', noMatches: 'No matching bookmarks.',
+      transfer: 'Save reading items to Bookmarks', transferHint: 'Original reading items are kept. Removing them later will not delete these bookmarks.',
+      copy: 'Confirm transfer', transferCount: '{n} pages to save. Enable sync, then choose a destination folder.', transferComplete: 'Transfer complete. Original reading items have been kept.',
+      copyResult: 'Added {added}, already present {existing}, failed {failed}.',
+      renameFolder: 'Rename folder', removeFolder: 'Delete empty folder', edit: 'Edit', move: 'Move', remove: 'Delete', cancel: 'Cancel', save: 'Save',
+      moveTitle: 'Move “{name}”', deleteTitle: 'Delete “{name}”?', deleteHint: 'This also deletes the browser bookmark and cannot be undone. Original reading items are not affected.',
+      active: 'Connected to browser bookmarks. Changes in either direction are reflected live.', disabled: 'Not enabled. Bookmarks are shown within the selected scope; temporary reading is never automatically added to browser bookmarks.',
+      working: 'Working…', success: 'Saved to browser bookmarks.', count: '{n} pages', readonly: 'Browser-managed / read-only',
+      privacy: 'Changes affect this browser directly. Bookmarks are excluded from reading-library wipe, JSON backups and WebDAV; cross-device bookmark sync is handled by the browser.',
+      bookmarkPermission: 'Bookmark access is missing. Choose “Enable & grant access”.', bookmarkDisabled: 'Enable bookmark sync first.',
+      bookmarkOutOfScope: 'The target was moved, deleted, or is outside the current scope. Refresh and try again.', bookmarkScopeMissing: 'The selected folder no longer exists. Choose a new scope; sync will not fall back to all bookmarks.',
+      bookmarkFolderRequired: 'Choose an existing folder.', bookmarkProtected: 'Browser roots, scope roots and managed bookmarks cannot be modified.',
+      bookmarkInvalidMove: 'A folder cannot move into itself or a descendant.', bookmarkNotEmpty: 'Only empty folders can be deleted here. Use the browser bookmark manager for recursive deletion.',
+      bookmarkTitleRequired: 'Enter a name.', bookmarkInvalidUrl: 'Enter a complete HTTP or HTTPS URL.',
+      bookmarkRefreshFailed: 'Refresh did not finish. Native bookmarks may already be saved; refresh to confirm before resubmitting.',
+      bookmarkInvalidItems: 'No pages to transfer.', bookmarkItemMissing: 'Some original reading items have been deleted.', failed: 'Could not complete this action. Refresh and try again.'
+    }
+  };
+  const $ = selector => document.querySelector(selector);
+  let language = 'zh-CN', state = { enabled: false, nodes: [], folders: [] }, busy = false, selected = '', scopeDirty = false, feedback = '';
+  let moving = null, pendingIds = [];
+  try {
+    const values = JSON.parse(new URL(location.href).searchParams.get('items') || '[]');
+    if (Array.isArray(values)) pendingIds = [...new Set(values.filter(value => typeof value === 'string'))];
+  } catch {}
+  const t = (key, params = {}) => (words[language][key] || words[language].failed).replace(/\{(\w+)\}/g, (_, name) => String(params[name] ?? ''));
+  const withinScope = node => {
+    if (!state.scopeId) return true;
+    const seen = new Set();
+    for (let current = node; current && !seen.has(current.id); current = state.folders.find(entry => entry.id === current.parentId)) {
+      if (current.id === state.scopeId) return true;
+      seen.add(current.id);
+    }
+    return false;
+  };
+  const destinations = () => state.folders.filter(node => node.writable && withinScope(node));
+  function fillFolders(select, folders, preferred, includeAll = false) {
+    const oldValue = preferred ?? select.value;
+    select.replaceChildren();
+    const option = (value, text) => { const el = document.createElement('option'); el.value = value; el.textContent = text; select.append(el); };
+    if (includeAll) option('', t('all'));
+    for (const node of folders) option(node.id, node.path || node.title);
+    if ([...select.options].some(entry => entry.value === oldValue)) select.value = oldValue;
+    else if (oldValue) {
+      // A native move/removal must not silently redirect a pending save elsewhere.
+      option(oldValue, t('bookmarkFolderRequired'));
+      select.lastElementChild.disabled = true;
+      select.value = oldValue;
+    }
+    else if (includeAll) select.value = '';
+    else select.value = folders.find(node => node.id === state.scopeId)?.id || folders.find(node => node.folderType === 'other')?.id || folders[0]?.id || '';
+  }
+  function controls() {
+    const available = state.enabled && !state.error;
+    $('#bookmarkEnable').hidden = state.enabled && state.error !== 'bookmarkPermission';
+    $('#bookmarkEnable').disabled = busy;
+    $('#bookmarkDisable').hidden = !state.enabled;
+    $('#bookmarkDisable').disabled = busy;
+    $('#bookmarkScope').disabled = busy || !state.enabled || state.error === 'bookmarkPermission';
+    $('#bookmarkApplyScope').disabled = $('#bookmarkScope').disabled;
+    $('#bookmarkRefresh').disabled = busy;
+    $('#bookmarkAddPanel').hidden = !available;
+    $('#bookmarkAddForm').querySelectorAll('button, input, select').forEach(el => { el.disabled = busy || !available || !destinations().length; });
+    const validDestination = selector => destinations().some(node => node.id === $(selector).value);
+    $('#bookmarkAddForm button').disabled ||= !validDestination('#bookmarkParent');
+    $('#bookmarkCopy').disabled = busy || !available || !pendingIds.length || !validDestination('#bookmarkTransferFolder');
+    $('#bookmarkTransferFolder').disabled = busy || !available;
+    $('#bookmarkList').querySelectorAll('button').forEach(el => { el.disabled = busy || !available || el.dataset.readonly === 'true'; });
+    $('#bookmarkMoveForm').querySelectorAll('button, select').forEach(el => { el.disabled = busy || !available; });
+    $('#bookmarkMoveForm button[type="submit"]').disabled ||= !validDestination('#bookmarkMoveFolder');
+    $('#bookmarkFolderActions').querySelectorAll('button').forEach(el => { el.disabled = busy || !available; });
+    $('#bookmarkStatus').textContent = busy ? t('working') : feedback || (state.error ? t(state.error) : t(state.enabled ? 'active' : 'disabled'));
+    $('#bookmarkStatus').dataset.error = String(!!state.error);
+  }
+  function render() {
+    const folders = state.folders || [];
+    if (selected && !state.nodes.some(node => node.id === selected && !node.url)) selected = '';
+    fillFolders($('#bookmarkScope'), folders, scopeDirty ? $('#bookmarkScope').value : state.scopeId || '', true);
+    if (state.scopeId && !folders.some(node => node.id === state.scopeId)) {
+      const missing = [...$('#bookmarkScope').options].find(option => option.value === state.scopeId);
+      if (missing) missing.textContent = t('bookmarkScopeMissing');
+      $('#bookmarkScope').value = state.scopeId;
+    }
+    for (const select of document.querySelectorAll('.folder-destination')) fillFolders(select, destinations());
+    const nav = $('#bookmarkFolders'); nav.replaceChildren();
+    for (const node of [{ id: '', path: t('all') }, ...state.nodes.filter(node => !node.url)]) {
+      const button = document.createElement('button'); button.type = 'button'; button.textContent = node.path || node.title;
+      button.title = button.textContent; button.setAttribute('aria-current', String(selected === node.id));
+      button.addEventListener('click', () => { selected = node.id; if (destinations().some(folder => folder.id === selected)) $('#bookmarkParent').value = selected; render(); });
+      nav.append(button);
+    }
+    const current = state.nodes.find(node => node.id === selected);
+    $('#bookmarkViewTitle').textContent = current?.title || t('all');
+    $('#bookmarkFolderActions').hidden = !current || current.protected || current.id === state.scopeId;
+    const query = $('#bookmarkSearch').value.trim().toLocaleLowerCase();
+    const visible = state.nodes.filter(node => node.url && (!selected || node.parentId === selected) &&
+      `${node.title} ${node.url} ${node.path}`.toLocaleLowerCase().includes(query));
+    $('#bookmarkCount').textContent = t('count', { n: visible.length });
+    $('#bookmarkEmpty').textContent = t(query ? 'noMatches' : 'empty');
+    $('#bookmarkEmpty').hidden = visible.length > 0 || !state.enabled || !!state.error;
+    const list = $('#bookmarkList'); list.replaceChildren();
+    for (const node of visible) {
+      const row = document.createElement('article'); row.className = 'bookmark-row'; row.dataset.id = node.id;
+      const safe = /^https?:\/\//i.test(node.url);
+      const link = document.createElement(safe ? 'a' : 'div'); link.className = 'bookmark-link';
+      if (safe) { link.href = node.url; link.target = '_blank'; link.rel = 'noreferrer noopener'; }
+      const heading = document.createElement('strong'); heading.textContent = node.title || node.url;
+      const url = document.createElement('small'); url.textContent = node.url; url.title = node.url;
+      const folder = document.createElement('small'); folder.textContent = folders.find(entry => entry.id === node.parentId)?.path || '';
+      link.append(heading, url, folder);
+      const actions = document.createElement('div'); actions.className = 'bookmark-actions';
+      for (const [key, fn] of [['edit', () => edit(node)], ['move', () => openMove(node)], ['remove', () => remove(node)]]) {
+        const button = document.createElement('button'); button.type = 'button'; button.textContent = t(key); button.dataset.action = key;
+        button.dataset.readonly = String(!!node.protected); button.setAttribute('aria-label', `${t(key)}: ${node.title || node.url}`);
+        button.addEventListener('click', fn); actions.append(button);
+      }
+      if (node.protected) actions.title = t('readonly');
+      row.append(link, actions); list.append(row);
+    }
+    $('#bookmarkTransfer').hidden = !new URL(location.href).searchParams.has('items');
+    $('#bookmarkTransferSummary').textContent = pendingIds.length ? t('transferCount', { n: pendingIds.length }) : t('transferComplete');
+    for (const selector of ['label[for="bookmarkTransferFolder"]', '#bookmarkTransferFolder', '#bookmarkCopy']) $(selector).hidden = !pendingIds.length;
+    controls();
+  }
+  async function send(message) {
+    const result = await chrome.runtime.sendMessage(message);
+    if (!result?.ok) throw new Error(result?.error || 'failed');
+    return result.state;
+  }
+  async function action(task, success = '') {
+    if (busy) return null;
+    busy = true; feedback = ''; controls();
+    try {
+      const next = await task();
+      if (next) state = next;
+      feedback = state.error ? t(state.error) : success;
+      render();
+      return next;
+    } catch (error) {
+      feedback = t(error.message); controls();
+      return null;
+    } finally { busy = false; controls(); }
+  }
+  async function edit(node) {
+    const fields = [{ name: 'title', label: t('title'), value: node.title, maxLength: 500 }];
+    if (node.url) fields.push({ name: 'url', label: t('url'), value: node.url, maxLength: 10000 });
+    const result = await window.LaterOnDialog.prompt({ title: t(node.url ? 'edit' : 'renameFolder'), fields, confirmText: t('save') });
+    if (result?.ok) await action(() => send({ type: 'BOOKMARKS_UPDATE', id: node.id, ...result.values }), t('success'));
+  }
+  async function remove(node) {
+    const confirmed = await window.LaterOnDialog.confirm({ tone: 'danger', title: t('deleteTitle', { name: node.title || node.url }), message: t('deleteHint'), confirmText: t('remove') });
+    if (confirmed) await action(() => send({ type: 'BOOKMARKS_REMOVE', id: node.id }), t('success'));
+  }
+  function openMove(node) {
+    moving = node;
+    $('#bookmarkMoveTitle').textContent = t('moveTitle', { name: node.title });
+    fillFolders($('#bookmarkMoveFolder'), destinations(), node.parentId);
+    $('#bookmarkMoveForm').hidden = false; controls(); $('#bookmarkMoveFolder').focus();
+  }
+  $('#bookmarkEnable').addEventListener('click', () => {
+    if (busy) return;
+    // Request directly in the user gesture, before awaiting storage or messages.
+    let requested;
+    try { requested = chrome.permissions.request({ permissions: ['bookmarks'] }); }
+    catch { feedback = t('bookmarkPermission'); controls(); return; }
+    action(async () => {
+      if (!await requested) throw new Error('bookmarkPermission');
+      return send({ type: 'BOOKMARKS_CONFIG', enabled: true, scopeId: state.scopeId || null });
+    });
+  });
+  $('#bookmarkDisable').addEventListener('click', () => action(() => send({ type: 'BOOKMARKS_CONFIG', enabled: false })));
+  $('#bookmarkScope').addEventListener('change', () => { scopeDirty = true; });
+  $('#bookmarkApplyScope').addEventListener('click', () => action(async () => {
+    const next = await send({ type: 'BOOKMARKS_CONFIG', enabled: true, scopeId: $('#bookmarkScope').value || null });
+    scopeDirty = false; return next;
+  }));
+  $('#bookmarkRefresh').addEventListener('click', () => action(() => send({ type: 'BOOKMARKS_GET' })));
+  $('#bookmarkSearch').addEventListener('input', render);
+  document.querySelectorAll('.folder-destination').forEach(select => select.addEventListener('change', controls));
+  $('#bookmarkAddForm').addEventListener('submit', event => {
+    event.preventDefault();
+    if (!$('#bookmarkAddForm').reportValidity()) return;
+    const message = { type: 'BOOKMARKS_CREATE', parentId: $('#bookmarkParent').value, title: $('#bookmarkTitle').value };
+    if ($('#bookmarkUrl').value.trim()) message.url = $('#bookmarkUrl').value.trim();
+    action(async () => {
+      const next = await send(message);
+      $('#bookmarkTitle').value = ''; $('#bookmarkUrl').value = '';
+      return next;
+    }, t('success'));
+  });
+  $('#bookmarkCopy').addEventListener('click', () => action(async () => {
+    const next = await send({ type: 'BOOKMARKS_COPY_ITEMS', ids: pendingIds, parentId: $('#bookmarkTransferFolder').value });
+    if (next.results) {
+      const done = new Set(next.results.successfulIds);
+      pendingIds = pendingIds.filter(id => !done.has(id));
+      $('#bookmarkTransferResult').textContent = [t('copyResult', { ...next.results, failed: next.results.failed.length }),
+        ...next.results.failed.map(item => `${item.title || item.id}: ${t(item.error)}`)].join('\n');
+    }
+    return next;
+  }));
+  $('#bookmarkRenameFolder').addEventListener('click', () => { const node = state.nodes.find(node => node.id === selected); if (node) edit(node); });
+  $('#bookmarkRemoveFolder').addEventListener('click', () => { const node = state.nodes.find(node => node.id === selected); if (node) remove(node); });
+  $('#bookmarkMoveCancel').addEventListener('click', () => { moving = null; $('#bookmarkMoveForm').hidden = true; });
+  $('#bookmarkMoveForm').addEventListener('submit', event => {
+    event.preventDefault();
+    if (!moving) return;
+    const id = moving.id, parentId = $('#bookmarkMoveFolder').value;
+    action(async () => {
+      const next = await send({ type: 'BOOKMARKS_MOVE', id, parentId });
+      moving = null; $('#bookmarkMoveForm').hidden = true;
+      return next;
+    }, t('success'));
+  });
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.laterOnBookmarkState?.newValue) {
+      state = changes.laterOnBookmarkState.newValue; feedback = ''; render();
+    }
+  });
+  (async () => {
+    language = await window.LaterOnI18n.getLanguage();
+    if (language !== 'en') language = 'zh-CN';
+    document.documentElement.lang = language;
+    document.title = `LaterOn · ${t('name')}`;
+    document.querySelector('.bookmark-header nav').setAttribute('aria-label', `${t('reading')} / ${t('name')}`);
+    document.querySelector('.bookmark-sidebar').setAttribute('aria-label', t('folders'));
+    document.querySelectorAll('[data-bm]').forEach(el => { el.textContent = t(el.dataset.bm); });
+    $('#bookmarkSearch').setAttribute('aria-label', t('search'));
+    render();
+    await action(() => send({ type: 'BOOKMARKS_GET' }));
+  })().catch(() => { feedback = t('failed'); controls(); });
+})();
