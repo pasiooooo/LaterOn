@@ -615,6 +615,7 @@ function extractPageMetadataForShortcut() {
   const clipTitle = (text, max) => (max && text.length > max ? `${text.slice(0, max).trim()}…` : text);
   // 每个候选都过一遍「剥站点后缀」——og:title 之类同样常带尾巴。
   const titleCandidates = [
+    { text: globalThis.LaterOnUrl?.searchTitle?.(location.href) || "", from: "search-query" },
     { text: douyin?.title || "", from: "douyin", max: 140 },
     { text: douyin?.larkTitle || "", from: "douyin-lark", max: 140 },
     { text: headline, from: "dom-headline" },
@@ -623,7 +624,7 @@ function extractPageMetadataForShortcut() {
     { text: meta('meta[name="title"]'), from: "meta-title" },
     { text: jsonLd.title, from: "jsonld" },
     { text: document.title, from: "page-title" }
-  ].map(({ text, from, max }) => ({ text: clipTitle(stripSiteSuffix(text), max), from }));
+  ].map(({ text, from, max }) => ({ text: clipTitle(from === "search-query" ? text : stripSiteSuffix(text), max), from }));
   const pickedTitle = titleCandidates.find(
     (candidate) => candidate.text && candidate.text.length <= 300 && !looksLikeSiteName(candidate.text)
   );

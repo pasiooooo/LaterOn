@@ -23,6 +23,15 @@ const allow = async () => {};
   assert(cancelled[0].error);
   assert.equal(calls, 0, 'Cancellation while checking native access prevents the request from starting');
 
+  const redirected = fixture();
+  redirected.ctx.fetch = async (_, options) => {
+    assert.equal(options.redirect, 'follow', 'Use browser-supported reading/CDN redirect behavior');
+    const response = new Response('<meta name="description" content="Must not consume private response">', { headers: { 'content-type': 'text/html' } });
+    Object.defineProperty(response, 'url', { value: 'http://127.0.0.1/private' });
+    return response;
+  };
+  assert((await redirected.ctx.LaterOnBookmarkPreviews.load([node], allow))[0].error, 'Reject a recognizable private final response before reading its body');
+
   const html = fixture();
   let reads = 0, cancellations = 0;
   const prefix = Buffer.from('<meta name="description" content="Inside the byte limit">');

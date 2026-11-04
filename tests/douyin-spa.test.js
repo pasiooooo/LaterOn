@@ -138,7 +138,7 @@ function makeSandbox(page) {
                 imageFrom: "douyin",
                 favicon: "https://lf1-cdn-tos.bytegoofy.com/goofy/ies/douyin_web/public/favicon.ico",
                 source: "抖音",
-                url: "https://www.douyin.com/video/" + shownId,
+                url: page.documentUrl || "https://www.douyin.com/video/" + shownId,
                 titleFrom: "douyin",
                 // 真实提取脚本会回报「面板上那条视频的 id」——调用方据此复核。
                 videoId: shownId
@@ -390,7 +390,36 @@ const callExtract = (sandbox, tab) => sandbox.run(`extractTabMetadata(${JSON.str
     check("没有耗到上限（在 1.5 秒预算内完成）", cost < 1500, `${cost}ms`);
   }
 
-  console.log("\n=== 十一、代码接线（静态检查）===");
+  console.log("\n=== 十一、书签自定义服务端补救仍保留文档与视频校验 ===");
+  {
+    const sandbox = makeSandbox(makePage());
+    sandbox.run('var customRequests = 0;');
+    const tab = { id: 8, url: 'https://example.com/current', title: 'Current document', status: 'complete' };
+    const meta = await sandbox.run(`extractTabMetadata(${JSON.stringify(tab)}, { serverMetadata: async () => {
+      customRequests++; return { title: 'Wrong rescue', image: 'https://images.test/wrong.jpg' };
+    } })`);
+    check('自定义 serverMetadata 不会把另一个实际文档的标题带入当前网页', meta.title === tab.title, meta.title);
+    check('文档不匹配时不采用旧封面', meta.image === '', meta.image);
+    check('文档不匹配时不请求服务端补救', sandbox.run('customRequests') === 0);
+  }
+  {
+    const page = makePage({ urlId: NEW_ID, panelId: OLD_ID, documentUrl: `https://www.douyin.com/video/${NEW_ID}` });
+    const sandbox = makeSandbox(page);
+    sandbox.setLag(9999);
+    // Advance only this VM's clock so the real extractor reaches its shared
+    // deadline without adding another 1.5-second wait to the regression suite.
+    sandbox.run('var strictClock = 0, customRequests = 0; Date = class extends Date { static now() { strictClock += 2000; return strictClock; } };');
+    const tab = task({ urlId: NEW_ID });
+    const meta = await sandbox.run(`extractTabMetadata(${JSON.stringify(tab)}, { serverMetadata: async () => {
+      customRequests++; return { title: 'Wrong rescue', image: 'https://images.test/wrong.jpg' };
+    } })`);
+    check('实际文档 URL 正确但面板视频 id 过期时，自定义补救路径退回标签标题', meta.title === tab.title, meta.title);
+    check('过期视频封面不会进入书签预览', meta.image === '', meta.image);
+    check('过期视频不会通过服务端补救改写成可提交结果', sandbox.run('customRequests') === 0);
+    check('仍然执行了实际探测和提取函数', sandbox.stats.probes === 1 && sandbox.stats.extractions === 1);
+  }
+
+  console.log("\n=== 十二、代码接线（静态检查）===");
   {
     check(
       "extractTabMetadata 里确实调用了 settleDouyinDom（并共用同一份时间预算）",

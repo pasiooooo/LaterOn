@@ -1,14 +1,15 @@
-// Optional, device-local presentation data; never written to native bookmarks.
+// Device-local presentation data; never written to native bookmarks.
 (() => {
   const KEY = 'laterOnBookmarkPreviews', MAX_ENTRIES = 300, MAX_CACHE = 8 * 1024 * 1024;
   const MAX_HTML = 256 * 1024, MAX_IMAGE = 4 * 1024 * 1024, MAX_THUMBNAIL = 512 * 1024;
   let cacheQueue = Promise.resolve(), active = 0, epoch = 0;
   const waiting = [], pending = new Map(), controllers = new Set();
+  let visible = new Map();
   const serial = task => { const work = cacheQueue.then(task); cacheQueue = work.catch(() => {}); return work; };
   function publicUrl(value) {
     try {
       const url = new URL(value), host = url.hostname.toLowerCase().replace(/^\[|\]$/g, '').replace(/\.$/, '');
-      if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || !host || !host.includes('.') && !host.includes(':')) return '';
+      if (!['http:', 'https:'].includes(url.protocol) || url.username || /^https?:\/\/[^/]*@/i.test(url.href) || !host || !host.includes('.') && !host.includes(':')) return '';
       if (/(?:^|\.)(?:localhost|local|localdomain|internal|intranet|corp|lan|home|arpa|invalid|onion)$/.test(host)) return '';
       if (host.includes(':')) {
         // Only global unicast literals; reject transition, documentation and special-use ranges.
@@ -24,12 +25,14 @@
   const canonical = value => { try { return new URL(value).href; } catch { return ''; } };
   function budget(value, nodes) {
     const ids = new Map(nodes.filter(node => node.url).map(node => [node.id, node.url]));
-    const entries = Object.entries(value).filter(([id, item]) => ids.get(id) === item?.url).sort((a,b) => (b[1].updatedAt || 0) - (a[1].updatedAt || 0));
-    const result = {}; let bytes = 0;
+    const entries = Object.entries(value).filter(([id, item]) => ids.get(id) === item?.url);
+    const quality = new Map(entries.map(([id, item]) => [id, localImage(item.image) ? 2 + Number(visible.get(id) === item.url) : item.description ? 1 : 0]));
+    entries.sort((a,b) => quality.get(b[0]) - quality.get(a[0]) || (b[1].updatedAt || 0) - (a[1].updatedAt || 0));
+    const result = {}; let bytes = 0, count = 0;
     for (const [id, item] of entries) {
       const size = JSON.stringify(item).length * 2;
-      if (Object.keys(result).length >= MAX_ENTRIES || bytes + size > MAX_CACHE) continue;
-      result[id] = item; bytes += size;
+      if (count >= MAX_ENTRIES || bytes + size > MAX_CACHE) continue;
+      result[id] = item; bytes += size; count++;
     }
     return result;
   }
@@ -38,6 +41,15 @@
       const stored = await chrome.storage.local.get([KEY, 'laterOnItems', 'laterOnCovers']);
       const previous = stored[KEY] || {}, next = { ...previous };
       const reading = new Map((stored.laterOnItems || []).map(item => [canonical(item.url), item]));
+      // The current-page card already acquired these facts through the reading
+      // extractor. Reuse its short-lived session cache as well as saved items.
+      let current = {};
+      try { current = (await chrome.storage.session?.get('laterOnCurrentPageMetadata'))?.laterOnCurrentPageMetadata || {}; } catch {}
+      for (const record of Object.values(current)) {
+        if (record?.expiresAt > Date.now() && record.metadata?.url && !reading.has(canonical(record.metadata.url))) {
+          reading.set(canonical(record.metadata.url), record.metadata);
+        }
+      }
       for (const node of nodes) {
         if (!node.url) continue;
         const old = next[node.id]?.url === node.url ? next[node.id] : {};
@@ -64,9 +76,14 @@
         if (!nodes.some(node => node.id === record.id && node.url === record.url)) continue;
         const old = next[record.id]?.url === record.url ? next[record.id] : {};
         next[record.id] = { ...old, url: record.url, image: record.image || old.image || '', description: record.description || old.description || '',
-          failed: !!record.error || !record.image && !record.description, attemptedAt: Date.now(), updatedAt: Date.now() };
+          sourceImage: record.sourceImage || old.sourceImage || '', failed: !!record.error || !record.image && !record.description, attemptedAt: Date.now(), updatedAt: Date.now() };
       }
       if (generation === epoch) await chrome.storage.local.set({ [KEY]: budget(next, nodes) });
+    });
+  }
+  function prioritize(nodes) {
+    return serial(async () => {
+      visible = new Map(nodes.slice(0, 144).map(node => [node.id, node.url]));
     });
   }
   function limit(task) {
@@ -100,7 +117,10 @@
     const controller = new AbortController(); controllers.add(controller);
     const timer = setTimeout(() => controller.abort(), 8000);
     try {
-      const response = await fetch(url, { credentials: 'omit', redirect: 'error', cache: 'no-store', referrerPolicy: 'no-referrer', signal: controller.signal });
+      // Match normal reading-cover retrieval: CDNs commonly redirect their
+      // image URLs. Browser fetch cannot expose Location for manual redirects.
+      const response = await fetch(url, { credentials: 'omit', redirect: 'follow', cache: 'no-store', referrerPolicy: 'no-referrer', signal: controller.signal });
+      if (response.url && !publicUrl(response.url)) throw new Error('bookmarkPreviewUnavailable');
       const type = (response.headers.get('content-type') || '').split(';')[0].toLowerCase();
       const supported = image ? /^image\/(?:png|jpeg|webp|gif|avif)$/.test(type) : type === 'text/html';
       if (!response.ok || !supported) throw new Error('bookmarkPreviewUnavailable');
@@ -120,14 +140,14 @@
       if (generation !== epoch || controller.signal.aborted) throw new Error('bookmarkPreviewUnavailable');
       const bytes = new Uint8Array(size); let offset = 0;
       for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
-      if (!image) return new TextDecoder().decode(bytes);
+      if (!image) return { html: new TextDecoder().decode(bytes), url: response.url || url };
       const converted = await thumbnail(bytes, type);
       if (generation !== epoch || controller.signal.aborted) throw new Error('bookmarkPreviewUnavailable');
       return converted;
     } finally { clearTimeout(timer); controller.abort(); controllers.delete(controller); }
   }
   const ready = tab => tab && !tab.discarded && !tab.frozen && !tab.pendingUrl && tab.status === 'complete';
-  async function rendered(node, tabs, generation, guard) {
+  async function rendered(node, tabs, generation, guard, serverMetadata) {
     if (typeof extractTabMetadata !== 'function') return {};
     try {
       const tab = (await tabs).find(tab => ready(tab) && canonical(tab.url) === canonical(node.url));
@@ -135,8 +155,9 @@
       await guard(node);
       const before = await chrome.tabs.get(tab.id);
       if (generation !== epoch || !ready(before) || canonical(before.url) !== canonical(node.url)) return {};
-      // The same read-only extractor as "Add current page", without its unbounded server rescue.
-      const metadata = await extractTabMetadata(before, { serverRescue: false });
+      // Use the complete reading extractor, including its metadata rescue and
+      // quality decisions, with the same bounded fetch used for queued pages.
+      const metadata = await extractTabMetadata(before, { serverMetadata });
       const after = await chrome.tabs.get(tab.id);
       if (generation !== epoch || !ready(after) || canonical(after.url) !== canonical(node.url) || canonical(metadata?.url) !== canonical(node.url)) return {};
       return metadata || {};
@@ -144,44 +165,61 @@
   }
   function load(nodes, guard) {
     const generation = epoch;
+    const batch = nodes.slice(0, 12);
+    if (!batch.length) return Promise.resolve([]);
+    // Reading cover sources must survive preview-cache eviction. Read them
+    // once per bounded batch rather than once per request or native guard.
+    const sources = chrome.storage.local.get([KEY, 'laterOnItems', 'laterOnCovers']).then(stored => ({ ...stored,
+      reading: new Map((stored.laterOnItems || []).map(item => [canonical(item.url), item])) }));
     const tabs = typeof extractTabMetadata === 'function' && chrome.tabs?.query
       ? chrome.tabs.query({ status: 'complete', discarded: false }).catch(() => []) : Promise.resolve([]);
-    return Promise.all(nodes.slice(0, 12).map(node => {
+    return Promise.all(batch.map(node => {
       const key = `${generation}:${node.id}:${node.url}`;
       if (pending.has(key)) return pending.get(key);
       const job = limit(async () => {
+        let sourceImage = '';
         try {
           if (!publicUrl(node.url) || generation !== epoch) throw new Error('bookmarkPreviewUnavailable');
           await guard(node);
           if (generation !== epoch) throw new Error('bookmarkPreviewUnavailable');
-          const metadata = await rendered(node, tabs, generation, guard);
-          let description = typeof metadata.description === 'string' && metadata.description !== '暂无摘要' ? metadata.description.slice(0, 600) : '';
-          let image = localImage(metadata.image);
-          const stored = (await chrome.storage.local.get(KEY))[KEY]?.[node.id];
+          let server;
+          const readServer = () => server ||= request(node.url, false, generation, () => guard(node))
+            .then(response => LaterOnPageMetadata.parse(response.html, response.url));
+          const stored = await sources, known = stored.reading.get(canonical(node.url));
+          const cached = stored[KEY]?.[node.id]?.url === node.url ? stored[KEY][node.id] : {};
+          sourceImage = publicUrl(known?.image) || publicUrl(cached.sourceImage);
+          const descriptionOf = value => typeof value === 'string' && value !== '暂无摘要' ? value.slice(0, 600) : '';
+          let description = descriptionOf(known?.description);
+          let image = localImage(known?.image?.startsWith('local://') ? stored.laterOnCovers?.[known.image.slice(8)] : known?.image);
           const tried = new Set();
           const getImage = async candidate => {
             const url = publicUrl(candidate);
             if (image || !url || url === node.url || tried.has(url) || LaterOnPageMetadata.isGenericImage(url)) return;
             tried.add(url);
-            try { image = await request(url, true, generation, () => guard(node)); } catch {}
+            sourceImage ||= url;
+            try { image = await request(url, true, generation, () => guard(node)); if (image) sourceImage = url; } catch {}
           };
-          await getImage(metadata.image);
-          if (stored?.url === node.url) await getImage(stored.sourceImage);
+          await getImage(sourceImage);
+          if (!image || !description) {
+            const metadata = await rendered(node, tabs, generation, guard, readServer);
+            description ||= descriptionOf(metadata.description);
+            image ||= localImage(metadata.image);
+            await getImage(metadata.image);
+          }
           if (!image || !description) {
             try {
-              const html = await request(node.url, false, generation, () => guard(node));
-              const fallback = LaterOnPageMetadata.parse(html, node.url);
+              const fallback = await readServer();
               description ||= fallback.description.slice(0, 600);
               await getImage(fallback.image);
             } catch {}
           }
           if (!image && !description) throw new Error('bookmarkPreviewUnavailable');
-          return { id: node.id, url: node.url, image, description };
-        } catch { return { id: node.id, url: node.url, error: 'bookmarkPreviewUnavailable' }; }
+          return { id: node.id, url: node.url, image, description, sourceImage };
+        } catch { return { id: node.id, url: node.url, sourceImage, error: 'bookmarkPreviewUnavailable' }; }
       }).finally(() => pending.delete(key));
       pending.set(key, job); return job;
     }));
   }
-  function cancel() { epoch++; for (const controller of controllers) controller.abort(); }
-  globalThis.LaterOnBookmarkPreviews = { read, commit, load, cancel, publicUrl, localImage, get epoch() { return epoch; } };
+  function cancel() { epoch++; visible.clear(); for (const controller of controllers) controller.abort(); }
+  globalThis.LaterOnBookmarkPreviews = { read, commit, load, cancel, prioritize, publicUrl, localImage, get epoch() { return epoch; } };
 })();

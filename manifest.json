@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "version": "1.74.0",
+  "version": "1.74.1",
   "default_locale": "zh_CN",
   "minimum_chrome_version": "121",
   "optional_permissions": ["bookmarks"],
@@ -24,6 +24,11 @@
     "matches": ["http://*/*", "https://*/*"],
     "js": ["picker-keyboard-guard.js"],
     "run_at": "document_start"
+  }, {
+    "matches": ["http://*/*", "https://*/*"],
+    "js": ["keyboard-shortcuts.js"],
+    "run_at": "document_start",
+    "all_frames": true
   }],
   "action": {
     "default_title": "__MSG_actionTitle__",
@@ -63,10 +68,13 @@
       "description": "__MSG_commandSaveSelectedTabs__"
     },
     "save-window-tabs": {
-      "suggested_key": {
-        "default": "Alt+Shift+2"
-      },
       "description": "__MSG_commandSaveAllTabs__"
+    },
+    "quick-switcher": {
+      "suggested_key": {
+        "default": "Alt+O"
+      },
+      "description": "__MSG_commandQuickSwitcher__"
     }
   },
   "options_page": "settings.html",

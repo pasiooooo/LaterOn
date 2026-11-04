@@ -2,7 +2,10 @@
 (() => {
   const CONFIG = 'laterOnBookmarkConfig', STATE = 'laterOnBookmarkState';
   const ALARM = 'laterOnBookmarkRefresh';
+  const PREVIEWS = 'laterOnBookmarkPreviewQueue', PREVIEW_ALARM = 'laterOnBookmarkPreviews';
+  const PREVIEW_RETRY = 24 * 60 * 60 * 1000, PREVIEW_BATCH = 12;
   let queue = Promise.resolve(), eventPending = false, importing = false;
+  let previewRunning = null, previewAgain = false;
   const installedEvents = new Map();
   const enqueue = task => {
     const pending = queue.then(task);
@@ -39,9 +42,9 @@
     }
     return false;
   }
-  async function snapshot(config) {
+  async function snapshot(config, includePreviews = true) {
     const all = flatten(await chrome.bookmarks.getTree());
-    const previews = globalThis.LaterOnBookmarkPreviews ? await LaterOnBookmarkPreviews.read(all) : {};
+    const previews = includePreviews && globalThis.LaterOnBookmarkPreviews ? await LaterOnBookmarkPreviews.read(all) : {};
     const folders = all.filter(node => !node.url && node.parentId);
     const missing = config.scopeId && !folders.some(node => node.id === config.scopeId);
     return { all, state: { enabled: true, scopeId: config.scopeId || null, folders,
@@ -55,24 +58,125 @@
   }
   async function refreshNow() {
     const config = await readConfig();
-    if (!config.enabled) return publish({ enabled: false, scopeId: config.scopeId || null, nodes: [], folders: [] });
+    if (!config.enabled) {
+      await chrome.storage.local.set({ [PREVIEWS]: { pending: [], attempted: {} } });
+      chrome.alarms?.clear(PREVIEW_ALARM);
+      return publish({ enabled: false, scopeId: config.scopeId || null, nodes: [], folders: [] });
+    }
     try {
       if (!await permission()) {
         return publish({ enabled: true, scopeId: config.scopeId || null, nodes: [], folders: [], error: 'bookmarkPermission' });
       }
       registerEvents();
-      return await publish((await snapshot(config)).state);
+      const previous = (await chrome.storage.local.get(PREVIEWS))[PREVIEWS] || {};
+      await globalThis.LaterOnBookmarkPreviews?.prioritize(previous.visible || []);
+      const result = await snapshot(config);
+      await reconcilePreviews(result.state, result.all, previous);
+      return await publish(result.state);
     } catch (error) {
       try { await publish({ ...await readState(), error: 'bookmarkRefreshFailed' }); } catch {}
       throw error;
     }
   }
   const refresh = () => enqueue(refreshNow);
-  async function context() {
+  async function reconcilePreviews(state, all, previous) {
+    const native = new Map(all.filter(node => node.url).map(node => [node.id, node.url]));
+    const attempted = Object.fromEntries(Object.entries(previous.attempted || {}).filter(([id, record]) => native.get(id) === record?.url));
+    const candidates = new Map((state.error ? [] : state.nodes).filter(node => node.url &&
+      globalThis.LaterOnBookmarkPreviews?.publicUrl(node.url) && (!node.preview?.image || !node.preview?.description) &&
+      !(attempted[node.id]?.url === node.url && (node.preview?.sourceImage === undefined || attempted[node.id].sourceImage === node.preview.sourceImage) && Date.now() - attempted[node.id].at < PREVIEW_RETRY))
+      .map(node => [node.id, { id: node.id, url: node.url }]));
+    const pending = [];
+    for (const job of previous.pending || []) {
+      if (candidates.get(job.id)?.url !== job.url) continue;
+      pending.push(candidates.get(job.id)); candidates.delete(job.id);
+    }
+    pending.push(...candidates.values());
+    const scoped = new Map(state.nodes.filter(node => node.url).map(node => [node.id, node.url]));
+    const visible = (previous.visible || []).filter(node => scoped.get(node.id) === node.url).slice(0, 144);
+    await globalThis.LaterOnBookmarkPreviews?.prioritize(visible);
+    await chrome.storage.local.set({ [PREVIEWS]: { scopeId: state.scopeId || null, pending, attempted, visible, visibleKey: previous.visibleKey || '' } });
+    if (pending.length) chrome.alarms?.create(PREVIEW_ALARM, { delayInMinutes: 0.5, periodInMinutes: 0.5 });
+    else chrome.alarms?.clear(PREVIEW_ALARM);
+  }
+  // The durable queue contains cheap identities only. Each wake processes at
+  // most twelve jobs through the global two-worker limiter; opening a view can
+  // promote its covers without creating a request for every native bookmark.
+  async function workPreviews() {
+    let initial, jobs, generation;
+    try {
+      ({ initial, jobs, generation } = await enqueue(async () => {
+        const initial = await context(), stored = (await chrome.storage.local.get(PREVIEWS))[PREVIEWS];
+        return { initial, jobs: (stored?.pending || []).slice(0, PREVIEW_BATCH), generation: LaterOnBookmarkPreviews.epoch };
+      }));
+    } catch { return; }
+    if (!jobs.length) return;
+    const records = await LaterOnBookmarkPreviews.load(jobs, node => enqueue(async () => {
+      const latest = await context(false);
+      if (latest.node(node.id).url !== node.url || generation !== LaterOnBookmarkPreviews.epoch) fail('bookmarkPreviewUnavailable');
+    }));
+    await enqueue(async () => {
+      let latest;
+      try { latest = await context(); } catch { return; }
+      if (generation !== LaterOnBookmarkPreviews.epoch || latest.config.scopeId !== initial.config.scopeId) return;
+      const valid = records.filter(record => latest.all.some(node => node.id === record.id && node.url === record.url && inScope(node, latest.all, latest.config.scopeId)));
+      await LaterOnBookmarkPreviews.commit(valid, latest.all, generation);
+      const stored = (await chrome.storage.local.get(PREVIEWS))[PREVIEWS] || {};
+      const attempted = { ...(stored.attempted || {}) };
+      const previews = (await chrome.storage.local.get('laterOnBookmarkPreviews')).laterOnBookmarkPreviews || {};
+      for (const job of jobs) {
+        const record = valid.find(record => record.id === job.id), cached = previews[job.id];
+        attempted[job.id] = { url: job.url, at: Date.now(), sourceImage: record?.sourceImage || cached?.sourceImage || '',
+          complete: !!record && !record.error && !!(record.image || cached?.image) && !!(record.description || cached?.description) };
+      }
+      await chrome.storage.local.set({ [PREVIEWS]: { ...stored, attempted,
+        pending: (stored.pending || []).filter(job => !jobs.some(done => done.id === job.id && done.url === job.url)) } });
+      await refreshNow();
+    });
+  }
+  function kickPreviews() {
+    if (previewRunning) { previewAgain = true; return previewRunning; }
+    previewRunning = workPreviews().catch(() => {}).finally(() => {
+      previewRunning = null;
+      if (previewAgain) { previewAgain = false; kickPreviews(); }
+    });
+    return previewRunning;
+  }
+  async function prioritizePreviews(message) {
+    if (!Array.isArray(message.ids) || message.ids.some(id => typeof id !== 'string')) fail('bookmarkInvalidItems');
+    const state = await enqueue(async () => {
+      const latest = await context();
+      const stored = (await chrome.storage.local.get(PREVIEWS))[PREVIEWS] || {};
+      const visible = [];
+      for (const id of new Set(message.ids.slice(0, 144))) {
+        try { const node = latest.node(id); if (node.url) visible.push({ id, url: node.url }); } catch {}
+      }
+      const ids = new Set(visible.map(node => node.id));
+      const visibleKey = typeof message.viewKey === 'string' ? message.viewKey.slice(0, 20000) : JSON.stringify([...ids]);
+      const attempted = { ...(stored.attempted || {}) }, pending = [...stored.pending || []];
+      const previews = (await chrome.storage.local.get('laterOnBookmarkPreviews')).laterOnBookmarkPreviews || {};
+      // A new view may restore an evicted successful cover immediately. A
+      // same-view redraw cannot restart it repeatedly when the byte budget is
+      // too small to retain every visible image. Failed jobs keep their cooldown.
+      if (stored.visibleKey !== visibleKey) for (const node of visible) {
+        const attempt = attempted[node.id];
+        if (attempt?.url !== node.url || !attempt.complete || previews[node.id]?.image || !LaterOnBookmarkPreviews.publicUrl(node.url)) continue;
+        delete attempted[node.id];
+        if (!pending.some(job => job.id === node.id && job.url === node.url)) pending.push(node);
+      }
+      await LaterOnBookmarkPreviews.prioritize(visible);
+      await chrome.storage.local.set({ [PREVIEWS]: { ...stored, attempted, visible, visibleKey,
+        pending: [...pending.filter(job => ids.has(job.id)), ...pending.filter(job => !ids.has(job.id))] } });
+      return readState();
+    });
+    kickPreviews();
+    return state;
+  }
+  async function context(includePreviews = true) {
     const config = await readConfig();
     if (!config.enabled) fail('bookmarkDisabled');
     if (!await permission()) fail('bookmarkPermission');
-    const { all, state } = await snapshot(config);
+    const { all, state } = await snapshot(config, includePreviews);
     if (state.error) fail(state.error);
     const node = id => {
       const result = all.find(entry => entry.id === id);
@@ -177,7 +281,7 @@
     const initial = await enqueue(context), generation = previews.epoch;
     const nodes = [...new Set(message.ids)].slice(0, 12).map(id => initial.node(id)).filter(node => node.url);
     const records = await previews.load(nodes, node => enqueue(async () => {
-      const latest = await context(), current = latest.node(node.id);
+      const latest = await context(false), current = latest.node(node.id);
       if (current.url !== node.url || generation !== previews.epoch) fail('bookmarkPreviewUnavailable');
     }));
     return enqueue(async () => {
@@ -194,7 +298,8 @@
         failed: nodes.length - valid.filter(record => !record.error && (record.image || record.description)).length } };
     });
   }
-  const handle = message => message.type === 'BOOKMARKS_PREVIEWS' ? loadPreviews(message) : enqueue(() => execute(message));
+  const handle = message => message.type === 'BOOKMARKS_PREVIEWS'
+    ? message.automatic ? prioritizePreviews(message) : loadPreviews(message) : enqueue(() => execute(message));
   function onNativeChange() {
     if (eventPending || importing) return;
     eventPending = true;
@@ -228,7 +333,10 @@
   });
   chrome.runtime.onStartup?.addListener(() => { refresh().catch(() => {}); });
   chrome.runtime.onInstalled?.addListener(() => { refresh().catch(() => {}); });
-  chrome.alarms?.onAlarm?.addListener(alarm => { if (alarm.name === ALARM) refresh().catch(() => {}); });
+  chrome.alarms?.onAlarm?.addListener(alarm => {
+    if (alarm.name === ALARM) refresh().catch(() => {});
+    if (alarm.name === PREVIEW_ALARM) kickPreviews();
+  });
   chrome.runtime.onMessage.addListener((message, sender, respond) => {
     if (typeof message?.type !== 'string' || !message.type.startsWith('BOOKMARKS_')) return;
     if (!sender.url?.startsWith(chrome.runtime.getURL(''))) { respond({ ok: false, error: 'bookmarkPermission' }); return; }

@@ -202,10 +202,11 @@ const check = (label, ok, extra = "") => {
   check("在当前网页里弹出浮层（没新开窗口）", overlays.length === 1 && windowsCreated.length === 0, `浮层 ${overlays.length} / 窗口 ${windowsCreated.length}`);
   check("此刻还没有真正收藏", !store.laterOnItems.some((i) => i.url === PAGE_URL), `${store.laterOnItems.length} 条`);
   check("浮层里只有这一篇", overlays[0]?.payload?.pages?.length === 1 && overlays[0].payload.pages[0].url === PAGE_URL, `${overlays[0]?.payload?.pages?.length} 个页面`);
-  check("浮层默认选中上次用过的项目", overlays[0]?.payload?.selected === FOLDER_ID, overlays[0]?.payload?.selected);
+  check("即使上次选过项目，浮层仍默认等待整理", overlays[0]?.payload?.selected === "", JSON.stringify(overlays[0]?.payload?.selected));
   check("浮层里列出了已有项目和「等待整理」", (overlays[0]?.payload?.folders?.length || 0) === 2, (overlays[0]?.payload?.folders || []).map((f) => f.name).join(" / "));
   check("这一篇没收藏过，浮层不提示「已收藏过」", overlays[0]?.payload?.savedCount === 0, `savedCount=${overlays[0]?.payload?.savedCount}`);
   check("这一篇被暂存下来了", session[PENDING_KEY]?.tabs?.length === 1, `${session[PENDING_KEY]?.tabs?.length} 个`);
+  check("暂存的默认目标也是等待整理", session[PENDING_KEY]?.projectId === "", JSON.stringify(session[PENDING_KEY]?.projectId));
 
   // ── 第 3 步：在浮层里确认 → 收藏进所选项目 ──────────────────
   console.log("\n── 第 3 步：选好项目并确认 ──");
@@ -241,6 +242,14 @@ const check = (label, ok, extra = "") => {
   const cancelled = await sendFromPage({ type: "CANCEL_BATCH_SAVE" });
   check("取消后清掉了待处理批次", cancelled?.cancelled === true && session[PENDING_KEY] === undefined, JSON.stringify(cancelled));
   check("取消不会收藏任何东西", store.laterOnItems.length === 0, `${store.laterOnItems.length} 条`);
+
+  // 上次选择仍保存在本机时，重新打开后直接确认也必须放进等待整理。
+  await sandbox.quickSave(tab, "shortcut");
+  check("重新添加仍默认等待整理", overlays.at(-1)?.payload?.selected === "" && store[LAST_PROJECT_KEY] === FOLDER_ID);
+  await sendFromPage({ type: "CONFIRM_BATCH_SAVE", projectId: overlays.at(-1)?.payload?.selected });
+  await waitForDone();
+  check("不改默认选项直接确认时收进等待整理", store.laterOnItems.some((i) => i.url === PAGE_URL && !i.projectId));
+  store.laterOnItems = [];
 
   // ── 第 6 步：再关掉开关 → 回到「直接收藏」───────────────────
   console.log("\n── 第 6 步：关掉开关 ──");

@@ -10,7 +10,7 @@ const wait = () => new Promise(resolve => setTimeout(resolve, 0));
   let fetched = 0;
   f.ctx.fetch = async () => { fetched++; throw new Error('Unexpected automatic fetch'); };
   let state = await f.api.handle({ type: 'BOOKMARKS_GET' });
-  assert.equal(fetched, 0, 'Opening the bookmark library does not fetch websites or remote images');
+  assert.equal(fetched, 0, 'Reading the native snapshot queues work without blocking on network requests');
   assert.equal(state.nodes.find(node => node.id === 'inside').title, 'Paper', 'Native titles remain authoritative');
   assert.equal(state.nodes.find(node => node.id === 'inside').preview.image, png);
   assert.equal(state.nodes.find(node => node.id === 'inside').preview.description, 'Local abstract');
@@ -18,7 +18,7 @@ const wait = () => new Promise(resolve => setTimeout(resolve, 0));
   f.store.laterOnItems = [];
   state = await f.api.handle({ type: 'BOOKMARKS_GET' });
   assert.equal(state.nodes.find(node => node.id === 'inside').preview.image, png, 'Copied local previews survive reading wipe');
-  for (const url of ['http://localhost/a', 'http://127.1/a', 'http://10.0.0.1/a', 'http://172.16.4.1/a', 'http://192.168.1.1/a', 'http://[::1]/a', 'http://[::ffff:127.0.0.1]/a', 'https://user:pass@example.com/', 'file:///a', 'https://printer.local/a']) {
+  for (const url of ['http://localhost/a', 'http://127.1/a', 'http://10.0.0.1/a', 'http://172.16.4.1/a', 'http://192.168.1.1/a', 'http://[::1]/a', 'http://[::ffff:127.0.0.1]/a', 'https://user:pass@example.com/', 'https://:preview@example.com/', 'file:///a', 'https://printer.local/a']) {
     assert.equal(f.ctx.LaterOnBookmarkPreviews.publicUrl(url), '', `Reject private/credential-bearing URL: ${url}`);
   }
   const beforeNative = JSON.stringify(f.nodes);
@@ -28,7 +28,7 @@ const wait = () => new Promise(resolve => setTimeout(resolve, 0));
   f.ctx.fetch = async (url, options) => {
     fetched++;
     assert.equal(options.credentials, 'omit');
-    assert.equal(options.redirect, 'error');
+    assert.equal(options.redirect, 'follow');
     assert.equal(options.referrerPolicy, 'no-referrer');
     if (url.endsWith('cover.png')) return new Response(Buffer.from([137,80,78,71]), { headers: { 'content-type': 'image/png' } });
     return new Response('<html><head><meta property="og:image" content="https://images.test/cover.png"><meta name="description" content="Fetched &amp; safe"></head></html>', { headers: { 'content-type': 'text/html' } });
@@ -68,5 +68,5 @@ const wait = () => new Promise(resolve => setTimeout(resolve, 0));
   release();
   await pending;
   assert(!JSON.stringify(g.store.laterOnBookmarkPreviews).includes('No commit after disable'));
-  console.log('PASS bookmark previews: local reuse, permanent copied covers, explicit bounded fetches, public URL checks, deduplication, native isolation and stale-result rejection');
+  console.log('PASS bookmark previews: local reuse, permanent copied covers, bounded fetches, public URL checks, deduplication, native isolation and stale-result rejection');
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -2,7 +2,7 @@
   const words = {
     'zh-CN': {
       openFull: '打开完整界面', openFullFailed: '完整界面未能打开，请重试。', loadingCurrent: '正在读取当前网页…', currentPage: '当前页面', saveCurrent: '添加', alreadyBookmarked: '已收藏', unsupportedCurrent: '请切换到可添加的 HTTP / HTTPS 网页', moreActions: '更多操作',
-      syncSettings: '同步设置', permanentHint: '长期保存，不参与已读自动清除', expand: '展开文件夹', collapse: '收起文件夹', pages: '网页', morePages: '更多网页', moreFolders: '更多文件夹', folderStats: '{n} 个网页 · {folders} 个子文件夹', viewStats: '{folders} 个文件夹 · {n} 个网页', pageHint: '保留在浏览器书签中的长期收藏', emptyHint: '添加网页，或使用文件夹整理长期收藏。', addPage: '添加网页', newFolder: '新建文件夹', connected: '浏览器书签 · 已连接', notConnected: '连接浏览器书签', needsAttention: '书签同步需要处理', loadPreviews: '补齐当前预览', loadingPreviews: '正在加载预览…', previewHint: '预览优先复用本地信息。补齐时先读取已打开网页，否则请求当前视图最多 12 个网页及封面；不打开新标签页，后台请求不携带登录凭据。', previewDone: '已补齐 {n} 个预览，{failed} 个保留本地或站点封面。', previewCancelled: '同步范围或权限已变化，未保存过期预览。', bookmarkPreviewUnavailable: '部分站点无法读取预览，已保留本地或站点封面。', name: '书签库', reading: '阅读库', settings: '设置', eyebrow: '长期收藏 · 浏览器双向同步',
+      syncSettings: '同步设置', permanentHint: '长期保存，不参与已读自动清除', expand: '展开文件夹', collapse: '收起文件夹', pages: '网页', morePages: '更多网页', moreFolders: '更多文件夹', folderStats: '{n} 个网页 · {folders} 个子文件夹', viewStats: '{folders} 个文件夹 · {n} 个网页', pageHint: '保留在浏览器书签中的长期收藏', emptyHint: '添加网页，或使用文件夹整理长期收藏。', addPage: '添加网页', newFolder: '新建文件夹', connected: '浏览器书签 · 已连接', notConnected: '连接浏览器书签', needsAttention: '书签同步需要处理', previewHint: '封面和摘要会自动获取，优先复用阅读库资料；无法读取时保留站点占位图。', bookmarkPreviewUnavailable: '部分站点无法读取预览，已保留本地或站点封面。', name: '书签库', reading: '阅读库', settings: '设置', eyebrow: '长期收藏 · 浏览器双向同步',
       intro: '与浏览器书签保持一致的长期收藏，独立于阅读库，不受已读自动清除影响。',
       syncTitle: '浏览器书签双向同步', syncHint: '默认同步全部书签，也可以只选择一个文件夹及其子文件夹。停用或修改范围不会删除浏览器书签。',
       enable: '启用并授权', disable: '停用同步', scope: '同步范围', all: '全部书签', applyScope: '应用范围', refresh: '刷新',
@@ -26,7 +26,7 @@
     },
     en: {
       openFull: 'Open full library', openFullFailed: 'Could not open the full library. Try again.', loadingCurrent: 'Reading the current page…', currentPage: 'Current page', saveCurrent: 'Add', alreadyBookmarked: 'Bookmarked', unsupportedCurrent: 'Switch to an HTTP or HTTPS page to add it', moreActions: 'More',
-      syncSettings: 'Sync settings', permanentHint: 'Kept permanently. Never auto-removed.', expand: 'Expand folder', collapse: 'Collapse folder', pages: 'Pages', morePages: 'More pages', moreFolders: 'More folders', folderStats: '{n} pages · {folders} subfolders', viewStats: '{folders} folders · {n} pages', pageHint: 'Kept in your browser bookmarks', emptyHint: 'Add a page or organize your lasting collection into folders.', addPage: 'Add page', newFolder: 'New folder', connected: 'Browser bookmarks · Connected', notConnected: 'Connect browser bookmarks', needsAttention: 'Bookmark sync needs attention', loadPreviews: 'Load missing previews', loadingPreviews: 'Loading previews…', previewHint: 'Reuse local covers and summaries first. Loading previews first reads already open pages, then requests up to 12 pages and covers in this view. It never opens tabs; background requests omit login credentials.', previewDone: 'Loaded {n} previews; {failed} kept their local or site cover.', previewCancelled: 'Scope or access changed. Outdated previews were discarded.', bookmarkPreviewUnavailable: 'Some sites do not provide a readable preview. Local or site covers were kept.', name: 'Bookmarks', reading: 'Reading', settings: 'Settings', eyebrow: 'KEEP FOR LATER · BROWSER SYNC',
+      syncSettings: 'Sync settings', permanentHint: 'Kept permanently. Never auto-removed.', expand: 'Expand folder', collapse: 'Collapse folder', pages: 'Pages', morePages: 'More pages', moreFolders: 'More folders', folderStats: '{n} pages · {folders} subfolders', viewStats: '{folders} folders · {n} pages', pageHint: 'Kept in your browser bookmarks', emptyHint: 'Add a page or organize your lasting collection into folders.', addPage: 'Add page', newFolder: 'New folder', connected: 'Browser bookmarks · Connected', notConnected: 'Connect browser bookmarks', needsAttention: 'Bookmark sync needs attention', previewHint: 'Covers and summaries load automatically, reusing Reading library details first. Site placeholders remain when a preview is unavailable.', bookmarkPreviewUnavailable: 'Some sites do not provide a readable preview. Local or site covers were kept.', name: 'Bookmarks', reading: 'Reading', settings: 'Settings', eyebrow: 'KEEP FOR LATER · BROWSER SYNC',
       intro: 'A lasting home for browser bookmarks, separate from the Reading library and never removed by read-page cleanup.',
       syncTitle: 'Two-way browser bookmark sync', syncHint: 'Sync all bookmarks by default, or a folder and its descendants. Disabling sync or changing its scope never deletes browser bookmarks.',
       enable: 'Enable & grant access', disable: 'Disable sync', scope: 'Sync scope', all: 'All bookmarks', applyScope: 'Apply scope', refresh: 'Refresh',
@@ -51,7 +51,7 @@
   };
   const $ = selector => document.querySelector(selector);
   let language = window.LaterOnAppearance?.get().language === 'en' ? 'en' : 'zh-CN', state = { enabled: false, nodes: [], folders: [] }, busy = false, selected = '', scopeDirty = false, feedback = '';
-  let moving = null, pendingIds = [], expanded = new Set(), expansionReady = false, limit = 48, folderLimit = 24, previewBusy = false, viewResult = { previewIds: [] };
+  let moving = null, pendingIds = [], expanded = new Set(), expansionReady = false, limit = 48, folderLimit = 24, previewSignature = '', viewResult = { previewIds: [] };
   let compact = null;
   const VIEW_KEY = window.LaterOnBookmarkSidepanel?.enabled ? 'laterOnBookmarkSidepanelView' : 'laterOnBookmarkView';
   try {
@@ -115,8 +115,6 @@
     $('#bookmarkConnection').dataset.error = String(!!state.error);
     $('#bookmarkConnectionLabel').textContent = t(state.error ? 'needsAttention' : available ? 'connected' : 'notConnected');
     for (const selector of ['#bookmarkNewPage', '#bookmarkNewFolder']) $(selector).disabled = busy || !available || !destinations().length;
-    $('#bookmarkLoadPreviews').disabled = previewBusy || !available || !previewIds().length;
-    $('#bookmarkLoadPreviews').textContent = t(previewBusy ? 'loadingPreviews' : 'loadPreviews');
     compact?.render({ state, busy, writable: available && destinations().length > 0, title: $('#bookmarkViewTitle').textContent, pages: viewResult.totalPages || 0 });
   }
   function persistView() {
@@ -134,12 +132,23 @@
     boards: $('#bookmarkFolderCards'), list: $('#bookmarkList'), t, onNavigate: navigate,
     onToggle: id => { if (expanded.has(id)) expanded.delete(id); else expanded.add(id); render(); persistView(); },
     onEdit: edit, onMove: openMove, onRemove: remove });
-  function previewIds() {
-    return viewResult.previewIds.map(id => viewResult.model.byId.get(id)).filter(node => {
-      const preview = node?.preview;
-      return node && (!preview?.image || !preview?.description);
-    }).sort((a, b) => (a.preview?.attemptedAt || 0) - (b.preview?.attemptedAt || 0)).slice(0, 12).map(node => node.id);
+  function queueVisiblePreviews() {
+    if (window.LaterOnSidepanelSwitch?.isActive() === false || !state.enabled || state.error || !viewResult.model) return;
+    const ids = viewResult.previewIds.filter(id => viewResult.model.byId.get(id)?.url);
+    const missing = ids.filter(id => {
+      const node = viewResult.model.byId.get(id), preview = node?.preview;
+      return node?.url && (!preview?.image || !preview?.description) &&
+        (!preview?.attemptedAt || Date.now() - preview.attemptedAt >= 24 * 60 * 60 * 1000);
+    });
+    const viewKey = JSON.stringify([state.scopeId, selected, $('#bookmarkSearch').value.trim(), limit, folderLimit, ids]);
+    const signature = JSON.stringify([viewKey, missing]);
+    if (signature === previewSignature) return;
+    previewSignature = signature;
+    // This only promotes durable jobs. It neither waits for all covers nor
+    // turns background preview failures into an interrupting status message.
+    chrome.runtime.sendMessage({ type: 'BOOKMARKS_PREVIEWS', automatic: true, ids, viewKey }).catch(() => { previewSignature = ''; });
   }
+  window.addEventListener('lateron-sidepanel-visible', queueVisiblePreviews);
   function render() {
     const folders = state.folders || [];
     if (state.enabled && selected && !state.nodes.some(node => node.id === selected && !node.url)) selected = '';
@@ -173,6 +182,7 @@
     for (const selector of ['label[for="bookmarkTransferFolder"]', '#bookmarkTransferFolder', '#bookmarkCopy']) $(selector).hidden = !pendingIds.length;
     document.title = `LaterOn · ${t('name')}${current ? ` · ${current.title}` : ''}`;
     controls();
+    queueVisiblePreviews();
   }
   async function send(message) {
     const result = await chrome.runtime.sendMessage(message);
@@ -245,16 +255,6 @@
   }
   $('#bookmarkNewPage').addEventListener('click', () => openAdd(false));
   $('#bookmarkNewFolder').addEventListener('click', () => openAdd(true));
-  $('#bookmarkLoadPreviews').addEventListener('click', async () => {
-    if (previewBusy || !previewIds().length) return;
-    const ids = previewIds(); previewBusy = true; controls();
-    try {
-      state = await send({ type: 'BOOKMARKS_PREVIEWS', ids });
-      feedback = t(state.previewResults?.cancelled ? 'previewCancelled' : 'previewDone', { n: state.previewResults?.updated || 0, failed: state.previewResults?.failed || 0 });
-      render();
-    } catch (error) { feedback = t(error.message); }
-    finally { previewBusy = false; controls(); }
-  });
   document.addEventListener('keydown', event => {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); $('#bookmarkSearch').focus(); }
   });
@@ -320,5 +320,6 @@
     if (requestedFolder !== null) selected = requestedFolder;
     render();
     await action(() => send({ type: 'BOOKMARKS_GET' }));
-  })().catch(() => { feedback = t('failed'); controls(); });
+  })().catch(() => { feedback = t('failed'); controls(); })
+    .finally(() => window.LaterOnSidepanelSwitch?.ready());
 })();

@@ -37,7 +37,10 @@ const windowIdReady = chrome.windows.getCurrent().then(
 // 完整界面会等待这个握手完成，再将当前标签页跳转到文章。
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type !== "PING_SIDEPANEL") return;
-  windowIdReady.then((id) => sendResponse({ ready: sidePanelReady && id === message.windowId }));
+  windowIdReady.then((id) => {
+    if (sidePanelReady && id === message.windowId) window.LaterOnSidepanelSwitch?.navigate('sidepanel.html');
+    sendResponse({ ready: sidePanelReady && id === message.windowId });
+  });
   return true;   // 异步应答
 });
 
@@ -127,14 +130,9 @@ const status = document.querySelector("#status");
 // Restore shared page facts immediately; collection loading only controls membership.
 loadCurrentPage();
 
-// 先让浏览器完成一帧绘制骨架屏，再启动数据读取和真实列表渲染。
-// 如果这里直接同步 init()，首屏缓存很快时骨架会在第一次 paint 前就被移除，
-// 用户只会看到“突然出现的正式内容”，看不到正在加载的反馈。
-if (typeof requestAnimationFrame === "function") {
-  requestAnimationFrame(() => requestAnimationFrame(() => init()));
-} else {
-  setTimeout(() => init(), 16);
-}
+// Start after this script finishes initializing. Fast local data can paint in
+// the first frame; only genuinely slow reads need to expose the skeleton.
+queueMicrotask(() => init());
 
 // 页面里加载最慢的几个文件（CSS / JS）。慢在「读页面」还是「读数据」，看这个就知道。
 function slowestResources() {
@@ -520,6 +518,7 @@ function applyCurrentPage(result, generation, options) {
   document.querySelector("#currentSource").removeAttribute("data-i18n");
   document.querySelector("#currentTitle").textContent = currentItem.title;
   document.querySelector("#currentSource").textContent = currentItem.source;
+  window.LaterOnReadingBookmarkStatus?.attach(document.querySelector("#currentSource"), currentItem.url);
   if (currentItem.image) setCurrentThumb(currentItem.image); else resetCurrentThumb();
 }
 
@@ -545,6 +544,7 @@ function resetCurrentPage() {
   document.querySelector("#currentTitle").dataset.i18n = "currentPage";
   document.querySelector("#currentSource").textContent = tr("currentLoading");
   document.querySelector("#currentSource").dataset.i18n = "currentLoading";
+  document.querySelector("#currentSource").classList.remove("has-bookmark-status");
   resetCurrentThumb();
 }
 
@@ -561,7 +561,7 @@ function fallbackMetadata(tab) {
   let source = tr("webPage");
   try { source = new URL(tab.url).hostname.replace(/^www\./, ""); } catch {}
   return {
-    title: tab.title || tab.url,
+    title: window.LaterOnUrl?.searchTitle?.(tab.url) || tab.title || tab.url,
     description: tr("noDescription"),
     image: "",
     favicon: tab.favIconUrl || "",
@@ -1014,6 +1014,7 @@ function render() {
   empty.hidden = visible.length > 0;
   // 第一批同步画出来（保证「立刻有东西看」），其余交给空闲时段续画。
   renderSlice(visible, 0, token);
+  window.LaterOnSidepanelSwitch?.ready();
   // 每次画完存一份快照进 localStorage，下次打开侧栏先拿它秒开第一屏。
   saveSlimCache();
 }
@@ -1068,6 +1069,7 @@ function applyCurrentAndLocate() {
 
 function locateCurrent(attempt = 0) {
   if (!pendingLocate || !currentItemId) return;
+  if (window.LaterOnSidepanelSwitch?.isActive() === false) return;
   const article = itemMap.get(currentItemId);
   if (!article) {
     // 列表都画完了还没有它 → 被筛选条件挡在外面（比如筛「已读」但它还没读完），这次不定位。
@@ -1112,6 +1114,10 @@ function locateCurrent(attempt = 0) {
     });
   }, 420);
 }
+
+window.addEventListener('lateron-sidepanel-visible', () => {
+  if (pendingLocate) nextFrame(() => locateCurrent());
+});
 
 // 自己算位置、自己滚。不用 scrollIntoView：侧栏里它时有失灵（滚动被丢掉、或滚偏），
 // 而 window.scrollTo 是我们能自己算、也能自己验证的。
@@ -1231,7 +1237,8 @@ function normalizeItems(list) {
   return (list || []).map((it) => {
     if (!it) return it;
     const status = it.status || (it.read ? "done" : "unread");
-    return { ...it, status, doneAt: status === "done" ? Number(it.doneAt) || null : null };
+    const title = !it.titleEdited && window.LaterOnUrl?.searchTitle?.(it.url) || it.title;
+    return { ...it, title, status, doneAt: status === "done" ? Number(it.doneAt) || null : null };
   });
 }
 
@@ -1350,6 +1357,7 @@ function createItem(item) {
   fragment.querySelector("h2").textContent = item.title;
   setText(fragment.querySelector(".description"), item.description);
   fragment.querySelector(".source").textContent = item.source;
+  window.LaterOnReadingBookmarkStatus?.attach(fragment.querySelector(".source"), item.url);
   fragment.querySelector("time").textContent = formatTime(item.savedAt);
   const favicon = fragment.querySelector(".meta img");
   favicon.src = item.favicon;
@@ -1381,6 +1389,8 @@ function updateItemCard(article, item) {
   setText(article.querySelector("h2"), item.title);
   setText(article.querySelector(".description"), item.description);
   article.querySelector(".open-item").href = safeTarget(item.url) || "#";
+  setText(article.querySelector(".source"), item.source);
+  window.LaterOnReadingBookmarkStatus?.attach(article.querySelector(".source"), item.url);
   applyThumb(article, item);
 }
 

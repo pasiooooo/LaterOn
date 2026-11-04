@@ -143,7 +143,8 @@ function normalizeItems(list) {
     if (!it) return it;
     const status = it.status || (it.read ? "done" : "unread");
     const doneAt = status === "done" ? (Number(it.doneAt) || Date.now()) : null;
-    return { ...it, status, doneAt };
+    const searchTitle = !it.titleEdited && window.LaterOnUrl?.searchTitle?.(it.url);
+    return { ...it, ...(searchTitle ? { title: searchTitle } : {}), status, doneAt };
   });
 }
 
@@ -1409,6 +1410,7 @@ function createCard(item) {
   setText(fragment.querySelector(".title-link h2"), item.title);
   setText(fragment.querySelector(".description"), IS_EMPTY_SUMMARY.test(item.description) ? tr("noDescription") : item.description);
   fragment.querySelector(".source-name").textContent = item.source;
+  window.LaterOnReadingBookmarkStatus?.attach(fragment.querySelector(".source-name"), item.url);
   fragment.querySelector("time").textContent = formatTime(item.savedAt);
   favicon.src = item.favicon;
   favicon.addEventListener("error", () => { favicon.style.visibility = "hidden"; });
@@ -1437,6 +1439,7 @@ function fillProjectSelect(select, ensureId, ensureName) {
 }
 
 function updateCard(card, item) {
+  window.LaterOnReadingBookmarkStatus?.attach(card.querySelector(".source-name"), item.url);
   card.classList.toggle("is-read", item.status === "done");
   card.classList.toggle("is-reading", item.status === "reading");
   const readToggle = card.querySelector(".read-toggle");

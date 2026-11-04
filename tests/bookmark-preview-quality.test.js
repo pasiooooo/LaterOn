@@ -26,7 +26,7 @@ const preview = state => state.nodes.find(node => node.id === 'inside').preview;
     async get() { return { ...tab }; },
     create() { throw Error('Must not open tabs'); }, update() { throw Error('Must not navigate or activate'); }, remove() { throw Error('Must not close tabs'); }
   };
-  open.ctx.extractTabMetadata = async (_, options) => { assert.equal(options.serverRescue, false); reads++; return metadata; };
+  open.ctx.extractTabMetadata = async (_, options) => { assert.equal(typeof options.serverMetadata, 'function'); assert.notEqual(options.serverRescue, false); reads++; return metadata; };
   open.ctx.fetch = async target => {
     assert.equal(target, metadata.image, 'A rendered cover needs no duplicate HTML request');
     return new Response(Buffer.from([137, 80, 78, 71]), { headers: { 'content-type': 'image/png' } });
@@ -34,7 +34,7 @@ const preview = state => state.nodes.find(node => node.id === 'inside').preview;
   await open.api.handle({ type: 'BOOKMARKS_GET' });
   assert.equal(reads, 0, 'Entering bookmarks never injects into webpages');
   let state = await fill(open);
-  assert.equal(preview(state).description, metadata.description, 'Explicit enrichment reuses the real add-page extractor');
+  assert.equal(preview(state).description, metadata.description, 'Enrichment reuses the complete add-page extractor with a bounded server provider');
   assert(preview(state).image.startsWith('data:image/png;base64,'));
   assert.equal(state.nodes.find(node => node.id === 'inside').title, 'Paper');
   assert.equal(reads, 1); assert.equal(queries, 1);
@@ -46,7 +46,7 @@ const preview = state => state.nodes.find(node => node.id === 'inside').preview;
     return new Response(Buffer.from([137, 80, 78, 71]), { headers: { 'content-type': 'image/png' } });
   };
   assert(preview(await fill(open)).image);
-  open.ctx.extractTabMetadata = async (_, options) => { assert.equal(options.serverRescue, false); reads++; return metadata; };
+  open.ctx.extractTabMetadata = async (_, options) => { assert.equal(typeof options.serverMetadata, 'function'); assert.notEqual(options.serverRescue, false); reads++; return metadata; };
 
   for (const [html, image] of [
     ['<base href="https://images.test/assets/"><meta property="og:image:url" content="cover.jpg"><meta name="twitter:description" content="Static summary">', 'https://images.test/assets/cover.jpg'],
@@ -102,6 +102,34 @@ const preview = state => state.nodes.find(node => node.id === 'inside').preview;
   };
   state = await fill(remote);
   assert(preview(state).image, 'An explicitly requested preview can reuse a remote cover URL known to the reading library');
+
+  const rescue = setup(); let htmlRequests = 0;
+  rescue.chrome.tabs = { async query() { return [{ id: 1, url, status: 'complete' }]; }, async get() { return { id: 1, url, status: 'complete' }; } };
+  rescue.ctx.extractTabMetadata = async (tab, options) => {
+    const metadata = await options.serverMetadata(tab.url);
+    return { ...metadata, url: tab.url };
+  };
+  rescue.ctx.fetch = async target => {
+    if (target === url) {
+      htmlRequests++;
+      const response = new Response('<meta name="description" content="Shared reading rescue"><meta property="og:image" content="cover.jpg">', { headers: { 'content-type': 'text/html' } });
+      Object.defineProperty(response, 'url', { value: 'https://cdn.test/article/index.html' });
+      return response;
+    }
+    assert.equal(target, 'https://cdn.test/article/cover.jpg', 'Relative cover URLs use the final HTML address after redirect');
+    return new Response(Buffer.from([137, 80, 78, 71]), { headers: { 'content-type': 'image/png' } });
+  };
+  state = await fill(rescue);
+  assert.equal(preview(state).description, 'Shared reading rescue');
+  assert(preview(state).image);
+  assert.equal(htmlRequests, 1, 'Reading rescue and preview fallback share one bounded HTML request');
+
+  const session = setup();
+  session.chrome.storage.session = { async get() { return { laterOnCurrentPageMetadata: { 3: { expiresAt: Date.now() + 10000,
+    metadata: { url, image: png, description: 'Current reading page' } } } }; } };
+  state = await session.api.handle({ type: 'BOOKMARKS_GET' });
+  assert.equal(preview(state).image, png);
+  assert.equal(preview(state).description, 'Current reading page', 'The current reading page cache is reusable before saving a reading item');
 
   const large = setup();
   let closed = 0, canvasSize;

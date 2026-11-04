@@ -40,6 +40,7 @@ const event = () => ({ listeners: [], addListener(fn) { this.listeners.push(fn);
     Object.defineProperty(window, 'localStorage', { value: { getItem() { return null; }, setItem() {}, removeItem() {} } });
     for (const file of bookmark ? ['bookmark-sidepanel.js', 'i18n.js', 'bookmark-view.js', 'bookmarks.js'] : ['i18n.js', 'url-utils.js', 'sidepanel.js']) window.eval(read(file));
     for (let i = 0; i < 20 && window.document.querySelector(bookmark ? '#bookmarkCurrentTitle' : '#currentTitle').textContent !== 'Shared article'; i++) await tick();
+    if (!bookmark) for (let i = 0; i < 20 && window.document.body.classList.contains('booting'); i++) await tick();
     return { window, $: selector => window.document.querySelector(selector), close() { cleanup.forEach(fn => fn()); window.close(); } };
   };
   let panel = await mount(false);

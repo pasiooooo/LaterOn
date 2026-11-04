@@ -53,7 +53,7 @@ const store = {
   ],
   laterOnProjects: [{ id: FOLDER_ID, name: "工作", createdAt: 1 }],
   laterOnSettings: {},
-  // 上次用过的项目：触发浮层时应该默认选中它。
+  // 上次用过的项目只供关闭选择浮层后的批量添加使用。
   [LAST_PROJECT_KEY]: FOLDER_ID
 };
 const session = {};
@@ -234,12 +234,13 @@ const check = (label, ok, extra = "") => {
   const workRow = folderPayload.find((folder) => folder.id === FOLDER_ID);
   check("浮层里列出了「等待整理」和已有项目", !!unfiledRow && !!workRow, folderPayload.map((f) => `${f.name}(${f.count})`).join(" / "));
   check("每个项目都带上了已收藏数量", unfiledRow?.count === 2 && workRow?.count === 0, `等待整理=${unfiledRow?.count} 工作=${workRow?.count}`);
-  check("浮层默认选中上次用过的项目", overlays[0]?.payload?.selected === FOLDER_ID, `selected=${JSON.stringify(overlays[0]?.payload?.selected)}`);
+  check("即使上次选过项目，浮层仍默认等待整理", overlays[0]?.payload?.selected === "", `selected=${JSON.stringify(overlays[0]?.payload?.selected)}`);
   check("浮层里带上了将要收藏的页面清单", overlays[0]?.payload?.pages?.length === 12 && overlays[0].payload.pages[0].title === "文章一", `${overlays[0]?.payload?.pages?.length} 个页面`);
   check("浮层的主题跟着扩展设置走", overlays[0]?.payload?.theme === "light", `theme=${overlays[0]?.payload?.theme}`);
   check("提前告诉用户这一批里有几篇已经收藏过", overlays[0]?.payload?.savedCount === 1, `savedCount=${overlays[0]?.payload?.savedCount}`);
 
   check("这一批标签页被暂存下来了", session[PENDING_KEY]?.tabs?.length === 12, `${session[PENDING_KEY]?.tabs?.length} 个`);
+  check("暂存的默认目标也是等待整理", session[PENDING_KEY]?.projectId === "", JSON.stringify(session[PENDING_KEY]?.projectId));
   check("暂存里记下了「按键那一刻的活动标签页」", session[PENDING_KEY]?.notifyTabId === 1, `notifyTabId=${session[PENDING_KEY]?.notifyTabId}`);
 
   // ── 第 2 步：在浮层里选中「工作」并确认（走真实的「页面 → 后台」消息通道）──
@@ -270,7 +271,7 @@ const check = (label, ok, extra = "") => {
   check("回填了重复那条的封面和摘要", !!patched.image && patched.description !== "暂无摘要", `image=${patched.image ? "有" : "无"}`);
   check("重复那条没有被重复插入（还是原来的 id）", items.filter((i) => i.url === DUP_URL).length === 1, `${items.filter((i) => i.url === DUP_URL).length} 条`);
   check("诊断里记下了搬家数量", diag.lastMoved === 1, `lastMoved=${diag.lastMoved}`);
-  check("记住了这次选的项目（下次默认选中）", store[LAST_PROJECT_KEY] === FOLDER_ID, store[LAST_PROJECT_KEY]);
+  check("记住了这次选的项目（供不弹浮层的批量添加使用）", store[LAST_PROJECT_KEY] === FOLDER_ID, store[LAST_PROJECT_KEY]);
   check("待处理批次已清空（不会重复执行）", session[PENDING_KEY] === undefined);
   check("顺序执行（任何时刻最多 1 个标签在抓取）", inflightMax === 1, `最大并发 ${inflightMax}`);
   check("休眠标签被跳过、没有白等", !extractionLog.includes(DISCARDED_ID));

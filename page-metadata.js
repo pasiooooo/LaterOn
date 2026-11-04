@@ -61,7 +61,7 @@
       .map(tag => candidate(tag.attrs['data-src'] || tag.attrs['data-original'] || tag.attrs.src)).find(Boolean) || '';
     let host = '';
     try { host = new URL(url).hostname.replace(/^www\./, ''); } catch {}
-    return { url, title: meta('og:title') || meta('twitter:title') || structured.title || decode(/<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(head)?.[1]),
+    return { url, title: globalThis.LaterOnUrl?.searchTitle?.(url) || meta('og:title') || meta('twitter:title') || structured.title || decode(/<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(head)?.[1]),
       description: meta('og:description') || meta('twitter:description') || meta('description') || structured.description,
       image, favicon: tags.filter(tag => tag.name === 'link' && /(?:^|\s)(?:icon|apple-touch-icon|apple-touch-icon-precomposed)(?:\s|$)/i.test(tag.attrs.rel || ''))
         .map(tag => absolute(tag.attrs.href, base)).find(Boolean) || absolute('/favicon.ico'), source: meta('og:site_name') || host };

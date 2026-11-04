@@ -6,6 +6,7 @@ const root = path.resolve(__dirname, '..');
 const dom = new JSDOM('<!doctype html><body><div id="tree"></div><div id="crumbs"></div><div id="boards"></div><div id="pages"></div></body>', {runScripts:'outside-only'});
 try {
   const { window } = dom;
+  window.eval(fs.readFileSync(path.join(root, 'url-utils.js'), 'utf8'));
   window.eval(fs.readFileSync(path.join(root, 'bookmark-view.js'), 'utf8'));
   const image = 'data:image/png;base64,iVBORw0KGgo=';
   const nodes = [
@@ -50,5 +51,20 @@ try {
   assert.equal(result.totalPages, 82);
   assert.equal(window.document.querySelectorAll('.bookmark-folder-card').length, 1);
   assert.equal(window.document.querySelectorAll('[data-setting="autoCleanDays"],.read-toggle').length, 0);
+  const search = { id: 'search', parentId: 'root', title: 'Search Results', url: 'https://www.google.com/search?q=reading+workflow' };
+  view.render({ nodes: [...nodes, search], selected: '', query: 'reading workflow' });
+  assert.equal(window.document.querySelector('.bookmark-card h2').textContent, 'reading workflow - Google', 'Existing search bookmarks show and match their decoded query');
+  assert.equal(search.title, 'Search Results', 'Presentation does not mutate the authoritative native bookmark title');
+  const named = { ...search, id: 'named-search', title: '论文检索入口' };
+  for (const query of ['论文检索入口', 'reading workflow']) {
+    view.render({ nodes: [...nodes, named], selected: '', query });
+    assert.equal(window.document.querySelector('.bookmark-card h2').textContent, '论文检索入口', 'Meaningful native names remain visible and searchable alongside the decoded query');
+  }
+  for (const title of ['Search Results', 'Search', '搜索结果', '搜索', 'Google', 'Google Search', 'Search Results - Google', search.url]) {
+    view.render({ nodes: [...nodes, { ...search, title }], selected: '', query: 'reading workflow' });
+    assert.equal(window.document.querySelector('.bookmark-card h2').textContent, 'reading workflow - Google', `Repair only weak search titles: ${title}`);
+  }
+  view.render({ nodes: [...nodes, { ...search, title: 'Google Scholar 文献查新' }], selected: '', query: 'reading workflow' });
+  assert.equal(window.document.querySelector('.bookmark-card h2').textContent, 'Google Scholar 文献查新', 'A name containing the engine label remains meaningful');
   console.log('PASS bookmark view: nested hierarchy, scoped roots, descendant mosaics/search, breadcrumb navigation, page cards and independent pagination');
 } finally { dom.window.close(); }

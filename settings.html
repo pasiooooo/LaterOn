@@ -9,6 +9,10 @@
     <title>LaterOn · 设置</title>
     <link rel="icon" href="icon128.png" type="image/png" />
     <script src="appearance.js"></script>
+    <script src="picker-keyboard-guard.js" defer></script>
+    <script src="keyboard-shortcuts.js" defer></script>
+    <script src="quick-switcher-ui.js" defer></script>
+    <script src="quick-switcher-client.js" defer></script>
     <link rel="stylesheet" href="theme-vars.css" />
     <link rel="stylesheet" href="dialog.css" />
     <link rel="stylesheet" href="settings.css" />
@@ -92,6 +96,10 @@
           <h2 data-i18n="shortcuts">快捷键</h2>
           <p class="setting-note" data-i18n="shortcutsNote">在 Chrome 中使用快捷键添加当前网页、所选网页、当前标签组或整窗标签。Chrome 不允许扩展在内部修改快捷键，请在 Chrome 的快捷键页面设置。</p>
           <div class="setting-row">
+            <div class="setting-label"><strong data-i18n="quickSwitcher">快速切换</strong><span id="cmdQuickSwitcher" data-i18n="loading">读取中…</span><span data-i18n="quickSwitcherHint">搜索阅读库与书签库中的所有已存网页，优先切换到已打开的标签页。</span></div>
+            <button class="setting-action" type="button" data-quick-switcher data-i18n="tryQuickSwitcher">试用快速切换</button>
+          </div>
+          <div class="setting-row">
             <div class="setting-label"><strong data-i18n="cmdSavePage">添加当前网页</strong><span id="cmdSave" data-i18n="loading">读取中…</span></div>
           </div>
           <div class="setting-row">
@@ -102,6 +110,10 @@
           </div>
           <div class="setting-row">
             <div class="setting-label"><strong data-i18n="cmdSaveAllTabs">添加当前窗口所有标签</strong><span id="cmdSaveAll" data-i18n="loading">读取中…</span></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label"><strong data-i18n="windowShortcutFallback">整窗添加的网页备用快捷键</strong><span data-i18n="windowShortcutFallbackHint">未设置浏览器快捷键时，可在网页中使用 Alt / Option + Shift + 2。关闭后不再接管此按键。</span></div>
+            <label class="switch"><input type="checkbox" data-setting="windowShortcutFallback" data-i18n-aria-label="windowShortcutFallback" aria-label="整窗添加的网页备用快捷键" /><span class="slider"></span></label>
           </div>
           <div class="setting-row">
             <div class="setting-label"><strong data-i18n="inLibrary">在 LaterOn 内</strong><span data-i18n="searchFocusHint">按 ⌘ / Ctrl + K 聚焦搜索框</span></div>

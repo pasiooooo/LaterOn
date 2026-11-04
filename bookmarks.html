@@ -7,6 +7,10 @@
   <title>LaterOn · 书签库</title>
   <link rel="icon" href="icon128.png" />
   <script src="appearance.js"></script>
+  <script src="picker-keyboard-guard.js" defer></script>
+  <script src="keyboard-shortcuts.js" defer></script>
+  <script src="quick-switcher-ui.js" defer></script>
+  <script src="quick-switcher-client.js" defer></script>
   <link rel="stylesheet" href="theme-vars.css" />
   <link rel="stylesheet" href="dialog.css" />
   <link rel="stylesheet" href="library.css" />
@@ -15,6 +19,8 @@
   <link rel="stylesheet" href="sidepanel.css" media="not all" id="bookmarkSidepanelBase" />
   <link rel="stylesheet" href="bookmark-sidepanel.css" media="not all" id="bookmarkSidepanelStyle" />
   <script src="bookmark-sidepanel.js"></script>
+  <script src="url-utils.js"></script>
+  <script src="sidepanel-switch.js"></script>
   <script src="theme.js"></script>
   <script src="i18n.js"></script>
   <script src="dialog.js"></script>
@@ -32,7 +38,7 @@
   <div id="bookmarkSidepanelNavigation" hidden></div>
   <div class="workspace bookmark-workspace">
     <aside class="project-sidebar bookmark-sidebar" aria-label="书签文件夹">
-      <nav class="library-switch" aria-label="资料库"><a href="library.html" data-i18n="readingLibrary">阅读库</a><a href="bookmarks.html" aria-current="page" data-i18n="bookmarkLibrary">书签库</a></nav>
+      <nav class="library-switch" aria-label="资料库"><a href="library.html" data-i18n="readingLibrary">阅读库</a><a href="bookmarks.html" aria-current="page" data-i18n="bookmarkLibrary">书签库</a><button class="quick-switcher-trigger" type="button" data-quick-switcher data-i18n-title="quickSwitcherShortcut" data-i18n-aria-label="quickSwitcher" title="快速切换 · Alt / Option + O" aria-label="快速切换"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7V5a2 2 0 1 0-2 2h10a2 2 0 1 0-2-2v14a2 2 0 1 0 2-2H7a2 2 0 1 0 2 2V7"/></svg></button></nav>
       <h2 class="sidebar-label" data-bm="folders">文件夹</h2>
       <div id="bookmarkFolders" class="bookmark-folder-tree"></div>
       <div class="sidebar-footer bookmark-sidebar-footer">
@@ -69,7 +75,7 @@
       <nav id="bookmarkBreadcrumbs" class="bookmark-breadcrumbs" aria-label="文件夹路径"></nav>
       <div class="collection-bar bookmark-collection-header">
         <div><h1 id="bookmarkViewTitle" data-bm="all">全部书签</h1><p id="bookmarkCount"></p></div>
-        <div class="bookmark-toolbar-actions"><button id="bookmarkLoadPreviews" type="button" data-bm="loadPreviews">补齐当前预览</button><button id="bookmarkNewFolder" type="button" data-bm="newFolder">新建文件夹</button><button id="bookmarkNewPage" class="primary" type="button" data-bm="addPage">添加网页</button></div>
+        <div class="bookmark-toolbar-actions"><button id="bookmarkNewFolder" type="button" data-bm="newFolder">新建文件夹</button><button id="bookmarkNewPage" class="primary" type="button" data-bm="addPage">添加网页</button></div>
       </div>
       <details id="bookmarkAddPanel" class="bookmark-add">
         <summary data-bm="add">添加网页或文件夹</summary>
@@ -85,7 +91,7 @@
       <section id="bookmarkFolderSection" class="bookmark-section"><div class="bookmark-section-heading"><h2 data-bm="folders">文件夹</h2><span id="bookmarkFolderCount"></span></div><div id="bookmarkFolderCards" class="board-grid"></div><button id="bookmarkMoreFolders" class="bookmark-load-more" type="button" data-bm="moreFolders" hidden>更多文件夹</button></section>
       <section id="bookmarkPageSection" class="bookmark-section"><div class="bookmark-section-heading"><h2 data-bm="pages">网页</h2><span id="bookmarkPageCount"></span></div><div id="bookmarkList" class="grid bookmark-grid"></div><button id="bookmarkMorePages" class="bookmark-load-more" type="button" data-bm="morePages" hidden>更多网页</button></section>
       <section id="bookmarkEmpty" class="empty" hidden><h2 data-bm="empty">这里还没有书签。</h2><p data-bm="emptyHint">添加网页，或使用文件夹整理长期收藏。</p></section>
-      <p class="bookmark-footnote" data-bm="previewHint">预览优先复用本地封面和摘要。补齐时最多请求当前视图的 12 个网页及封面，不打开标签页、不使用登录凭据。</p>
+      <p class="bookmark-footnote" data-bm="previewHint">封面和摘要会自动获取，优先复用阅读库资料；无法读取时保留站点占位图。</p>
       <p class="bookmark-footnote" data-bm="privacy">书签修改直接作用于当前浏览器。此区域不参与阅读库的清空、JSON 备份或 WebDAV 同步；跨设备书签同步由浏览器负责。</p>
     </main>
   </div>

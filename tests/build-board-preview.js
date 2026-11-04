@@ -113,7 +113,7 @@ const out = html
   // 不内联的话 file:// 下相对路径取不到，点卡片上的下拉毫无反应，浮层就没法在预览里看。
   .replace('<script src="picker-ui.js"></script>', () => inlineScript("picker-ui.js"))
   .replace('<script src="onboarding.js" defer></script>', () => inlineScript("onboarding.js"))
-  .replace('<script src="library.js"></script>', () => inlineScript("library.js"));
+  .replace(/<script src="library\.js"(?: defer)?><\/script>/, () => inlineScript("library.js"));
 
 if (!out.includes("laterOnPreview")) throw new Error("假数据没有注入成功，检查 library.html 里的 script 标签是否变了");
 if (/<link rel="stylesheet"/.test(out)) throw new Error("还有样式表没内联");

@@ -7,7 +7,7 @@
       try {
         if (new URL(window.location.href).pathname.endsWith('/sidepanel.html')) {
           url.searchParams.set('surface', 'sidepanel');
-          window.location.assign(url.href);
+          if (!window.LaterOnSidepanelSwitch?.navigate(url.href)) window.location.assign(url.href);
         } else await chrome.tabs.create({ url: url.href });
       }
       catch {

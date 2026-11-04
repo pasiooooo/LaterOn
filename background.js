@@ -1,4 +1,4 @@
-importScripts("page-metadata.js", "url-utils.js", "reading-position-background.js", "webdav-sync-core.js", "webdav-directory.js", "webdav-sync.js", "import-metadata-background.js", "import-urls-background.js", "tab-batch-background.js", "bookmark-previews.js", "bookmark-sync.js", "current-page-background.js");
+importScripts("page-metadata.js", "url-utils.js", "reading-position-background.js", "webdav-sync-core.js", "webdav-directory.js", "webdav-sync.js", "import-metadata-background.js", "import-urls-background.js", "tab-batch-background.js", "bookmark-previews.js", "bookmark-sync.js", "current-page-background.js", "quick-switcher-search.js", "quick-switcher-background.js");
 const normalizeUrl = LaterOnUrl.normalize;
 
 const STORAGE_KEY = "laterOnItems";
@@ -498,6 +498,7 @@ chrome.commands.onCommand.addListener((command, tab) => {
 });
 
 async function handleCommand(command, commandTab) {
+  if (command === "quick-switcher") return LaterOnQuickSwitcher.open(commandTab);
   // Existing Alt+Shift+1 bindings now add the selection; Alt+Shift+2 adds the window.
   if (command === "save-all-tabs") return saveSelectedTabs(commandTab);
   if (command === "save-window-tabs") return saveAllTabsInWindow("shortcut", commandTab);
@@ -684,7 +685,7 @@ function isPlaceholderText(value, source) {
   if (/^[a-z0-9-]+(\.[a-z]{2,}){1,2}$/i.test(text)) return true;
   // 明显的导航词 / 通用词，同样视为「没抓到标题」。
   // 这样重复收藏一次，就会自动把标题补成正确的。
-  if (/^(首页|主页|登录|注册|搜索|搜索结果|全部|分类|列表|购物车|loading|untitled|无标题|error|not found|404)$/i.test(text)) return true;
+  if (/^(首页|主页|登录|注册|搜索|搜索结果|全部|分类|列表|购物车|search results?|loading|untitled|无标题|error|not found|404)$/i.test(text)) return true;
   return false;
 }
 
@@ -842,11 +843,6 @@ async function saveTabsInScope(source, tabs, activeTab) {
     }
 
     const settings = (await chrome.storage.local.get(SETTINGS_KEY))[SETTINGS_KEY] || {};
-    const savedProject = (await chrome.storage.local.get(LAST_PROJECT_KEY))[LAST_PROJECT_KEY] || "";
-    // 上次用过的项目可能已经被删掉了：先校验一次，
-    // 免得拿一个不存在的 id 去收藏、或在浮层里默认选中一个已经没了的项目。
-    const remembered = await resolveProject(savedProject);
-
     // 这一批里有多少个网页已经收藏过？
     // 用来在浮层里提前说清楚：「已收藏的会被一起搬过来」，免得用户以为重复的会被跳过、
     // 回头还得手动整理一遍。（按网址去重后统计，同一篇在多个标签页里只算一个。）
@@ -858,6 +854,8 @@ async function saveTabsInScope(source, tabs, activeTab) {
 
     // 用户关掉了「先选项目」：直接用上次用过的项目开始。
     if (settings.askFolderOnBatch === false) {
+      const savedProject = (await chrome.storage.local.get(LAST_PROJECT_KEY))[LAST_PROJECT_KEY] || "";
+      const remembered = await resolveProject(savedProject);
       await stage({ lastStage: "开始添加（未启用项目选择）" });
       return runBatchSave({
         tabs: targets,
@@ -869,7 +867,7 @@ async function saveTabsInScope(source, tabs, activeTab) {
     }
 
     await stage({ lastStage: "等待选择项目", lastTabCount: targets.length });
-    return askFolderThenSave({ tabs: targets, source, activeTab, savedCount, remembered });
+    return askFolderThenSave({ tabs: targets, source, activeTab, savedCount });
   } catch (error) {
     await recordDiag({
       lastStage: "失败",
@@ -891,9 +889,10 @@ async function shouldAskFolderForSingle() {
 // 把这一批标签页暂存起来，弹出「选项目」浮层，等用户选好再真正收藏。
 // 单篇收藏和整窗收藏共用这一段，所以两条路径的体验完全一致：
 // 都是先选项目 → 再抓取收藏 → 已收藏过的会被搬进所选项目。
-async function askFolderThenSave({ tabs, source = "shortcut", activeTab = null, savedCount = 0, remembered = null }) {
+async function askFolderThenSave({ tabs, source = "shortcut", activeTab = null, savedCount = 0 }) {
   const targets = tabs || [];
-  const last = remembered || (await resolveProject((await chrome.storage.local.get(LAST_PROJECT_KEY))[LAST_PROJECT_KEY] || ""));
+  // 每次添加都从「等待整理」开始，避免上次选过的项目影响本次归属。
+  // 移动已有网页的浮层由调用方显式传入原项目，不走此添加流程。
 
   // 先把这一批标签页暂存起来，等用户在浮层里选好项目（或新建一个）再真正开始。
   await chrome.storage.session.set({
@@ -901,7 +900,7 @@ async function askFolderThenSave({ tabs, source = "shortcut", activeTab = null, 
       createdAt: Date.now(),
       source,
       notifyTabId: activeTab?.id ?? null,
-      projectId: last.id || "",
+      projectId: "",
       savedCount,
       tabs: targets.map((tab) => ({
         id: tab.id,
@@ -918,7 +917,7 @@ async function askFolderThenSave({ tabs, source = "shortcut", activeTab = null, 
   // 选择项目只允许使用网页内浮层，不再创建任何独立窗口。
   // 首次注入可能正撞上页面跳转，短暂等一下再重试一次；共享 UI 会先移除旧宿主，
   // 因此即使第一次稍后恢复，页面上最终也只会保留一个浮层。
-  const pickerPayload = { tabs: targets, projectId: last.id, savedCount };
+  const pickerPayload = { tabs: targets, projectId: null, savedCount };
   let shown = await showPickerOverlay(activeTab, pickerPayload);
   if (!shown && activeTab?.id && isWebUrl(activeTab.url)) {
     await new Promise((resolve) => setTimeout(resolve, 180));
@@ -1482,14 +1481,14 @@ async function refetchMetaFromServer(url) {
 }
 
 // 仅补救弱标题、图标封面和缺失摘要，保留页面内已提取到的正文信息。
-async function applyServerMetaRescue(result) {
+async function applyServerMetaRescue(result, refetch = refetchMetaFromServer) {
   const titleIsWeak =
     ["tab", "page-title", "none", "page", "meta-title"].includes(result.titleFrom) ||
     (result.titleFrom !== "dom-headline" && titleHasSiteNoise(result.title, result.source));
   const imageIsWeak = !result.image || isIconLikeImage(result.image);
   if (!titleIsWeak && !imageIsWeak) return result;
 
-  const server = await refetchMetaFromServer(result.url);
+  const server = await refetch(result.url);
   if (server) {
     const serverTitleUsable =
       server.title &&
@@ -1510,11 +1509,13 @@ async function applyServerMetaRescue(result) {
   return result;
 }
 
-async function extractTabMetadata(tab, { serverRescue = true } = {}) {
-  const rescue = result => serverRescue ? applyServerMetaRescue(result) : result;
+async function extractTabMetadata(tab, { serverRescue = true, serverMetadata = refetchMetaFromServer } = {}) {
+  const rescue = result => serverRescue ? applyServerMetaRescue(result, serverMetadata) : result;
+  const requireCurrentDocument = !serverRescue || serverMetadata !== refetchMetaFromServer;
+  const searchTitle = globalThis.LaterOnUrl?.searchTitle?.(tab.url) || "";
   const fallback = {
-    title: tab.title || tab.url,
-    titleFrom: "tab",
+    title: searchTitle || tab.title || tab.url,
+    titleFrom: searchTitle ? "search-query" : "tab",
     description: "暂无摘要",
     image: "",
     imageFrom: "none",
@@ -1537,7 +1538,7 @@ async function extractTabMetadata(tab, { serverRescue = true } = {}) {
   for (;;) {
     const data = await readTabMetadata(tab);
     if (!data) return rescue(fallback);
-    if (!serverRescue && data.url !== tab.url) return fallback;
+    if (requireCurrentDocument && data.url !== tab.url) return fallback;
 
     // 复核：提取脚本会回报它实际读到的视频 id（面板上的那个）。
     // 跟网址一对，就知道读到的标题/封面是不是这条视频的。对不上就趁剩下的时间再读一次。
@@ -1545,11 +1546,11 @@ async function extractTabMetadata(tab, { serverRescue = true } = {}) {
       await new Promise((resolve) => setTimeout(resolve, DOUYIN_POLL_MS));
       continue;
     }
-    if (!serverRescue && expectedId && data.videoId && data.videoId !== expectedId) return fallback;
+    if (requireCurrentDocument && expectedId && data.videoId && data.videoId !== expectedId) return fallback;
 
     const result = {
-      title: data.title || fallback.title,
-      titleFrom: data.title ? data.titleFrom || "page" : "tab",
+      title: searchTitle || data.title || fallback.title,
+      titleFrom: searchTitle ? "search-query" : data.title ? data.titleFrom || "page" : "tab",
       description: data.description || fallback.description,
       image: data.image || "",
       imageFrom: data.imageFrom || "none",
@@ -1567,7 +1568,7 @@ async function readTabMetadata(tab) {
     const injection = await withTimeout(
       chrome.scripting.executeScript({
         target: { tabId: tab.id },
-        files: ["content-metadata.js"]
+        files: ["url-utils.js", "content-metadata.js"]
       }),
       EXTRACT_TIMEOUT_MS,
       null

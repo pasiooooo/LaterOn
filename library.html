@@ -9,6 +9,10 @@
     <title>LaterOn · 阅读库</title>
     <link rel="icon" href="icon128.png" type="image/png" />
     <script src="appearance.js"></script>
+    <script src="picker-keyboard-guard.js" defer></script>
+    <script src="keyboard-shortcuts.js" defer></script>
+    <script src="quick-switcher-ui.js" defer></script>
+    <script src="quick-switcher-client.js" defer></script>
     <link rel="stylesheet" href="theme-vars.css" />
     <link rel="stylesheet" href="dialog.css" />
     <link rel="stylesheet" href="onboarding.css" />
@@ -38,7 +42,7 @@
 
       <div class="workspace">
         <aside class="project-sidebar" data-i18n-aria-label="projectNav" aria-label="项目导航">
-          <nav class="library-switch" aria-label="资料库"><a href="library.html" aria-current="page" data-i18n="readingLibrary">阅读库</a><a href="bookmarks.html" data-i18n="bookmarkLibrary">书签库</a></nav>
+          <nav class="library-switch" aria-label="资料库"><a href="library.html" aria-current="page" data-i18n="readingLibrary">阅读库</a><a href="bookmarks.html" data-i18n="bookmarkLibrary">书签库</a><button class="quick-switcher-trigger" type="button" data-quick-switcher data-i18n-title="quickSwitcherShortcut" data-i18n-aria-label="quickSwitcher" title="快速切换 · Alt / Option + O" aria-label="快速切换"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7V5a2 2 0 1 0-2 2h10a2 2 0 1 0-2-2v14a2 2 0 1 0 2-2H7a2 2 0 1 0 2 2V7"/></svg></button></nav>
           <!-- 「待整理」单独占一块，钉在侧栏最上面：它不是一个普通筛选项，
                而是一个待办——有东西堆在这里就该去归位。有内容时整块高亮。
                仍然带 .project-nav，所以点击切换、拖收藏进来归类的行为都照旧。 -->
@@ -197,8 +201,9 @@
     </div>
     <div id="toast" class="toast" role="status"></div>
     <script src="url-utils.js"></script>
+    <script src="reading-bookmark-status.js"></script>
     <script src="tab-navigation.js"></script>
-    <script src="library.js"></script>
+    <script src="library.js" defer></script>
     <script src="bookmark-transfer.js"></script>
   </body>
 </html>

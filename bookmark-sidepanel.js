@@ -33,14 +33,14 @@
       $('#bookmarkSidepanelFolders').hidden = sidebar.hidden;
       $('#bookmarkToggleFolders').setAttribute('aria-expanded', String(!sidebar.hidden));
     });
-    for (const selector of ['#bookmarkNewPage', '#bookmarkNewFolder', '#bookmarkLoadPreviews', '#bookmarkSettingsShortcut']) $(selector).addEventListener('click', () => { tools.open = false; });
+    for (const selector of ['#bookmarkNewPage', '#bookmarkNewFolder', '#bookmarkSettingsShortcut']) $(selector).addEventListener('click', () => { tools.open = false; });
     document.addEventListener('click', event => { if (!tools.contains(event.target)) tools.open = false; });
     let currentTab = null, currentMetadata = null, querying = false, ownerWindowId = null, currentState = { nodes: [] }, writable = false, busy = false, generation = 0, opening = false;
     const webUrl = value => { try { const url = new URL(value); return ['http:', 'https:'].includes(url.protocol) ? url.href : ''; } catch { return ''; } };
     function renderCurrent() {
       const url = webUrl(currentTab?.url);
       const saved = url && currentState.nodes.find(node => node.url && webUrl(node.url) === url);
-      $('#bookmarkCurrentTitle').textContent = currentMetadata?.title || currentTab?.title || t('currentPage');
+      $('#bookmarkCurrentTitle').textContent = currentMetadata?.title || window.LaterOnUrl?.searchTitle?.(currentTab?.url) || currentTab?.title || t('currentPage');
       $('#bookmarkCurrentSource').textContent = currentMetadata?.source || (url ? new URL(url).hostname : t('unsupportedCurrent'));
       if (currentTab) {
         $('#bookmarkCurrentTitle').removeAttribute('data-bm'); $('#bookmarkCurrentSource').removeAttribute('data-bm');

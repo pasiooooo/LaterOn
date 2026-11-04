@@ -67,17 +67,26 @@ async function init() {
   // Legacy IDs preserve users' installed bindings when the action changes.
   let commands = [];
   try { commands = await chrome.commands.getAll(); } catch {}
-  for (const [name, selector, shortcut] of [
-    ["quick-save", "#cmdSave", "Alt+1"],
-    ["save-all-tabs", "#cmdSaveSelected", "Alt+Shift+1"],
-    ["toggle-translation", "#cmdSaveGroup", "Alt+2"],
-    ["save-window-tabs", "#cmdSaveAll", "Alt+Shift+2"]
-  ]) {
-    const current = commands.find(command => command.name === name)?.shortcut;
-    document.querySelector(selector).textContent = current
-      ? t("shortcutDefault", { shortcut: current, def: shortcut })
-      : t("shortcutNotSet", { def: shortcut });
+  function showShortcuts() {
+    for (const [name, selector, shortcut] of [
+      ["quick-switcher", "#cmdQuickSwitcher", "Alt+O"],
+      ["quick-save", "#cmdSave", "Alt+1"],
+      ["save-all-tabs", "#cmdSaveSelected", "Alt+Shift+1"],
+      ["toggle-translation", "#cmdSaveGroup", "Alt+2"]
+    ]) {
+      const assigned = commands.find(command => command.name === name)?.shortcut;
+      document.querySelector(selector).textContent = assigned
+        ? t("shortcutDefault", { shortcut: assigned, def: shortcut })
+        : t("shortcutNotSet", { def: shortcut });
+    }
+    const windowShortcut = commands.find(command => command.name === "save-window-tabs")?.shortcut;
+    const fallback = document.querySelector('[data-setting="windowShortcutFallback"]').checked;
+    document.querySelector("#cmdSaveAll").textContent = windowShortcut
+      ? t("shortcutAssigned", { shortcut: windowShortcut })
+      : fallback ? t("shortcutWebFallback", { shortcut: "Alt+Shift+2" }) : t("shortcutFallbackOff");
   }
+  showShortcuts();
+  document.querySelector('[data-setting="windowShortcutFallback"]').addEventListener("change", showShortcuts);
 
   document.querySelector("#openShortcuts").addEventListener("click", () => {
     chrome.tabs.create({ url: "chrome://extensions/shortcuts" }).catch(() => {
@@ -274,6 +283,7 @@ async function init() {
 // ── 快捷键自检 ──────────────────────────────────────────────
 // 这些映射存的是 i18n 词条 key，显示时用 t() 按当前语言取词。
 const COMMAND_KEYS = {
+  "quick-switcher": "quickSwitcher",
   "quick-save": "cmdSavePage",
   "toggle-translation": "cmdSaveTabGroup",
   "save-all-tabs": "cmdSaveSelectedTabs",

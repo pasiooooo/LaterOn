@@ -53,6 +53,22 @@
     const path = document.createElementNS(svg.namespaceURI, 'path'); path.setAttribute('d', paths[name] || paths.folder); svg.append(path); return svg;
   }
   const localImage = value => typeof value === 'string' && /^data:image\/(?:png|jpeg|webp|gif|avif);base64,[a-z0-9+/=\s]+$/i.test(value) ? value : '';
+  const queryTitle = node => window.LaterOnUrl?.searchTitle?.(node.url) || '';
+  function pageTitle(node) {
+    const title = String(node.title || '').trim(), derived = queryTitle(node);
+    if (!derived) return title || node.url;
+    // Native bookmarks have no titleEdited flag. Keep a user's meaningful name
+    // and only repair generic search/engine labels or a raw URL placeholder.
+    const compact = value => value.toLocaleLowerCase().replace(/[\s·|—–:：_-]+/g, '');
+    const label = compact(title), engine = compact(derived.slice(derived.lastIndexOf(' - ') + 3));
+    const generic = value => /^(?:search(?:results?)?|搜索(?:结果)?|检索(?:结果)?)$/.test(value);
+    let rawUrl = title === node.url;
+    try { rawUrl ||= new URL(title).href === new URL(node.url).href; } catch {}
+    const weak = !title || rawUrl || label === engine || generic(label)
+      || label.startsWith(engine) && generic(label.slice(engine.length))
+      || label.endsWith(engine) && generic(label.slice(0, -engine.length));
+    return weak ? derived : title;
+  }
   function cover(node, className = '') {
     const cell = document.createElement('div'); cell.className = `bookmark-preview ${className}`;
     let host = '';
@@ -76,7 +92,7 @@
       const focused = document.activeElement?.closest?.('[data-folder-id]')?.dataset.folderId;
       const queryText = query.trim().toLocaleLowerCase();
       const pathFor = node => model.trail(node.url ? node.parentId : node.id).map(folder => folder.title).join(' / ');
-      const matches = node => `${node.title || ''} ${node.url || ''} ${pathFor(node)} ${node.preview?.description || ''}`.toLocaleLowerCase().includes(queryText);
+      const matches = node => `${node.title || ''} ${queryTitle(node)} ${node.url || ''} ${pathFor(node)} ${node.preview?.description || ''}`.toLocaleLowerCase().includes(queryText);
       const button = (text, handler, className) => {
         const el = document.createElement('button'); el.type = 'button'; el.className = className || ''; el.textContent = text; el.addEventListener('click', handler); return el;
       };
@@ -151,7 +167,7 @@
         const body = document.createElement('div'); body.className = 'card-body';
         const source = document.createElement('div'); source.className = 'source-row';
         try { source.textContent = new URL(node.url).hostname.replace(/^www\./, ''); } catch { source.textContent = t('name'); }
-        const titleLink = link('title-link'), heading = document.createElement('h2'); heading.textContent = node.title || node.url; heading.title = heading.textContent; titleLink.append(heading);
+        const titleLink = link('title-link'), heading = document.createElement('h2'); heading.textContent = pageTitle(node); heading.title = heading.textContent; titleLink.append(heading);
         const description = document.createElement('p'); description.className = 'description'; description.textContent = node.preview?.description || t('pageHint');
         const footer = document.createElement('footer');
         const folder = button(model.byId.get(node.parentId)?.title || t('all'), () => options.onMove(node), 'bookmark-card-folder'); folder.title = pathFor(node);

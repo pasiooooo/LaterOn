@@ -50,11 +50,10 @@ const tick = () => new Promise(resolve => setTimeout(resolve, 20));
       assert.equal($('#bookmarkList').children.length,1);
       assert($('#bookmarkList').textContent.includes('Deep research'));
       $('#bookmarkSearch').value='';$('#bookmarkSearch').dispatchEvent(new window.Event('input'));
-      $('#bookmarkLoadPreviews').click();
+      assert.equal($('#bookmarkLoadPreviews'), null, 'Covers load automatically without a manual preview button');
       for(let i=0;i<20 && !$('#bookmarkFolderCards img');i++) await tick();
       assert($('#bookmarkFolderCards img'),'Folder boards show cached previews from descendant pages');
       assert($('#bookmarkList .cover img'),'Page cards render the fetched cover');
-      assert(!$('#bookmarkLoadPreviews').disabled || !$('#bookmarkLoadPreviews').textContent.includes('…'));
       $('#bookmarkScope').value='scope';$('#bookmarkScope').dispatchEvent(new window.Event('change'));$('#bookmarkApplyScope').click();
       await tick();
       assert(!$('#bookmarkBreadcrumbs').textContent.includes('Bookmarks bar'),'Out-of-scope native ancestors are not breadcrumb destinations');
@@ -86,15 +85,13 @@ const tick = () => new Promise(resolve => setTimeout(resolve, 20));
     for(const name of ['i18n.js','bookmark-view.js','bookmarks.js'])window.eval(read(name));
     await tick();
     assert.equal(window.document.querySelector('#bookmarkViewTitle').textContent,'Other bookmarks','Saved folder selection is restored');
-    const load=()=>window.document.querySelector('#bookmarkLoadPreviews');
-    load().click();
-    for(let i=0;i<50&&load().textContent.includes('…');i++)await tick();
-    load().click();
-    for(let i=0;i<50&&load().textContent.includes('…');i++)await tick();
-    assert.equal(batches.length,2);
-    assert.equal(batches[0].length,12);
-    assert.equal(batches[1].length,12);
-    assert(!batches[1].some(id=>batches[0].includes(id)),'Pages without site covers must not monopolize every preview batch');
+    for(let i=0;i<50 && batch.store.laterOnBookmarkPreviewQueue.pending.length;i++) {
+      batch.chrome.alarms.onAlarm.emit({name:'laterOnBookmarkPreviews'}); await tick();
+    }
+    assert(batches.length > 0, 'Visible previews are automatically prioritized');
+    assert(batches.every(ids=>ids.length <= 144));
+    assert.equal(batch.store.laterOnBookmarkPreviewQueue.pending.length,0,'Queue progresses across batches without another user action');
+    assert.equal(Object.keys(batch.store.laterOnBookmarkPreviewQueue.attempted).length,27);
   } finally {batchDom.window.close();}
   assert(read('bookmarks.html').includes('href="library.css"'),'Use the actual reading-library visual foundation');
   assert.match(read('bookmarks.css'),/\.bookmark-card h2[^}]*overflow:\s*visible[^}]*height:\s*auto[^}]*line-height:\s*var\(--leading-title\)/);
