@@ -16,6 +16,8 @@ main { padding:var(--panel-main-top) var(--panel-gutter) var(--panel-bottom); }
 .current-thumb { display:grid; place-items:center; width:52px; height:52px; overflow:hidden; border-radius:9px; background:linear-gradient(145deg,#33312e,#777169); background-position:center; background-size:cover; }
 /* 顶部「当前页面」小预览：没抓到封面时在深色底上居中放一枚 Logo。 */
 .current-thumb .thumb-logo { width:22px; height:22px; border-radius:6px; box-shadow:0 3px 8px -3px rgba(0,0,0,.4); }
+/* 两库共用：真实封面的透明区域透出卡片底色，渐变只用于未加载的占位图。 */
+.current-thumb.has-cover { background-color:transparent; background-image:none; }
 .current-thumb.has-cover .thumb-logo { display:none; }
 .current-copy { min-width:0; }
 .current-copy p { overflow:hidden; margin:0 0 4px; color:var(--muted); font-size:10px; text-overflow:ellipsis; white-space:nowrap; }

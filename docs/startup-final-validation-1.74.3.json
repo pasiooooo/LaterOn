@@ -35,7 +35,6 @@
       ],
       "reason": "Quick remained open while waiting for background preparation; recorded quiesce timeouts retained. Corrected closing order separately measured three times."
     },
-    "sourceHashesEqual": true,
     "independentEvidenceReview": "passed",
     "preparedQuick": {
       "runningWorkerFirstRowsMs": {
@@ -71,21 +70,8 @@
       "failedPerRep": 60,
       "producerFinished": true,
       "controlledNetworkFailure": true
-    }
-  },
-  "package": {
-    "version": "1.74.3",
-    "files": 70,
-    "bytes": 629527,
-    "sha256": "472df115e0979e0594b95185db8dd6c8f8d22b31de79c3ef78f9ab55bd93ef5b",
-    "archive": "/Users/jzh/Library/CloudStorage/OneDrive-Personal/Dev/LaterOn/dist/LaterOn-1.74.3.zip",
-    "folder": "/Users/jzh/Library/CloudStorage/OneDrive-Personal/Dev/LaterOn/dist/LaterOn-1.74.3",
-    "crc": true,
-    "archiveSourceExtractedEqual": true,
-    "localReferences": 42,
-    "localesValid": true,
-    "nativeDefaultShortcuts": 4,
-    "bookmarksPermission": "optional"
+    },
+    "sourceHashesEqualAtPerformanceCommit": true
   },
   "evidenceSha256": {
     "docs/startup-native-final-core-50k.json": "f29f7861da4c3c89a262c3fddf47b33e450c561467b16ca8ec7f2a89ff327c26",
@@ -107,8 +93,55 @@
     "stopReason": "STOP file",
     "browserExitCode": 0
   },
-  "documentationSha256": {
+  "performanceEvidenceCommit": "e37f6266e7de6bd13d2e9497f4dfe4a391516998",
+  "performanceMeasuredPackage": {
+    "version": "1.74.3",
+    "files": 70,
+    "bytes": 629527,
+    "sha256": "472df115e0979e0594b95185db8dd6c8f8d22b31de79c3ef78f9ab55bd93ef5b",
+    "archive": "/Users/jzh/Library/CloudStorage/OneDrive-Personal/Dev/LaterOn/dist/LaterOn-1.74.3.zip",
+    "folder": "/Users/jzh/Library/CloudStorage/OneDrive-Personal/Dev/LaterOn/dist/LaterOn-1.74.3",
+    "crc": true,
+    "archiveSourceExtractedEqual": true,
+    "localReferences": 42,
+    "localesValid": true,
+    "nativeDefaultShortcuts": 4,
+    "bookmarksPermission": "optional"
+  },
+  "package": {
+    "version": "1.74.3",
+    "files": 70,
+    "bytes": 629600,
+    "sha256": "acabf02b6a80716a6904208f86fc42c093fba476c068e0b2425d61437d10ddc2",
+    "archive": "/Users/jzh/Library/CloudStorage/OneDrive-Personal/Dev/LaterOn/dist/cover-background-fix/LaterOn-1.74.3.zip",
+    "folder": "/Users/jzh/Library/CloudStorage/OneDrive-Personal/Dev/LaterOn/dist/release-verification-1.74.3",
+    "releaseDownloadUrl": "https://github.com/pasiooooo/LaterOn/releases/download/v1.74.3/LaterOn-1.74.3.zip",
+    "crc": true,
+    "archiveSourceExtractedEqual": true,
+    "localReferences": 42,
+    "localesValid": true,
+    "nativeDefaultShortcuts": 4,
+    "bookmarksPermission": "optional"
+  },
+  "releasePackageVerifiedAt": "2026-11-07T22:36:43.279664+08:00",
+  "postPerformanceCoverFix": {
+    "runtimeFilesChanged": [
+      "sidepanel.css"
+    ],
+    "allOtherRuntimeFilesEqual": true,
+    "componentCasesPassed": 8,
+    "focusedTestsPassed": [
+      "sidepanel-shared-current.test.js",
+      "bookmark-sidepanel.test.js"
+    ],
+    "boundary": "Actual Chromium component rendering and actual cover functions with controlled metadata and images; not installed-extension Google or actual user profile validation. Full native performance suite was not repeated for this CSS-only follow-up."
+  },
+  "performanceDocumentationSha256": {
     "docs/startup-performance.md": "17d64772b02c101afc1f696aa4a6138b7e7ba99da5b7acadfffa4560bd42dacc",
     "CHANGELOG.md": "43d066f0d7c6dbde57a2f2733fc0682fceb816844dcef03ee307764cda25f26c"
+  },
+  "documentationSha256": {
+    "docs/startup-performance.md": "525d57c8ef8c16bd7064bd13bacf9c4bee35a9dd2cd4e2ddf863c2e62c648dfe",
+    "CHANGELOG.md": "9aaee26c524e36ffc08de3f3d7b216e40f9e48564084348e9ca8e26d6602ced6"
   }
 }
