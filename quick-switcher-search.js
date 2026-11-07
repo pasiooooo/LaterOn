@@ -2,6 +2,31 @@
 // neither this index nor its transient scores belong in backups or sync data.
 (() => {
   const prepared = new WeakMap();
+  const recentOrder = new WeakSet();
+  let channel = null, lastYield = 0;
+  const turns = [];
+  const now = () => typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+  // Bulk index work yields at least every few milliseconds, at background
+  // priority, so worker messages (show, search, open) run first. Do not use
+  // scheduler.yield(): its continuation is boosted ahead of ordinary tasks,
+  // which can starve extension messages for seconds during a large build.
+  const BUDGET = 6;
+  function yieldTask() {
+    if (now() - lastYield < BUDGET) return Promise.resolve();
+    const done = () => { lastYield = now(); };
+    if (typeof globalThis.scheduler?.postTask === 'function') {
+      return globalThis.scheduler.postTask(done, { priority: 'background' }).catch(done);
+    }
+    if (typeof MessageChannel === 'function') {
+      if (!channel) {
+        channel = new MessageChannel();
+        channel.port1.onmessage = () => turns.shift()?.();
+        channel.port1.unref?.(); channel.port2.unref?.();
+      }
+      return new Promise(resolve => { turns.push(() => { done(); resolve(); }); channel.port2.postMessage(null); });
+    }
+    return new Promise(resolve => setTimeout(() => { done(); resolve(); }, 0));
+  }
   const text = (value, maximum = 1000) => typeof value === 'string'
     ? value.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, maximum) : '';
   const fold = value => String(value || '').normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase();
@@ -35,9 +60,10 @@
       locations: [...entry.projectNames || [], ...entry.folderNames || []].map(fold),
       inbox: entry.readingIds?.length && !entry.projectNames?.length ? '等待整理 inbox' : '' };
   }
-  function build({ items = [], projects = [], bookmarks = {}, bookmarkConfig = {} } = {}) {
+  function* construct({ items = [], projects = [], bookmarks = {}, bookmarkConfig = {} } = {}) {
     const all = new Map(), names = new Map((Array.isArray(projects) ? projects : []).filter(Boolean).map(project => [project.id, text(project.name, 500)]));
     const priorities = new Map();
+    let work = 0;
     function record(url) {
       if (!all.has(url)) {
         const host = new URL(url).hostname.replace(/^www\./, '');
@@ -52,6 +78,7 @@
       if (priority > (priorities.get(entry.url) || 0)) { entry.title = value; priorities.set(entry.url, priority); }
     }
     for (const item of Array.isArray(items) ? items : []) {
+      if (++work % 250 === 0) yield;
       if (!item) continue;
       const url = pageUrl(item.url);
       if (!url) continue;
@@ -67,7 +94,11 @@
       && (bookmarkConfig.scopeId || null) === (bookmarks.scopeId || null);
     if (enabled) {
       const nodes = (Array.isArray(bookmarks.nodes) ? bookmarks.nodes : []).filter(Boolean);
-      const byId = new Map([...(Array.isArray(bookmarks.folders) ? bookmarks.folders : []), ...nodes].filter(Boolean).map(node => [node.id, node]));
+      const byId = new Map();
+      for (const node of [...(Array.isArray(bookmarks.folders) ? bookmarks.folders : []), ...nodes]) {
+        if (++work % 250 === 0) yield;
+        if (node) byId.set(node.id, node);
+      }
       const paths = new Map(), scopes = new Map();
       function scoped(node) {
         if (!bookmarkConfig.scopeId) return true;
@@ -92,6 +123,7 @@
         const path = parts.join(' / '); paths.set(parentId, path); return path;
       }
       for (const node of nodes) {
+        if (++work % 250 === 0) yield;
         const url = pageUrl(node.url);
         if (!url || !scoped(node)) continue;
         const entry = record(url), derived = globalThis.LaterOnUrl?.searchTitle?.(url) || '';
@@ -104,8 +136,26 @@
       }
     }
     const index = [...all.values()].sort((a, b) => b.savedAt - a.savedAt || a.url.localeCompare(b.url));
-    prepared.set(index, index.map(fields));
+    const normalized = [];
+    for (const entry of index) {
+      if (++work % 250 === 0) yield;
+      normalized.push(fields(entry));
+    }
+    prepared.set(index, normalized);
+    recentOrder.add(index);
     return index;
+  }
+  function build(input) {
+    const iterator = construct(input);
+    let step = iterator.next();
+    while (!step.done) step = iterator.next();
+    return step.value;
+  }
+  async function buildAsync(input, pause = yieldTask) {
+    const iterator = construct(input);
+    let step = iterator.next();
+    while (!step.done) { await pause(); step = iterator.next(); }
+    return step.value;
   }
   function containsScore(value, term, exact, prefix, inside) {
     const position = value.indexOf(term);
@@ -126,35 +176,59 @@
     }
     return best;
   }
-  function search(index, query, { limit = 50 } = {}) {
+  const maximumFor = limit => Number.isFinite(Number(limit)) ? Math.max(0, Math.min(100, Math.floor(Number(limit)))) : 50;
+  function score(entry, values, phrase, terms) {
+    let score = 0;
+    for (const term of terms) {
+      let part = containsScore(values.title, term, 260, 220, 160);
+      for (const alias of values.aliases) part = Math.max(part, containsScore(alias, term, 200, 175, 135));
+      part = Math.max(part, containsScore(values.source, term, 115, 105, 95), containsScore(values.url, term, 85, 75, 60));
+      for (const location of values.locations) part = Math.max(part, containsScore(location, term, 110, 95, 80));
+      if (values.inbox.includes(term)) part = Math.max(part, 80);
+      if (!part) {
+        part = fuzzyScore(values.title, term);
+        for (const alias of values.aliases) part = Math.max(part, Math.max(0, fuzzyScore(alias, term) - 5));
+      }
+      if (!part) return null;
+      score += part;
+    }
+    if (phrase) score += containsScore(values.title, phrase, 700, 350, 150);
+    return score;
+  }
+  function searchRecords(records, query, { limit = 50 } = {}) {
+    const phrase = fold(text(query, 512)), terms = [...new Set(phrase.split(/\s+/).filter(Boolean))];
+    const maximum = maximumFor(limit), found = [];
+    const compare = (a, b) => b.score - a.score || b.entry.savedAt - a.entry.savedAt || a.position - b.position;
+    let total = 0;
+    for (const record of records) {
+      const value = score(record.entry, record.values, phrase, terms);
+      if (value === null) continue;
+      total++;
+      if (!maximum) continue;
+      const hit = { entry: record.entry, score: value, position: record.position };
+      // Keep only the requested winners. Sorting every matching page makes a
+      // broad one-letter query progressively slower as the library grows.
+      if (found.length === maximum && compare(hit, found[found.length - 1]) >= 0) continue;
+      let low = 0, high = found.length;
+      while (low < high) { const middle = (low + high) >>> 1; if (compare(hit, found[middle]) < 0) high = middle; else low = middle + 1; }
+      found.splice(low, 0, hit);
+      if (found.length > maximum) found.pop();
+    }
+    return { results: found.map(({ entry, score }) => ({ ...entry, score })), total };
+  }
+  function search(index, query, options = {}) {
     const entries = Array.isArray(index) ? index : [];
+    if (!text(query, 512) && recentOrder.has(entries)) {
+      return { results: entries.slice(0, maximumFor(options.limit === undefined ? 50 : options.limit)).map(entry => ({ ...entry, score: 0 })), total: entries.length };
+    }
     let normalized = prepared.get(entries);
     if (!normalized) { normalized = entries.map(fields); prepared.set(entries, normalized); }
-    const phrase = fold(text(query, 512)), terms = [...new Set(phrase.split(/\s+/).filter(Boolean))];
-    const found = [];
-    for (let position = 0; position < entries.length; position++) {
-      const entry = entries[position], values = normalized[position];
-      let score = 0, matches = true;
-      for (const term of terms) {
-        let part = containsScore(values.title, term, 260, 220, 160);
-        for (const alias of values.aliases) part = Math.max(part, containsScore(alias, term, 200, 175, 135));
-        part = Math.max(part, containsScore(values.source, term, 115, 105, 95), containsScore(values.url, term, 85, 75, 60));
-        for (const location of values.locations) part = Math.max(part, containsScore(location, term, 110, 95, 80));
-        if (values.inbox.includes(term)) part = Math.max(part, 80);
-        if (!part) {
-          part = fuzzyScore(values.title, term);
-          for (const alias of values.aliases) part = Math.max(part, Math.max(0, fuzzyScore(alias, term) - 5));
-        }
-        if (!part) { matches = false; break; }
-        score += part;
-      }
-      if (!matches) continue;
-      if (phrase) score += containsScore(values.title, phrase, 700, 350, 150);
-      found.push({ entry, score, position });
-    }
-    found.sort((a, b) => b.score - a.score || b.entry.savedAt - a.entry.savedAt || a.position - b.position);
-    const maximum = Number.isFinite(Number(limit)) ? Math.max(0, Math.min(100, Math.floor(Number(limit)))) : 50;
-    return { results: found.slice(0, maximum).map(({ entry, score }) => ({ ...entry, score })), total: found.length };
+    return searchRecords(entries.map((entry, position) => ({ entry, position, values: normalized[position] })), query, options);
   }
-  globalThis.LaterOnQuickSearch = { build, search };
+  function preparedFields(index) {
+    let normalized = prepared.get(index);
+    if (!normalized) { normalized = index.map(fields); prepared.set(index, normalized); }
+    return normalized;
+  }
+  globalThis.LaterOnQuickSearch = { build, buildAsync, search, searchRecords, fields, preparedFields, fold, text, yieldTask };
 })();

@@ -26,12 +26,14 @@
       title: 'Quick Switcher', placeholder: 'Search saved pages, URLs or folders…', close: 'Close Quick Switcher', recent: 'Recently saved', matches: 'Search results',
       loading: 'Searching your library…', empty: 'No matching pages', emptyHint: 'Try a title, website, project or folder.', noPages: 'Your saved pages will appear here', noPagesHint: 'Add pages to Reading or connect your Bookmarks to get started.',
       failed: 'Couldn’t search your pages', retry: 'Try again', openFailed: 'Couldn’t open this page. Please try again.', opening: 'Opening…',
-      reading: 'Reading', bookmarks: 'Bookmarks', move: 'Select', enter: 'Open / switch', newTab: 'New tab', dismiss: 'Close', pages: n => `${n} pages`, limited: (shown, total) => `${shown} of ${total}`
+      reading: 'Reading', bookmarks: 'Bookmarks', move: 'Select', enter: 'Open / switch', newTab: 'New tab', dismiss: 'Close', pages: n => `${n} pages`, limited: (shown, total) => `${shown} of ${total}`,
+      available: n => `${n} available`, updating: 'Loading more pages…'
     } : {
       title: '快速切换', placeholder: '搜索已存网页、网址或文件夹…', close: '关闭快速切换', recent: '最近保存', matches: '搜索结果',
       loading: '正在搜索资料库…', empty: '没有匹配的网页', emptyHint: '试试标题、网站、项目或文件夹名称。', noPages: '已保存的网页会出现在这里', noPagesHint: '添加网页到阅读库，或连接书签库后即可搜索。',
       failed: '暂时无法搜索网页', retry: '重试', openFailed: '网页未能打开，请重试。', opening: '正在打开…',
-      reading: '阅读库', bookmarks: '书签库', move: '选择', enter: '打开 / 切换', newTab: '新标签页', dismiss: '关闭', pages: n => `${n} 个网页`, limited: (shown, total) => `${shown} / ${total}`
+      reading: '阅读库', bookmarks: '书签库', move: '选择', enter: '打开 / 切换', newTab: '新标签页', dismiss: '关闭', pages: n => `${n} 个网页`, limited: (shown, total) => `${shown} / ${total}`,
+      available: n => `${n} 个可用结果`, updating: '正在读取其余网页…'
     };
     const host = element('div'); host.id = HOST_ID;
     host.style.setProperty('all', 'initial', 'important');
@@ -121,8 +123,10 @@
       results = (Array.isArray(response?.results) ? response.results : []).filter(result => safeUrl(result?.url)).slice(0, 50);
       total = Math.max(results.length, Number(response?.total) || 0); rows = [];
       list.replaceChildren(); list.hidden = !results.length; status.hidden = !!results.length;
-      count.textContent = total > results.length ? words.limited(results.length, total) : words.pages(total);
-      live.textContent = words.pages(total);
+      const provisional = response?.provisional === true;
+      count.textContent = provisional ? `${words.available(results.length)} · ${words.updating}`
+        : total > results.length ? words.limited(results.length, total) : words.pages(total);
+      live.textContent = provisional ? count.textContent : words.pages(total);
       for (const [index, result] of results.entries()) {
         const row = element('div', 'qs-result'); row.id = `lateron-switcher-option-${index}`; row.setAttribute('role', 'option'); row.setAttribute('aria-selected', 'false');
         let domain = result.source || '', address = result.url;
@@ -146,7 +150,8 @@
       }
       if (!results.length) {
         input.removeAttribute('aria-activedescendant');
-        announce(query ? words.empty : words.noPages, query ? words.emptyHint : words.noPagesHint);
+        if (provisional) announce(words.loading);
+        else announce(query ? words.empty : words.noPages, query ? words.emptyHint : words.noPagesHint);
       } else select(results.some(result => result.id === previousId) ? results.findIndex(result => result.id === previousId) : 0);
     }
     async function runSearch() {

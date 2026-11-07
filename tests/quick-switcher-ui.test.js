@@ -165,6 +165,23 @@ function fixture() {
     assert.deepEqual(resize.errors, []);
   } finally { resize.w.close(); }
 
+  const provisional = fixture();
+  try {
+    let pending = true, empty = false;
+    const api = provisional.open({ search: async () => ({ results: empty ? [] : [result('available')], total: pending ? 9999 : 1, provisional: pending }), onOpen: async () => {} });
+    const s = api.shadow;
+    await waitFor(() => s.querySelectorAll('.qs-result').length === 1, 'Provisional results remain usable');
+    assert(s.querySelector('.qs-count').textContent.includes('1 available'));
+    assert(!s.querySelector('.qs-count').textContent.includes('9999'), 'An incomplete result set does not claim an exact library count');
+    pending = false; api.refresh();
+    await waitFor(() => s.querySelector('.qs-count').textContent === '1 pages', 'Fresh results restore the exact count');
+    pending = true; empty = true; api.refresh();
+    await waitFor(() => s.querySelector('.qs-status').textContent.includes('Searching your library'), 'An incomplete empty response is still loading');
+    assert(!s.querySelector('.qs-status').textContent.includes('saved pages will appear'), 'Loading is not falsely reported as an empty collection');
+    api.close();
+    assert.deepEqual(provisional.errors, []);
+  } finally { provisional.w.close(); }
+
   const failure = fixture();
   try {
     let attempts = 0;

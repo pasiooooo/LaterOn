@@ -34,6 +34,16 @@ function fixture(initial = {}, noNamespace = false, blockedListeners = false) {
       for (const node of copies) if (node.parentId) byId.get(node.parentId)?.children.push(node);
       return [byId.get('0')];
     },
+    async get(ids) {
+      if (!granted) throw new Error('Permission denied');
+      const list = Array.isArray(ids) ? ids : [ids];
+      return list.map(id => {
+        const node = nodes.find(entry => entry.id === id);
+        if (!node) throw new Error(`Can't find bookmark for id.`);
+        const { children, ...plain } = clone(node);
+        return plain;
+      });
+    },
     async create(data) {
       const node = { id: String(nextId++), ...clone(data), ...(data.url ? {} : { children: [] }) };
       nodes.push(node); events.onCreated.emit(node.id, node); return clone(node);

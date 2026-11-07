@@ -10,6 +10,10 @@
   let persisted = null;
   const root = document.documentElement;
   const url = new URL(location.href);
+  if (url.pathname.endsWith('/quick-switcher.html')) {
+    const presentation = { theme: url.searchParams.get('theme'), language: url.searchParams.get('language') };
+    if (valid(presentation)) current = presentation;
+  }
   const compact = url.pathname.endsWith('/sidepanel.html') || url.pathname.endsWith('/bookmarks.html') && url.searchParams.get('surface') === 'sidepanel';
   root.classList.toggle('sidepanel-surface', compact);
   if (compact && url.pathname.endsWith('/bookmarks.html')) root.classList.add('bookmark-sidepanel');

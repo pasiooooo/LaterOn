@@ -237,7 +237,14 @@ async function setFilter(value) {
 }
 
 async function init() {
-  await window.LaterOnI18n?.getLanguage();
+  // Use the cached language for the first screen. The authoritative language
+  // read runs alongside collection loading instead of delaying its request.
+  let rendered = false;
+  Promise.resolve(window.LaterOnI18n?.ready || window.LaterOnI18n?.getLanguage?.())
+    .catch(() => null).then(() => {
+      window.LaterOnI18n?.applyStatic();
+      if (rendered) { render(); renderProjects(); }
+    });
   window.LaterOnI18n?.applyStatic();
   const [result, activeTabs] = await Promise.all([
     chrome.storage.local.get([STORAGE_KEY, PROJECTS_KEY, ACTIVE_PROJECT_KEY, SETTINGS_KEY, CURRENT_ITEM_KEY, FILTER_KEY, FILTER_CHOSEN_KEY, ORDER_KEY, COVERS_KEY]),
@@ -286,6 +293,7 @@ async function init() {
   libraryWindowId = activeTabs[0]?.windowId || null;
   render();
   renderProjects();
+  rendered = true;
 }
 
 chrome.storage.onChanged.addListener((changes, area) => {
@@ -403,7 +411,7 @@ document.querySelectorAll(".nav-item").forEach((button) => {
 let searchTimer = null;
 searchInput.addEventListener("input", () => {
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => { query = searchInput.value.trim().toLowerCase(); render(); }, 120);
+  searchTimer = setTimeout(() => { query = searchInput.value.trim().toLowerCase(); render(); }, 32);
 });
 
 // 点左上角的 LaterOn 标识 = 回「全屏首页」。

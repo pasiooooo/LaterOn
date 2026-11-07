@@ -45,6 +45,9 @@ const until = async check => { for (let i = 0; i < 100 && !check(); i++) await t
     assert.equal(requests, 1, 'Re-rendering and refreshing cannot hammer unavailable sites');
     f.store.laterOnBookmarkPreviewQueue.attempted.inside.at -= 25 * 60 * 60 * 1000;
     f.store.laterOnBookmarkPreviews.inside.attemptedAt -= 25 * 60 * 60 * 1000;
+    // Opening a view returns the cached mirror; once its last native check is
+    // older than the recheck window, the same GET queues a quiet refresh.
+    f.store.laterOnBookmarkStateMeta.checkedAt -= 2 * 60 * 1000;
     await f.api.handle({ type: 'BOOKMARKS_GET' });
     await until(() => requests === 2);
     await until(() => f.store.laterOnBookmarkPreviewQueue.pending.length === 0);

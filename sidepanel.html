@@ -10,10 +10,6 @@
     <link rel="icon" href="icon128.png" type="image/png" />
 
     <script src="appearance.js"></script>
-    <script src="picker-keyboard-guard.js" defer></script>
-    <script src="keyboard-shortcuts.js" defer></script>
-    <script src="quick-switcher-ui.js" defer></script>
-    <script src="quick-switcher-client.js" defer></script>
 
     <!-- 首屏兜底采用正式侧栏的主题和字体；核心样式在首帧前就绪，
          其余内容加载时只显示列表骨架，不替换顶部公共控件。 -->
@@ -85,11 +81,18 @@
     <script src="i18n.js" defer></script>
     <script src="onboarding.js" defer></script>
     <script src="url-utils.js" defer></script>
+    <script src="quick-switcher-search.js" defer></script>
+    <script src="local-index.js" defer></script>
     <script src="reading-bookmark-status.js" defer></script>
     <script src="sidepanel-switch.js" defer></script>
     <script src="tab-navigation.js" defer></script>
     <script src="sidepanel.js" defer></script>
     <script src="bookmark-transfer.js" defer></script>
+    <!-- 首屏先启动；快捷切换与网页备用键不排在列表初始化之前。 -->
+    <script src="picker-keyboard-guard.js" defer></script>
+    <script src="keyboard-shortcuts.js" defer></script>
+    <script src="quick-switcher-ui.js" defer></script>
+    <script src="quick-switcher-client.js" defer></script>
   </head>
   <body class="booting">
     <header>

@@ -6,6 +6,19 @@
   const waiting = [], pending = new Map(), controllers = new Set();
   let visible = new Map();
   const serial = task => { const work = cacheQueue.then(task); cacheQueue = work.catch(() => {}); return work; };
+  // Exact cache differences since the last take, so a preview-only change can
+  // patch the device-local index instead of rebuilding the whole mirror.
+  let changes = new Map();
+  function record(previous, next) {
+    for (const [id, value] of Object.entries(next)) if (previous[id] !== value) changes.set(id, { id, ...value });
+    for (const id of Object.keys(previous)) if (!(id in next)) changes.set(id, null);
+  }
+  function takeChanges() {
+    const taken = changes; changes = new Map();
+    const records = [], removedIds = [];
+    for (const [id, value] of taken) if (value) records.push(value); else removedIds.push(id);
+    return { records, removedIds };
+  }
   function publicUrl(value) {
     try {
       const url = new URL(value), host = url.hostname.toLowerCase().replace(/^\[|\]$/g, '').replace(/\.$/, '');
@@ -23,6 +36,18 @@
   }
   const localImage = value => typeof value === 'string' && value.length <= 768 * 1024 && /^data:image\/(?:png|jpeg|webp|gif|avif);base64,[a-z0-9+/=\s]+$/i.test(value) ? value : '';
   const canonical = value => { try { return new URL(value).href; } catch { return ''; } };
+  // Serialized length without copying cover data: base64 data URLs contain no
+  // characters that JSON escapes, so their length is exact; others fall back.
+  const plain = /^[\x20\x21\x23-\x5b\x5d-\x7e]*$/;
+  function serializedSize(item) {
+    let extra = 0;
+    const small = {};
+    for (const [key, value] of Object.entries(item)) {
+      if (typeof value === 'string' && value.length > 4096 && plain.test(value)) { small[key] = ''; extra += value.length; }
+      else small[key] = value;
+    }
+    return JSON.stringify(small).length + extra;
+  }
   function budget(value, nodes) {
     const ids = new Map(nodes.filter(node => node.url).map(node => [node.id, node.url]));
     const entries = Object.entries(value).filter(([id, item]) => ids.get(id) === item?.url);
@@ -30,7 +55,7 @@
     entries.sort((a,b) => quality.get(b[0]) - quality.get(a[0]) || (b[1].updatedAt || 0) - (a[1].updatedAt || 0));
     const result = {}; let bytes = 0, count = 0;
     for (const [id, item] of entries) {
-      const size = JSON.stringify(item).length * 2;
+      const size = serializedSize(item) * 2;
       if (count >= MAX_ENTRIES || bytes + size > MAX_CACHE) continue;
       result[id] = item; bytes += size; count++;
     }
@@ -38,8 +63,9 @@
   }
   function read(nodes) {
     return serial(async () => {
-      const stored = await chrome.storage.local.get([KEY, 'laterOnItems', 'laterOnCovers']);
+      const stored = await chrome.storage.local.get([KEY, 'laterOnItems']);
       const previous = stored[KEY] || {}, next = { ...previous };
+      let changed = false, covers = null;
       const reading = new Map((stored.laterOnItems || []).map(item => [canonical(item.url), item]));
       // The current-page card already acquired these facts through the reading
       // extractor. Reuse its short-lived session cache as well as saved items.
@@ -55,30 +81,46 @@
         const old = next[node.id]?.url === node.url ? next[node.id] : {};
         const item = reading.get(canonical(node.url));
         if (!item) continue;
-        const image = localImage(item.image?.startsWith('local://') ? stored.laterOnCovers?.[item.image.slice(8)] : item.image);
+        let image = '';
+        if (!old.image && typeof item.image === 'string') {
+          if (item.image.startsWith('local://')) {
+            // User covers can be large; read them only when one is needed.
+            covers ||= (await chrome.storage.local.get('laterOnCovers')).laterOnCovers || {};
+            image = localImage(covers[item.image.slice(8)]);
+          } else image = localImage(item.image);
+        }
         const description = typeof item.description === 'string' && item.description !== '暂无摘要' ? item.description.slice(0, 600) : '';
         const sourceImage = publicUrl(item.image);
         if ((!old.image && image) || (!old.description && description) || (!old.image && sourceImage && sourceImage !== old.sourceImage)) {
           next[node.id] = { ...old, url: node.url, image: old.image || image, description: old.description || description,
             sourceImage, updatedAt: Date.now(), local: true, failed: false };
+          changed = true;
         }
       }
       const trimmed = budget(next, nodes);
-      if (JSON.stringify(trimmed) !== JSON.stringify(previous)) await chrome.storage.local.set({ [KEY]: trimmed });
+      const kept = Object.keys(trimmed);
+      if (changed || kept.length !== Object.keys(previous).length || kept.some(id => trimmed[id] !== previous[id])) {
+        await chrome.storage.local.set({ [KEY]: trimmed });
+        record(previous, trimmed);
+      }
       return trimmed;
     });
   }
   function commit(records, nodes, generation) {
     return serial(async () => {
       if (generation !== epoch) return;
-      const stored = await chrome.storage.local.get(KEY), next = { ...(stored[KEY] || {}) };
+      const stored = await chrome.storage.local.get(KEY), previous = stored[KEY] || {}, next = { ...previous };
+      const native = new Map(nodes.filter(node => node.url).map(node => [node.id, node.url]));
       for (const record of records) {
-        if (!nodes.some(node => node.id === record.id && node.url === record.url)) continue;
+        if (native.get(record.id) !== record.url) continue;
         const old = next[record.id]?.url === record.url ? next[record.id] : {};
         next[record.id] = { ...old, url: record.url, image: record.image || old.image || '', description: record.description || old.description || '',
           sourceImage: record.sourceImage || old.sourceImage || '', failed: !!record.error || !record.image && !record.description, attemptedAt: Date.now(), updatedAt: Date.now() };
       }
-      if (generation === epoch) await chrome.storage.local.set({ [KEY]: budget(next, nodes) });
+      if (generation !== epoch) return;
+      const trimmed = budget(next, nodes);
+      await chrome.storage.local.set({ [KEY]: trimmed });
+      if (generation === epoch) record(previous, trimmed);
     });
   }
   function prioritize(nodes) {
@@ -220,6 +262,6 @@
       pending.set(key, job); return job;
     }));
   }
-  function cancel() { epoch++; visible.clear(); for (const controller of controllers) controller.abort(); }
-  globalThis.LaterOnBookmarkPreviews = { read, commit, load, cancel, prioritize, publicUrl, localImage, get epoch() { return epoch; } };
+  function cancel() { epoch++; visible.clear(); changes = new Map(); for (const controller of controllers) controller.abort(); }
+  globalThis.LaterOnBookmarkPreviews = { read, commit, load, cancel, prioritize, publicUrl, localImage, takeChanges, get epoch() { return epoch; } };
 })();

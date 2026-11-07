@@ -40,15 +40,17 @@
 
   // A saved opt-out must take effect before the first possible keypress. A
   // newer settings event also wins over a delayed initial storage response.
-  try {
-    api.storage.onChanged?.addListener((changes, area) => {
-      if (area !== 'local' || !changes[SETTINGS]) return;
-      version++; apply(changes[SETTINGS].newValue);
-    });
-  } catch { /* An invalidated extension context cannot update preferences. */ }
+  const preferences = globalThis.LaterOnContentPreferences;
+  if (preferences) preferences.subscribe(settings => { version++; apply(settings); });
+  else try {
+      api.storage.onChanged?.addListener((changes, area) => {
+        if (area !== 'local' || !changes[SETTINGS]) return;
+        version++; apply(changes[SETTINGS].newValue);
+      });
+    } catch { /* An invalidated extension context cannot update preferences. */ }
   const initialVersion = version;
   try {
-    Promise.resolve(api.storage.local.get(SETTINGS)).then(stored => {
+    Promise.resolve(preferences ? preferences.ready.then(settings => ({ [SETTINGS]: settings })) : api.storage.local.get(SETTINGS)).then(stored => {
       if (version === initialVersion) apply(stored?.[SETTINGS]);
     }, () => { if (version === initialVersion) apply(); });
   } catch { apply(); }

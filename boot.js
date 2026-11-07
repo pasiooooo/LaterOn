@@ -10,10 +10,41 @@
   let revealed = false;
   let english = false;
 
+  // Start the reading data request before the remaining deferred scripts run.
+  // Keep changes made during script loading so an early snapshot cannot bring
+  // back a deleted page or overwrite a newly selected project at startup.
+  let readingData = null;
+  if (location.pathname.endsWith('/sidepanel.html')) {
+    const keys = ['laterOnItems', 'laterOnProjects', 'laterOnActiveProject',
+      'laterOnCurrentItem', 'laterOnSettings', 'laterOnFilter',
+      'laterOnFilterChosen', 'laterOnOrder'];
+    const changes = {};
+    const changed = (patch, area) => {
+      if (area === 'local') for (const key of keys) {
+        if (Object.prototype.hasOwnProperty.call(patch, key)) changes[key] = patch[key].newValue;
+      }
+    };
+    try {
+      chrome.storage.onChanged.addListener(changed);
+      const started = performance.now();
+      const promise = Promise.resolve(chrome.storage.local.get(keys))
+        .catch(error => ({ __laterOnLoadError: String(error?.message || error || '读取失败') }));
+      readingData = { started, promise, take() {
+        return promise.then(stored => {
+          chrome.storage.onChanged.removeListener?.(changed);
+          return { ...stored, ...changes };
+        });
+      } };
+      promise.then(() => { readingData.finished = performance.now(); });
+    } catch {
+      try { chrome.storage.onChanged.removeListener?.(changed); } catch {}
+    }
+  }
+
   // This script paints before the regular i18n layer. Read only the saved
   // language so a slow first load does not leave English users with Chinese UI.
   try {
-    chrome.storage.local.get("laterOnSettings").then((stored) => {
+    (readingData?.promise || chrome.storage.local.get("laterOnSettings")).then((stored) => {
       english = stored?.laterOnSettings?.language === "en";
       const opening = textOf("bootTipText");
       if (english && opening) opening.textContent = "Opening your saves…";
@@ -75,6 +106,7 @@
 
   window.LaterOnBoot = {
     t0,
+    readingData,
     // 切换提示语：告诉用户现在卡在读数据还是画界面。
     stage(label) {
       marks.push([label, elapsed()]);

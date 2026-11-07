@@ -2,13 +2,19 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM, VirtualConsole } = require('jsdom');
+const vm = require('node:vm');
 const source = fs.readFileSync(path.resolve(__dirname, '../quick-switcher-client.js'), 'utf8');
+const presentation = vm.createContext({});
+vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../quick-switcher-styles.js'), 'utf8'), presentation);
+for (const [key, file] of [['theme', 'theme-vars.css'], ['component', 'quick-switcher.css']]) {
+  assert.equal(presentation.LaterOnQuickSwitcherStyles[key], fs.readFileSync(path.resolve(__dirname, '..', file), 'utf8'), 'Preloaded styles exactly match the canonical CSS');
+}
 const tick = () => new Promise(resolve => setTimeout(resolve, 0));
 const until = async (test, message) => { for (let i = 0; i < 100 && !test(); i++) await tick(); assert(test(), message); };
 const extension = file => `chrome-extension://fixture/${file}`;
 const event = () => ({ listeners: [], addListener(fn) { this.listeners.push(fn); }, emit(...args) { for (const listener of this.listeners) listener(...args); } });
 
-function fixture(url = 'https://page.test/', reply) {
+function fixture(url = 'https://page.test/', reply, { localStyles = false } = {}) {
   const errors = [], vc = new VirtualConsole(); vc.on('jsdomError', error => errors.push(error.message));
   const dom = new JSDOM('<!doctype html><button id="open" data-quick-switcher>Quick Switcher</button><p id="quickSwitcherError" hidden>Error</p>', { url, runScripts: 'outside-only', virtualConsole: vc });
   const window = dom.window, calls = [], opened = [], currentCalls = [], refreshed = [];
@@ -17,6 +23,10 @@ function fixture(url = 'https://page.test/', reply) {
     : { ok: true, results: [], total: 0 });
   const runtime = { onMessage: event(), getURL: extension, sendMessage(message) { calls.push(message); return responder(message); } };
   window.chrome = { runtime, storage: { onChanged: event() }, tabs: { async getCurrent() { currentCalls.push(true); return { id: 99, windowId: 90 }; } } };
+  if (localStyles) Object.defineProperty(window.document, 'styleSheets', { configurable: true, value: [
+    { href: extension('theme-vars.css'), cssRules: [{ cssText: ':root { color: red; }' }] },
+    { href: extension('quick-switcher.css'), cssRules: [{ cssText: '.qs-dialog { display: grid; }' }] }
+  ] });
   window.LaterOnQuickSwitcherUI = {
     open(options) { opened.push(options); current = { refresh() { refreshed.push(true); } }; return current; },
     close() { const old = current; current = null; if (old) opened.at(-1).onClose(); },
@@ -55,6 +65,7 @@ function fixture(url = 'https://page.test/', reply) {
     assert.equal(results.total, 1);
     assert.equal(web.calls.at(-1).type, 'QUICK_SWITCHER_SEARCH');
     assert.equal(web.calls.at(-1).query, '中文 search');
+    assert.equal(web.calls.at(-1).active, true, 'A query from an open UI renews worker activity after a restart');
     await web.opened[0].onOpen({ id: 'page:https://saved.test/', url: 'https://tampered.test/', title: 'Not authority' }, { newTab: true });
     const action = web.calls.at(-1);
     assert.equal(action.type, 'QUICK_SWITCHER_OPEN'); assert.equal(action.id, 'page:https://saved.test/');
@@ -109,6 +120,18 @@ function fixture(url = 'https://page.test/', reply) {
     assert.equal(replies[1].ok, false); assert.equal(owned.opened.length, 1, 'An expired targeted broadcast does not toggle the current modal');
   } finally { owned.window.close(); }
 
+  const instant = fixture(`${extension('quick-switcher.html')}?window=4&theme=dark&language=en`,
+    () => new Promise(() => {}), { localStyles: true });
+  try {
+    assert.equal(instant.opened.length, 1, 'A popup with local styles and worker presentation opens synchronously');
+    assert.equal(instant.opened[0].theme, 'dark');
+    assert.equal(instant.opened[0].language, 'en');
+    assert.match(instant.opened[0].styles.theme, /:root/);
+    assert.match(instant.opened[0].styles.component, /qs-dialog/);
+    assert.equal(instant.calls.filter(message => message.type !== 'QUICK_SWITCHER_ACTIVITY').length, 0, 'The popup does not wait for another worker context request');
+    assert.deepEqual(instant.errors, []);
+  } finally { instant.window.close(); }
+
   const popup = fixture(`${extension('quick-switcher.html')}?window=4`);
   try {
     await until(() => popup.opened.length === 1, 'The protected-page popup loads its worker context');
@@ -124,10 +147,49 @@ function fixture(url = 'https://page.test/', reply) {
     assert.deepEqual(popup.errors, [], 'Synchronous close failures from invalidated extension contexts stay contained');
   } finally { popup.window.close(); }
 
+  // Extension pages read the prepared index directly, unless a newer source
+  // revision is pending; then the worker answers with current Reading data.
+  const page = fixture(extension('library.html'));
+  try {
+    let pending = null, localQueries = 0, enabled = false, bookmarkVariant = false;
+    page.window.chrome.storage.local = { async get(keys) { return { laterOnBookmarkConfig: { enabled }, ...(pending ? { laterOnQuickSearchPending: pending } : {}) }; } };
+    page.window.chrome.permissions = { async contains() { return enabled; } };
+    page.window.LaterOnQuickSearch = {};
+    page.window.LaterOnLocalIndex = { supported: () => true, async search() { localQueries++; return { results: [], total: 0, revision: 7, bookmarkVariant }; } };
+    page.window.LaterOnQuickSwitcherClient.show({ language: 'en' });
+    page.reply(async () => ({ ok: true, results: [], total: 3, provisional: true }));
+    assert.equal((await page.opened.at(-1).search('x')).total, 0, 'A current prepared index answers locally');
+    assert.equal(page.calls.filter(call => call.type === 'QUICK_SWITCHER_SEARCH').length, 0);
+    pending = { revision: 9 };
+    const delegated = await page.opened.at(-1).search('x');
+    assert.equal(delegated.provisional, true, 'A pending source revision routes the query to the worker');
+    assert.equal(page.calls.filter(call => call.type === 'QUICK_SWITCHER_SEARCH').length, 1);
+    assert.equal(page.calls.at(-1).active, true, 'A pending direct-index query renews activity when it delegates');
+    assert.equal(localQueries, 2);
+    const before = page.refreshed.length;
+    page.change('laterOnQuickSearchPending');
+    assert.equal(page.refreshed.length, before + 1, 'Marker changes refresh an open dialog');
+    page.message({ type: 'LATERON_QUICK_SWITCHER_CHANGED', fresh: true });
+    assert.equal(page.refreshed.length, before + 2, 'A fresh commit refreshes an open dialog');
+    pending = null; enabled = true;
+    assert.equal((await page.opened.at(-1).search('native')).provisional, true, 'An enabled bookmark library cannot use a Reading-only local snapshot as complete');
+    assert.equal(page.calls.filter(call => call.type === 'QUICK_SWITCHER_SEARCH').length, 2);
+    bookmarkVariant = true;
+    assert.equal((await page.opened.at(-1).search('native')).total, 0, 'A current combined snapshot keeps answering directly');
+    assert.equal(page.calls.filter(call => call.type === 'QUICK_SWITCHER_SEARCH').length, 2);
+    let release;
+    page.window.chrome.storage.local.get = () => new Promise(resolve => { release = resolve; });
+    const delayed = page.opened.at(-1).search('closed');
+    page.window.LaterOnQuickSwitcherUI.close();
+    release({ laterOnBookmarkConfig: { enabled: true }, laterOnQuickSearchPending: { revision: 9 } });
+    await delayed;
+    assert.equal(page.calls.at(-1).active, false, 'A delayed query cannot renew activity after its UI closes');
+  } finally { page.window.close(); }
+
   const failure = fixture(`${extension('quick-switcher.html')}?window=4`, async () => ({ ok: false, error: 'Unavailable' }));
   try {
     await until(() => !failure.window.document.querySelector('#quickSwitcherError').hidden, 'Bootstrap failure exposes the standalone recovery message');
     assert.equal(failure.opened.length, 0); assert.deepEqual(failure.errors, []);
   } finally { failure.window.close(); }
-  console.log('PASS quick-switcher client: source-limited launch controls, expiring opens, singleton, search/action failure propagation, live invalidation, toggling and safe popup close');
+  console.log('PASS quick-switcher client: source-limited launch controls, expiring opens, singleton, search/action failure propagation, live invalidation, pending-revision delegation, toggling and safe popup close');
 })().catch(error => { console.error(error); process.exitCode = 1; });

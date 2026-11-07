@@ -18,6 +18,7 @@ const COVERS_KEY = "laterOnCovers";
 // 打开侧栏时先画缓存，再去 chrome.storage 拿最新数据核对——就算存储读取慢，
 // 界面也不会白屏干等。
 const CACHE_KEY = "laterOnPanelCache";
+const CACHE_CONTEXT_KEY = "laterOnPanelCacheContext";
 // 本机 localStorage 是不是本身就慢（第一次读就超过 0.4 秒即判定）。
 // 慢的话就彻底不再碰它：秒开快照靠不住，反复读写反而一次比一次拖。
 let localStorageSlow = false;
@@ -25,6 +26,9 @@ let cacheSaveTimer = null;
 let sidePanelWindowId = null;
 let sidePanelReady = false;
 let readingDataReady = false;
+let startupFinished = false;
+let startupChanges = {};
+let cachePreview = [], cacheCount = null, cacheVisibleCount = 0;
 
 // 侧栏自己所在窗口的 id 是异步取的（`chrome.windows.getCurrent()`），
 // 而完整界面的握手请求可能比它先到。把这次查询存成 Promise，
@@ -168,14 +172,14 @@ function slowConclusion(seg) {
   const [key, label] = worst;
   const ms = seg[key];
   if (document.documentElement.lang === "en") {
-    if (key === "page") return "Most time was spent preparing the page — Chrome was opening the side panel or loading its files; the number of saves isn’t the cause.";
+    if (key === "page") return "Most time was spent before the page scripts were ready. This includes Chrome opening the side panel, loading files and scheduling scripts.";
     if (key === "cache") return `The local snapshot took ${ms} ms to read, so it will be skipped for the rest of this session.`;
     if (key === "data") return `Reading local storage took ${ms} ms. The cached first screen was shown while it finished.`;
     if (key === "paint") return `Painting the first screen took ${ms} ms. Remaining cards are being rendered in batches.`;
     if (key === "migrate") return `Migrating old covers took ${ms} ms. This should only happen once after upgrading.`;
     return `Finishing up took ${ms} ms.`;
   }
-  if (key === "page") return "「准备页面」占了大头 → 是 Chrome 打开侧边栏 / 加载页面文件慢，跟添加的网页数量无关。";
+  if (key === "page") return "「准备页面」占了大头，包含 Chrome 打开侧边栏、加载文件和调度脚本的时间。";
   if (key === "cache") return `「读本地缓存」占了大头（${ms} 毫秒）→ 侧栏的秒开快照读取慢，接下来本次会话会直接跳过它，不再反复卡。`;
   if (key === "data") return `「读取网页数据」占了大头（${ms} 毫秒）→ 本地存储冷的时候这一次读取会慢，列表已先用缓存画出来了。`;
   if (key === "paint") return `「画第一屏」占了大头（${ms} 毫秒）→ 卡片太多，一次画不完（已分批，剩下的后台续画）。`;
@@ -199,11 +203,11 @@ function showSlowBanner({ total, firstPaint, seg, slow }) {
   if (slow.length) lines.push(english ? `Slowest files: ${slow.map((entry) => `${entry.name} ${entry.ms} ms`).join(", ")}` : `最慢的文件：${slow.map((entry) => `${entry.name} ${entry.ms} 毫秒`).join("、")}`);
   const conclusion = slowConclusion(seg);
   if (conclusion) lines.push(conclusion);
-  // 数据体积异常大单独说一句：这是「读数据慢」最常见的原因。
+  // 同时记录资料库体积，便于和读取耗时对照。
   if ((seg.bytes || 0) > 300000) {
     lines.push(english
-      ? `Save data is ${Math.round(seg.bytes / 1024)} KB (normally only tens of KB). Large embedded content may be slowing it down.`
-      : `网页数据 ${Math.round(seg.bytes / 1024)} KB（正常几十 KB）→ 里面有体积大的内容，建议删掉带大图的旧网页。`);
+      ? `${items.length} saved pages use ${Math.round(seg.bytes / 1024)} KB. The stage timings above show the cost of loading this collection.`
+      : `${items.length} 个网页的数据共 ${Math.round(seg.bytes / 1024)} KB，可结合上面的分段耗时查看读取这份资料库的成本。`);
   }
   banner.textContent = lines.join("\n");
   banner.hidden = false;
@@ -214,24 +218,24 @@ function reportOpenSpeed(seg, bootStart, cacheHit) {
   const total = Math.round(nowMs() - bootStart);
   // 命中快照时，用户在真实存储返回前就已经能操作；把“首屏可见”和“后台校准完成”
   // 分开记录，避免一个 6 秒的冷存储读数让人误以为界面也白等了 6 秒。
-  const firstPaint = cacheHit ? seg.page + seg.cache + seg.paint : total;
+  const firstPaint = cacheHit ? seg.firstScreen ?? seg.page + seg.cache + seg.paint : total;
   // 「其余」= 总耗时里没被任何一段认领的部分（比如等待浏览器调度、脚本解析）。
   const other = Math.max(0, total - (seg.page + seg.cache + seg.paint + seg.data + seg.migrate));
   const full = { ...seg, other };
-  // 数据超过 300 KB 就值得一说：正常只有几十 KB，大说明里面混进了图片之类的大块内容。
-  const fatData = (seg.bytes || 0) > 300000;
   const slow = slowestResources();
   try { console.info(`[LaterOn] 打开耗时 总 ${total} 毫秒`, full, slow); } catch {}
   // 本地快照读起来比预期的慢很多 → 说明这台机器上 localStorage 本身就是慢的，
   // 那就别再一遍遍去读它了（每次 render 都会写一次，慢起来是叠加的）。
   if (seg.cache > 400) localStorageSlow = true;
   // 存一份到存储里：设置页「自检信息 → 侧栏打开耗时」也能看到。
-  saveOpenDiag({
+  const record = {
     at: Date.now(),
     page: seg.page,
     cache: seg.cache,
     paint: seg.paint,
     data: seg.data,
+    dataRequest: seg.dataRequest ?? seg.data,
+    prefetched: !!seg.prefetched,
     migrate: seg.migrate,
     other,
     bytes: seg.bytes || 0,
@@ -242,11 +246,13 @@ function reportOpenSpeed(seg, bootStart, cacheHit) {
     localStorageSlow,
     localStorageOk: probeLocalStorage(),
     slow
-  });
+  };
+  saveOpenDiag(record);
   // 只有「真的等住了」才在界面上说话：1 秒以内是正常水平（冷启动时读一次存储
   // 本来就要几百毫秒，而列表早已先用秒开缓存画出来了），弹横幅反而像在报错。
   // 数据照样每次都存进诊断，去设置页「自检信息 → 侧栏打开耗时」随时能翻。
   if (total > 2000) showSlowBanner({ total, firstPaint, seg: full, slow });
+  return record;
 }
 
 // localStorage 到底能不能用？用不上「秒开缓存」的话会明显拖慢打开速度，这里记一笔。
@@ -293,11 +299,15 @@ async function init() {
   // ① 先把「读存储」发出去，但**不等它**。存储冷的时候这一次读取要好几秒，
   //    早点发出去，它就能和后面的「读本地缓存」「画第一屏」同时跑；
   //    排成一队的话，谁慢整条链就卡在谁后面（这正是之前白等十几秒的原因）。
+  const prefetched = window.LaterOnBoot?.readingData;
+  // Count only the wait after the page is ready in the additive segments;
+  // the full prefetched I/O duration overlaps page preparation.
   const storageStart = nowMs();
+  seg.prefetched = !!prefetched;
   // 封面（COVERS_KEY）故意不在这批里：它可能比整个列表还大，
   // 排在首屏之后单独读，列表才能最快出来。
-  const storedPromise = chrome.storage.local
-    .get([STORAGE_KEY, PROJECTS_KEY, ACTIVE_PROJECT_KEY, CURRENT_ITEM_KEY, SETTINGS_KEY, FILTER_KEY, FILTER_CHOSEN_KEY, ORDER_KEY])
+  const storedPromise = (prefetched?.take() || chrome.storage.local
+    .get([STORAGE_KEY, PROJECTS_KEY, ACTIVE_PROJECT_KEY, CURRENT_ITEM_KEY, SETTINGS_KEY, FILTER_KEY, FILTER_CHOSEN_KEY, ORDER_KEY]))
     .catch((error) => ({ __laterOnLoadError: String(error?.message || error || "读取失败") }));
 
   // ② 读「秒开缓存」并立刻画第一屏：上一回的列表快照就在本页 localStorage 里，
@@ -306,19 +316,29 @@ async function init() {
   const cacheStart = nowMs();
   const cached = readSlimCache();
   seg.cache = Math.round(nowMs() - cacheStart);
-  if (cached?.length) {
+  if (Array.isArray(cached)) {
     cacheHit = true;
     items = normalizeItems(cached);
     const paintStart = nowMs();
     render();
     renderProjectFilters();
     seg.paint = Math.round(nowMs() - paintStart);
+    sidePanelReady = true;
   }
   if (typeof window.LaterOnBoot?.stage === "function") window.LaterOnBoot.stage(tr("readingSaves"));
 
+  // Record a slow synchronous cache read before yielding to the next frame;
+  // data calibration must not delay disabling further localStorage writes.
+  if (seg.cache > 400) reportOpenSpeed(seg, bootStart, cacheHit);
   // ③ 现在才等存储结果（它从 ① 就开始跑了）。
-  const stored = await storedPromise;
-  seg.data = Math.round(nowMs() - storageStart);
+  // A resolved storage promise must not let the full-library normalization
+  // run in the same turn as the cached first screen and postpone its paint.
+  if (cacheHit) await new Promise(resolve => nextFrame(() => setTimeout(resolve, 0)));
+  if (cacheHit) seg.firstScreen = Math.round(nowMs() - bootStart);
+  const dataAwait = nowMs();
+  const stored = { ...await storedPromise, ...startupChanges };
+  seg.data = Math.round(nowMs() - dataAwait);
+  seg.dataRequest = prefetched ? Math.round(prefetched.finished - prefetched.started) : seg.data;
   // 读取失败和“存储里确实没有收藏”不是一回事。以前两者都落成 {}，随后会把
   // 秒开缓存覆盖成空数组；一次偶发 I/O 错误就可能让下一次也失去可见内容。
   if (stored.__laterOnLoadError) {
@@ -332,15 +352,23 @@ async function init() {
     status.textContent = cacheHit
       ? tr("noRefreshShowingCache")
       : tr("loadFailedRetry");
+    startupFinished = true; startupChanges = {};
     return;
   }
   const migrateStart = nowMs();
   const migrated = await migrateLegacyCovers(stored[STORAGE_KEY]);
+  Object.assign(stored, startupChanges);
   seg.migrate = Math.round(nowMs() - migrateStart);
   // 读回来的这批数据有多大？体积是「读数据慢」最常见的解释——
   // 早期版本把封面 base64 直接塞在条目里，能塞到好几兆，读完必然慢。
-  try { seg.bytes = JSON.stringify(stored[STORAGE_KEY] || []).length; } catch { /* 量不出来就不量 */ }
-  items = normalizeItems(migrated || stored[STORAGE_KEY]);
+  let raw = Object.prototype.hasOwnProperty.call(startupChanges, STORAGE_KEY) ? stored[STORAGE_KEY] : migrated || stored[STORAGE_KEY];
+  for (;;) {
+    const normalized = await normalizeItemsForBoot(raw);
+    const latest = Object.prototype.hasOwnProperty.call(startupChanges, STORAGE_KEY) ? startupChanges[STORAGE_KEY] : raw;
+    if (latest !== raw) { raw = latest; continue; }
+    items = normalized; break;
+  }
+  Object.assign(stored, startupChanges);
   readingDataReady = true;
   archivedProjectIds = new Set((stored[PROJECTS_KEY] || []).filter((project) => project.archived).map((project) => project.id));
   projects = (stored[PROJECTS_KEY] || []).filter((project) => !project.archived);
@@ -359,16 +387,32 @@ async function init() {
   if (!cacheHit) seg.paint = Math.round(nowMs() - paintStart2);
   // 把这次打开的分段耗时记下来并（慢的时候）直接显示在界面上。
   // 异步写存储，绝不等它返回。
-  reportOpenSpeed(seg, bootStart, cacheHit);
+  const diagnostic = reportOpenSpeed(seg, bootStart, cacheHit);
+  // Ask Chrome for its stored byte count instead of serializing every note and
+  // description on the UI thread simply to produce a diagnostic number.
+  if (chrome.storage.local.getBytesInUse) {
+    Promise.resolve(chrome.storage.local.getBytesInUse(STORAGE_KEY)).then(bytes => {
+      seg.bytes = bytes;
+      saveOpenDiag({ ...diagnostic, bytes });
+      if (diagnostic.total > 2000) showSlowBanner({ total: diagnostic.total, firstPaint: diagnostic.firstPaint,
+        seg: { ...seg, other: diagnostic.other }, slow: diagnostic.slow });
+    }).catch(() => {});
+  }
   // 封面留到最后单独读：它大，但缺了它也只是晚几毫秒显示缩略图，不影响列表先出来。
   loadCovers();
   sidePanelReady = true;
   // 如果这次打开是因为在别处点开了一篇，直接把那篇滚到可视区域里。
   applyCurrentAndLocate();
   if (currentItem?.url) syncCurrentTabItem(currentItem.url);
+  startupFinished = true; startupChanges = {};
 }
 
 chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && !startupFinished) {
+    for (const key of [STORAGE_KEY, PROJECTS_KEY, ACTIVE_PROJECT_KEY, CURRENT_ITEM_KEY, SETTINGS_KEY, FILTER_KEY, FILTER_CHOSEN_KEY, ORDER_KEY]) {
+      if (Object.prototype.hasOwnProperty.call(changes, key)) startupChanges[key] = changes[key].newValue;
+    }
+  }
   if (area === "local" && changes[STORAGE_KEY]) {
     items = normalizeItems(changes[STORAGE_KEY].newValue || []);
     readingDataReady = true;
@@ -609,10 +653,12 @@ function syncCurrentTabItem(url, { followProject = true } = {}) {
 
 saveButton.addEventListener("click", async () => {
   if (!currentItem || currentItemId) return;
+  const targetTabId = currentTabId;
   saveButton.disabled = true;
   // 统一交给后台处理（和快捷键、右键菜单同一条链路）：
   // 设置里打开「收藏单篇前先选项目」时，点这里同样会先在网页里弹出选项目浮层。
-  const response = await chrome.runtime.sendMessage({ type: "QUICK_SAVE_TAB", source: "panel" }).catch(() => null);
+  const response = await chrome.runtime.sendMessage({ type: "QUICK_SAVE_TAB", source: "panel", tabId: targetTabId }).catch(() => null);
+  if (targetTabId !== currentTabId) return;
   if (response?.ok && response.pending) {
     // 已经弹出浮层了，真正的收藏等用户在浮层里确认（结果会弹在网页上）。
     saveButton.disabled = false;
@@ -652,7 +698,7 @@ document.querySelector("#openLibrary").addEventListener("click", async () => {
 });
 document.querySelector("#searchInput").addEventListener("input", (event) => {
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => { query = event.target.value.trim().toLowerCase(); render(); }, 120);
+  searchTimer = setTimeout(() => { query = event.target.value.trim().toLowerCase(); render(); }, 32);
 });
 
 // 事件委托：整页只挂一个监听器，避免给每张卡片单独绑监听。
@@ -976,21 +1022,19 @@ function hideBootPlaceholder() {
   if (typeof window.LaterOnBoot?.done === "function") window.LaterOnBoot.done();
 }
 
-function render() {
-  // 只要画得出东西（秒开缓存也好、真数据也好），骨架屏就完成使命了。
-  hideBootPlaceholder();
+function visibleItems(searchQuery = query) {
   const visible = items.filter((item) => {
     // 搜索是全局的（和全屏页同一个规矩）：搜索框里有字时一律在「全部收藏」里找，
     // 不受上面那排项目筛选影响——否则在某个项目里搜一个明明存在的标题会一无所获，
     // 还以为是收藏丢了。「未读 / 已读」那一档仍然生效，它是用户自己拨过去的开关。
     if (archivedProjectIds.has(item.projectId)) return false;
-    const matchesProject = !!query
+    const matchesProject = !!searchQuery
       || activeProject === "all"
       || (activeProject === "unfiled" ? !item.projectId : item.projectId === activeProject);
     // 「未读」= 还没读完（未读 + 在读）；「已读」= 手动标完成的那批。
     const matchesFilter = filter === "all" || (filter === "done" ? item.status === "done" : item.status !== "done");
-    const text = `${item.title} ${item.description} ${item.source}`.toLowerCase();
-    return matchesProject && matchesFilter && (!query || text.includes(query));
+    if (!matchesProject || !matchesFilter) return false;
+    return !searchQuery || `${item.title} ${item.description} ${item.source}`.toLowerCase().includes(searchQuery);
   });
   // 全屏那边选了「自定义顺序」并拖过卡片 —— 侧栏用同一份顺序，两边看到的先后一致。
   if (sortMode === "custom") {
@@ -1002,9 +1046,18 @@ function render() {
       return (b.savedAt || 0) - (a.savedAt || 0);
     });
   }
+  return visible;
+}
+
+function render() {
+  // 只要画得出东西（秒开缓存也好、真数据也好），骨架屏就完成使命了。
+  hideBootPlaceholder();
+  const visible = visibleItems();
   const token = ++renderToken;
   renderComplete = false;   // 这一轮还没画完，先别拿半张列表的坐标去做定位
-  document.querySelector("#itemCount").textContent = tr("cardCount", { n: visible.length });
+  document.querySelector("#itemCount").textContent = tr("cardCount", { n: !readingDataReady && cacheCount !== null && !query ? cacheCount : visible.length });
+  cachePreview = visible.slice(0, CACHE_PREVIEW_LIMIT);
+  cacheVisibleCount = visible.length;
 
   // 已经不在列表里的卡片先撤掉（删掉的收藏要立刻从界面消失）。
   const visibleIds = new Set(visible.map((item) => item.id));
@@ -1241,6 +1294,18 @@ function normalizeItems(list) {
     return { ...it, title, status, doneAt: status === "done" ? Number(it.doneAt) || null : null };
   });
 }
+async function normalizeItemsForBoot(list) {
+  if (!Array.isArray(list) || list.length < 2000) return normalizeItems(list);
+  const result = [];
+  for (let start = 0; start < list.length; start += 1000) {
+    result.push(...normalizeItems(list.slice(start, start + 1000)));
+    if (start + 1000 < list.length) {
+      if (window.LaterOnQuickSearch?.yieldTask) await window.LaterOnQuickSearch.yieldTask();
+      else await new Promise(resolve => setTimeout(resolve, 0));
+    }
+  }
+  return result;
+}
 
 // ── 封面取值 ────────────────────────────────────────────────
 // item.image 里存的可能是三种东西：
@@ -1288,18 +1353,50 @@ function saveSlimCache() {
   if (cacheSaveTimer) return;
   cacheSaveTimer = setTimeout(() => {
     cacheSaveTimer = null;
+    if (!readingDataReady) return;
     try {
-      const json = JSON.stringify(items.filter((item) => !archivedProjectIds.has(item.projectId)).slice(0, CACHE_PREVIEW_LIMIT));
-      if (json.length < 2000000) localStorage.setItem(CACHE_KEY, json);
-      else localStorage.removeItem(CACHE_KEY);
+      // A search never becomes the next launch's collection. Data and archive
+      // changes during a search still update its ordinary project/filter view.
+      const unsearched = query ? visibleItems("") : null;
+      const preview = unsearched ? unsearched.slice(0, CACHE_PREVIEW_LIMIT) : cachePreview;
+      const json = JSON.stringify(preview);
+      const context = JSON.stringify({ version: 2, ids: preview.map(item => item.id), count: unsearched ? unsearched.length : cacheVisibleCount,
+        projects, archivedProjectIds: [...archivedProjectIds], activeProject, filter, currentItemId, autoMarkRead, sortMode,
+        orders: { [activeProject || "all"]: preview.map(item => item.id) } });
+      if (json.length + context.length < 2000000) {
+        // Keep the legacy array readable; context is a small separate record.
+        localStorage.setItem(CACHE_KEY, json);
+        localStorage.setItem(CACHE_CONTEXT_KEY, context);
+      } else {
+        localStorage.removeItem(CACHE_KEY);
+        localStorage.removeItem(CACHE_CONTEXT_KEY);
+      }
     } catch { /* localStorage 用不了就算了，不影响正常功能 */ }
   }, 300);
 }
 function readSlimCache() {
   if (localStorageSlow) return null;
   try {
-    const parsed = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
-    return Array.isArray(parsed) ? parsed : null;
+    let parsed = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+    if (Array.isArray(parsed)) {
+      let context;
+      try { context = JSON.parse(localStorage.getItem(CACHE_CONTEXT_KEY) || "null"); } catch {}
+      if (context?.version !== 2 || !Array.isArray(context.ids) || context.ids.length !== parsed.length
+        || context.ids.some((id, index) => id !== parsed[index]?.id)) return parsed;
+      parsed = { ...context, items: parsed };
+    }
+    if (parsed?.version !== 2 || !Array.isArray(parsed.items)) return null;
+    projects = Array.isArray(parsed.projects) ? parsed.projects : [];
+    archivedProjectIds = new Set(Array.isArray(parsed.archivedProjectIds) ? parsed.archivedProjectIds : []);
+    activeProject = normalizeProject(parsed.activeProject);
+    filter = normalizeFilter(parsed.filter);
+    currentItemId = typeof parsed.currentItemId === "string" ? parsed.currentItemId : null;
+    autoMarkRead = parsed.autoMarkRead !== false;
+    sortMode = parsed.sortMode || "newest";
+    orders = parsed.orders || {};
+    cacheCount = Number.isFinite(parsed.count) ? parsed.count : null;
+    syncFilterButtons();
+    return parsed.items;
   } catch {
     return null;
   }
@@ -1481,12 +1578,14 @@ async function openItem(item) {
   chrome.storage.local.set({ [CURRENT_ITEM_KEY]: item.id });
   const openTab = await globalThis.LaterOnTabs.findOpen(target);
   if (openTab) {
-    if (autoMarkRead && item.status === "unread") await updateItem(item.id, { status: "reading" });
     await globalThis.LaterOnTabs.activate(openTab);
     // 如果命中的页面在另一个窗口，也让 LaterOn 侧栏跟到那个窗口。
     if (openTab.windowId != null && typeof chrome.sidePanel?.open === "function") {
       await chrome.sidePanel.open({ windowId: openTab.windowId }).catch(() => null);
     }
+    // Focus the article before saving its reading state. That write can read
+    // a large collection and cover map; it must not hold up an existing tab.
+    if (autoMarkRead && item.status === "unread") await updateItem(item.id, { status: "reading" });
     return;
   }
   // 侧栏依附在用户正在浏览的网页旁边，普通点击不能把那个网页覆盖掉。

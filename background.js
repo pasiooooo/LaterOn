@@ -1,4 +1,4 @@
-importScripts("page-metadata.js", "url-utils.js", "reading-position-background.js", "webdav-sync-core.js", "webdav-directory.js", "webdav-sync.js", "import-metadata-background.js", "import-urls-background.js", "tab-batch-background.js", "bookmark-previews.js", "bookmark-sync.js", "current-page-background.js", "quick-switcher-search.js", "quick-switcher-background.js");
+importScripts("page-metadata.js", "url-utils.js", "content-preferences-background.js", "quick-switcher-search.js", "local-index.js", "quick-switcher-background.js", "reading-position-background.js", "webdav-sync-core.js", "webdav-directory.js", "webdav-sync.js", "import-metadata-background.js", "import-urls-background.js", "tab-batch-background.js", "bookmark-previews.js", "bookmark-sync.js", "current-page-background.js");
 const normalizeUrl = LaterOnUrl.normalize;
 
 const STORAGE_KEY = "laterOnItems";
@@ -212,13 +212,17 @@ chrome.omnibox?.onInputEntered?.addListener((text, disposition) => {
 // 这里把「是否收到按键 / 执行结果 / 报错」记到本地，设置页会展示出来，
 // 一眼就能判断到底是按键没到达扩展，还是扩展执行时出错了。
 const DIAG_KEY = "laterOnDiag";
-async function recordDiag(patch) {
-  try {
-    const stored = await chrome.storage.local.get(DIAG_KEY);
-    await chrome.storage.local.set({ [DIAG_KEY]: { ...(stored[DIAG_KEY] || {}), ...patch } });
-  } catch {
-    // 诊断信息写不进去不影响主流程。
-  }
+let diagQueue = Promise.resolve();
+function recordDiag(patch) {
+  diagQueue = diagQueue.then(async () => {
+    try {
+      const stored = await chrome.storage.local.get(DIAG_KEY);
+      await chrome.storage.local.set({ [DIAG_KEY]: { ...(stored[DIAG_KEY] || {}), ...patch } });
+    } catch {
+      // 诊断信息写不进去不影响主流程，也不阻塞下一次记录。
+    }
+  });
+  return diagQueue;
 }
 
 // ── 右键菜单：不依赖快捷键的备用入口 ────────────────────────
@@ -320,6 +324,10 @@ async function purgeExpiredItems() {
 
 async function purgeExpiredItemsNow() {
   try {
+    // A disabled cleanup must not clone the entire Reading library and all
+    // uploaded covers whenever a shortcut wakes the worker.
+    const settings = (await chrome.storage.local.get(SETTINGS_KEY))[SETTINGS_KEY] || {};
+    if (normalizeCleanDays(settings.autoCleanDays) === null) return 0;
     const stored = await chrome.storage.local.get([STORAGE_KEY, ORDER_KEY, SETTINGS_KEY, COVERS_KEY, CURRENT_ITEM_KEY]);
     const items = stored[STORAGE_KEY] || [];
     const days = normalizeCleanDays((stored[SETTINGS_KEY] || {}).autoCleanDays);
@@ -488,7 +496,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 // 这样即使后面执行失败，也能在设置页看出按键有没有到达扩展。
 chrome.commands.onCommand.addListener((command, tab) => {
   (async () => {
-    await recordDiag({ lastCommand: command, lastTrigger: "shortcut", lastCommandAt: Date.now() });
+    // Diagnostics must not add a storage read/write round trip to the shortcut.
+    recordDiag({ lastCommand: command, lastTrigger: "shortcut", lastCommandAt: Date.now() }).catch(() => {});
     try {
       await handleCommand(command, tab);
     } catch (error) {
@@ -531,13 +540,13 @@ async function quickSave(tab, source = "shortcut") {
     const storedItems = (await chrome.storage.local.get(STORAGE_KEY))[STORAGE_KEY] || [];
     const knownUrls = new Set(storedItems.map((entry) => normalizeUrl(entry.url)));
     const savedCount = knownUrls.has(normalizeUrl(tab.url || "")) ? 1 : 0;
-    await recordDiag({
+    recordDiag({
       lastTrigger: source,
       lastStage: "等待选择项目",
       lastStageAt: Date.now(),
       lastRunAt: Date.now(),
       lastTabCount: 1
-    });
+    }).catch(() => {});
     return askFolderThenSave({ tabs: [tab], source, activeTab: tab, savedCount });
   }
 
@@ -821,11 +830,11 @@ async function saveTabsInScope(source, tabs, activeTab) {
   const stage = (patch) => recordDiag({ lastTrigger: source, lastStageAt: Date.now(), ...patch });
 
   try {
-    await stage({ lastStage: "开始", lastRunAt: Date.now() });
+    stage({ lastStage: "开始", lastRunAt: Date.now() }).catch(() => {});
 
     const targets = tabs.filter(tab => isWebUrl(tab.url))
       .sort((a, b) => (a.index || 0) - (b.index || 0));
-    await stage({ lastStage: "读取标签页", lastTabCount: targets.length });
+    stage({ lastStage: "读取标签页", lastTabCount: targets.length }).catch(() => {});
 
     if (!targets.length) {
       await recordDiag({
@@ -856,7 +865,7 @@ async function saveTabsInScope(source, tabs, activeTab) {
     if (settings.askFolderOnBatch === false) {
       const savedProject = (await chrome.storage.local.get(LAST_PROJECT_KEY))[LAST_PROJECT_KEY] || "";
       const remembered = await resolveProject(savedProject);
-      await stage({ lastStage: "开始添加（未启用项目选择）" });
+      stage({ lastStage: "开始添加（未启用项目选择）" }).catch(() => {});
       return runBatchSave({
         tabs: targets,
         source,
@@ -866,7 +875,7 @@ async function saveTabsInScope(source, tabs, activeTab) {
       });
     }
 
-    await stage({ lastStage: "等待选择项目", lastTabCount: targets.length });
+    stage({ lastStage: "等待选择项目", lastTabCount: targets.length }).catch(() => {});
     return askFolderThenSave({ tabs: targets, source, activeTab, savedCount });
   } catch (error) {
     await recordDiag({

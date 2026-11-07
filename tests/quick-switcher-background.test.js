@@ -77,7 +77,7 @@ function fixture(patch = {}) {
   assert.equal(native.calls.messages.length, 1, 'Fast repeated native invocations coalesce one open transaction');
   assert.equal(native.calls.messages[0].message.type, 'LATERON_QUICK_SWITCHER_SHOW');
   assert.equal(native.calls.injections.length, 0); assert.equal(native.calls.popups.length, 0);
-  assert.equal(native.calls.fetches.length, 2, 'The injected component receives only the extension-owned theme and component styles');
+  assert.equal(native.calls.fetches.length, 0, 'A preloaded component opens without a worker settings read or style fetch');
 
   const owned = fixture();
   await owned.api.open({ id: 9, windowId: 4, url: extension('library.html') });
@@ -103,6 +103,8 @@ function fixture(patch = {}) {
   assert.equal(protectedPage.calls.popups.length, 1);
   assert.equal(protectedPage.calls.popups[0].type, 'popup');
   assert.equal(new URL(protectedPage.calls.popups[0].url).searchParams.get('window'), '4', 'Protected-page fallback remembers its originating browser window');
+  assert.equal(new URL(protectedPage.calls.popups[0].url).searchParams.get('theme'), 'dark', 'The popup receives presentation already read by the worker');
+  assert.equal(new URL(protectedPage.calls.popups[0].url).searchParams.get('language'), 'en');
   protectedPage.tabs.push({ id: 90, windowId: 90, url: `${extension('quick-switcher.html')}?window=8` });
   await protectedPage.api.open(protectedTab);
   assert.equal(protectedPage.calls.popups.length, 1, 'A later fallback reuses the existing Quick Switcher window');
