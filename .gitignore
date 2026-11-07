@@ -1,6 +1,26 @@
 .DS_Store
 .workbuddy/
 dist/
+node_modules/
+
+# Local agent instructions, plugin configuration and caches
+/.agents/
+/.codex/
+/.claude/
+/.magpie/
+/.codegraph/
+/.rea/
+/.plugins/
+/AGENTS.md
+/CLAUDE.md
+/GEMINI.md
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*.pem
+
 tests/board-preview.html
 tests/dialog-preview.html
 tests/picker-preview.html
