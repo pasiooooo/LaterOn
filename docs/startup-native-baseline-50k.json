@@ -1,0 +1,3816 @@
+{
+  "at": "2026-11-06T10:20:09.575Z",
+  "label": "50k",
+  "port": 9333,
+  "extensionId": "ifkjnimbijeafkmehbhchmamkpnhphac",
+  "loaded": "/private/tmp/lateron-instant-native-ext-baseline",
+  "variants": [
+    "baseline"
+  ],
+  "reps": 5,
+  "smoke": false,
+  "boundary": [
+    "Real Chrome 156 extension (CDP Extensions.loadUnpacked path), real storage/bookmarks/sidePanel/tabs APIs, 50k native bookmarks from profile Bookmarks file.",
+    "Test-only changes in loaded copy: bookmarks permission required (no prompt automation); native-harness.html/js for a trusted click that calls sidePanel.open.",
+    "Alt+O accelerator is not pressed (CDP cannot); quick switcher uses the same QUICK_SWITCHER_SHOW message from the real content-script world.",
+    "Page targets are paused at creation for tens of ms (hookup: 31 ms) to install a passive recorder; pauseMs is recorded per row and precedes navigation start. Workers are never debugger-attached.",
+    "laterOnOnboardingSeen=true is set in the owned test profile so the first-run guide does not cover timed UI; rows with a guide overlay are counted in overlayRows.",
+    "Web hosts resolve to NOTFOUND (no network); tab reuse targets are error pages with the original URL."
+  ],
+  "installs": [
+    {
+      "variant": "baseline",
+      "src": "/private/tmp/lateron-instant-native-baseline-1.74.2",
+      "version": "1.74.2",
+      "files": 67,
+      "missingImportScripts": [],
+      "at": "2026-11-06T10:20:09.704Z"
+    }
+  ],
+  "seed": {
+    "skipped": true,
+    "marker": {
+      "at": 1793957765209,
+      "bookmarks": 50000,
+      "items": 5000,
+      "previews": 300
+    }
+  },
+  "data": [
+    {
+      "tag": "install#0 baseline",
+      "version": "1.74.2",
+      "onboardingSeenBefore": true,
+      "condition": "prepared: storage/index settled before UI timing",
+      "harnessOpenMs": 218,
+      "extensionStateBeforeOpen": "ENABLED",
+      "ping": {
+        "ms": 5,
+        "reply": {
+          "ok": false,
+          "error": "quickSwitcherUnavailable"
+        }
+      },
+      "reloadToRepublishedMs": 2780,
+      "settleMs": 9374,
+      "summary": {
+        "version": "1.74.2",
+        "nativeBookmarkUrls": 50000,
+        "items": 5000,
+        "projects": 24,
+        "bookmarkConfig": {
+          "enabled": true,
+          "scopeId": null
+        },
+        "bookmarkStateNodes": 50822,
+        "bookmarkStateFolders": 822,
+        "bookmarkStateError": null,
+        "bookmarkStateUpdatedAt": 1793960412484,
+        "previewEntries": 300,
+        "previewPending": 0,
+        "previewAttempted": 50000,
+        "storageKeys": {
+          "laterOnBookmarkConfig": 52,
+          "laterOnBookmarkPreviewQueue": 6168182,
+          "laterOnBookmarkPreviews": 3144271,
+          "laterOnBookmarkState": 18893722,
+          "laterOnCleanupV165": 22,
+          "laterOnDiag": 138,
+          "laterOnItems": 2347927,
+          "laterOnLocateDiag": 135,
+          "laterOnNativeSeed": 88,
+          "laterOnOnboardingSeen": 25,
+          "laterOnProjects": 1877,
+          "laterOnSettings": 51,
+          "laterOnSyncQuietUntil": 39
+        },
+        "metaKeys": {},
+        "bookmarkMeta": null,
+        "idbMeta": {},
+        "theme": "light",
+        "totalBytes": 30556529,
+        "bytes": {
+          "laterOnItems": 2347927,
+          "laterOnProjects": 1877,
+          "laterOnBookmarkState": 18893722,
+          "laterOnBookmarkConfig": 52,
+          "laterOnBookmarkPreviews": 3144271,
+          "laterOnBookmarkPreviewQueue": 6168182,
+          "laterOnCovers": 0,
+          "laterOnSettings": 51
+        },
+        "idb": [],
+        "settleRule": "post-reload check observed"
+      }
+    },
+    {
+      "tag": "post-seed reload baseline",
+      "version": "1.74.2",
+      "onboardingSeenBefore": true,
+      "condition": "prepared: storage/index settled before UI timing",
+      "harnessOpenMs": 156,
+      "extensionStateBeforeOpen": "ENABLED",
+      "ping": {
+        "ms": 139,
+        "reply": {
+          "ok": false,
+          "error": "quickSwitcherUnavailable"
+        }
+      },
+      "reloadToRepublishedMs": 2707,
+      "settleMs": 9327,
+      "summary": {
+        "version": "1.74.2",
+        "nativeBookmarkUrls": 50000,
+        "items": 5000,
+        "projects": 24,
+        "bookmarkConfig": {
+          "enabled": true,
+          "scopeId": null
+        },
+        "bookmarkStateNodes": 50822,
+        "bookmarkStateFolders": 822,
+        "bookmarkStateError": null,
+        "bookmarkStateUpdatedAt": 1793960421786,
+        "previewEntries": 300,
+        "previewPending": 0,
+        "previewAttempted": 50000,
+        "storageKeys": {
+          "laterOnBookmarkConfig": 52,
+          "laterOnBookmarkPreviewQueue": 6168182,
+          "laterOnBookmarkPreviews": 3144271,
+          "laterOnBookmarkState": 18893722,
+          "laterOnCleanupV165": 22,
+          "laterOnDiag": 138,
+          "laterOnItems": 2347927,
+          "laterOnLocateDiag": 135,
+          "laterOnNativeSeed": 88,
+          "laterOnOnboardingSeen": 25,
+          "laterOnProjects": 1877,
+          "laterOnSettings": 51,
+          "laterOnSyncQuietUntil": 39
+        },
+        "metaKeys": {},
+        "bookmarkMeta": null,
+        "idbMeta": {},
+        "theme": "light",
+        "totalBytes": 30556529,
+        "bytes": {
+          "laterOnItems": 2347927,
+          "laterOnProjects": 1877,
+          "laterOnBookmarkState": 18893722,
+          "laterOnBookmarkConfig": 52,
+          "laterOnBookmarkPreviews": 3144271,
+          "laterOnBookmarkPreviewQueue": 6168182,
+          "laterOnCovers": 0,
+          "laterOnSettings": 51
+        },
+        "idb": [],
+        "settleRule": "post-reload check observed"
+      }
+    },
+    {
+      "tag": "extension info baseline#0",
+      "info": {
+        "state": "ENABLED",
+        "runtimeErrors": [],
+        "manifestErrors": []
+      }
+    },
+    {
+      "tag": "final summary baseline#0",
+      "summary": {
+        "version": "1.74.2",
+        "nativeBookmarkUrls": 50000,
+        "items": 5000,
+        "projects": 24,
+        "bookmarkConfig": {
+          "enabled": true,
+          "scopeId": null
+        },
+        "bookmarkStateNodes": 50822,
+        "bookmarkStateFolders": 822,
+        "bookmarkStateError": null,
+        "bookmarkStateUpdatedAt": 1793960547530,
+        "previewEntries": 300,
+        "previewPending": 0,
+        "previewAttempted": 50000,
+        "storageKeys": {
+          "laterOnBookmarkConfig": 52,
+          "laterOnBookmarkPreviewQueue": 6168182,
+          "laterOnBookmarkPreviews": 3144271,
+          "laterOnBookmarkState": 18893721,
+          "laterOnCleanupV165": 22,
+          "laterOnDiag": 138,
+          "laterOnItems": 2348031,
+          "laterOnLocateDiag": 135,
+          "laterOnNativeSeed": 88,
+          "laterOnOnboardingSeen": 25,
+          "laterOnProjects": 1877,
+          "laterOnSettings": 51,
+          "laterOnSyncQuietUntil": 39
+        },
+        "metaKeys": {},
+        "bookmarkMeta": null,
+        "idbMeta": {},
+        "theme": "light",
+        "totalBytes": 30556632,
+        "bytes": {
+          "laterOnItems": 2348031,
+          "laterOnProjects": 1877,
+          "laterOnBookmarkState": 18893721,
+          "laterOnBookmarkConfig": 52,
+          "laterOnBookmarkPreviews": 3144271,
+          "laterOnBookmarkPreviewQueue": 6168182,
+          "laterOnCovers": 0,
+          "laterOnSettings": 51
+        },
+        "idb": []
+      }
+    }
+  ],
+  "rows": [
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-reading",
+      "rep": "first-after-reload",
+      "workerState": "running",
+      "workerBefore": true,
+      "pauseMs": 24,
+      "pausedAtStart": true,
+      "query": "4320",
+      "ready": {
+        "ok": true,
+        "at": 107.59999999403954
+      },
+      "trustedClick": true,
+      "openError": null,
+      "clickToNavStartMs": 16,
+      "marks": {
+        "origin": 1793960428764.2,
+        "installedAt": 16,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "input": 24,
+          "readingCard": 46,
+          "skeletonGone": 46
+        },
+        "frame": {
+          "input": 108,
+          "readingCard": 108,
+          "skeletonGone": 108
+        },
+        "paint": {
+          "first-paint": 164,
+          "first-contentful-paint": 164
+        },
+        "boot": {
+          "total": 299,
+          "marks": [
+            [
+              "正在读取网页数据…",
+              46
+            ]
+          ]
+        },
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 88,
+        "bookmarkCards": 0,
+        "theme": "light"
+      },
+      "screenshot": "/private/tmp/lateron-instant-native-work/measure-50k-2026-11-06T10-20-09-573Z/screens/baseline-r0-sidepanel-first.png",
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 153,
+        "counts": {
+          "reading": 153,
+          "bookmarks": 0
+        }
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 130,
+        "counts": {
+          "reading": 1,
+          "bookmarks": 0
+        }
+      },
+      "openTarget": {
+        "cards": 1,
+        "link": true,
+        "text": "site339.example.com·10月6日\n            notes cipher garnet notes atlas ember 4320"
+      },
+      "openResult": {
+        "ms": 270,
+        "reused": true,
+        "url": "https://site339.example.com/reading/4320"
+      },
+      "errors": [],
+      "panelDiag": {
+        "at": 1793960428864,
+        "bytes": 2339126,
+        "cache": 0,
+        "cacheHit": true,
+        "data": 59,
+        "dataRequest": 60,
+        "firstPaint": 46,
+        "items": 5000,
+        "localStorageOk": true,
+        "localStorageSlow": false,
+        "migrate": 1,
+        "other": 0,
+        "page": 32,
+        "paint": 14,
+        "prefetched": true,
+        "slow": [],
+        "total": 100
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-bookmarks-switch",
+      "rep": "first-after-reload",
+      "ok": true,
+      "preloaded": false,
+      "frameState": {
+        "iframe": true,
+        "src": "chrome-extension://ifkjnimbijeafkmehbhchmamkpnhphac/bookmarks.html?surface=sidepanel",
+        "className": "sidepanel-alternate is-active",
+        "active": true,
+        "busy": null,
+        "overlayTop": false,
+        "status": "",
+        "doc": {
+          "href": "chrome-extension://ifkjnimbijeafkmehbhchmamkpnhphac/bookmarks.html?surface=sidepanel",
+          "title": "LaterOn · 书签库",
+          "readyState": "complete",
+          "overlay": false,
+          "cards": 48,
+          "status": "已连接浏览器书签，两个方向的修改实时反映。"
+        }
+      },
+      "lateFrameMarks": {
+        "origin": 1793960430175.8,
+        "installedAt": 2,
+        "late": true,
+        "readyStateAtInstall": "complete",
+        "dom": {},
+        "frame": {},
+        "paint": {
+          "first-paint": 2352,
+          "first-contentful-paint": 2352
+        },
+        "boot": null,
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 0,
+        "bookmarkCards": 48,
+        "theme": "light"
+      },
+      "primary": "clickToVisibleCardsMs (parent frame, click to visible bookmark cards)",
+      "clickToVisibleCardsMs": 2327,
+      "clickToFrameOriginMs": null,
+      "marks": null,
+      "screenshot": "/private/tmp/lateron-instant-native-work/measure-50k-2026-11-06T10-20-09-573Z/screens/baseline-r0-sidepanel-bookmarks-first.png",
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 152,
+        "counts": {
+          "reading": 0,
+          "bookmarks": 48
+        }
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 107,
+        "counts": {
+          "reading": 0,
+          "bookmarks": 5
+        }
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-reading",
+      "rep": 0,
+      "workerState": "running",
+      "workerBefore": true,
+      "pauseMs": 14,
+      "pausedAtStart": true,
+      "query": "4335",
+      "ready": {
+        "ok": true,
+        "at": 230.5
+      },
+      "trustedClick": true,
+      "openError": null,
+      "clickToNavStartMs": 9,
+      "marks": {
+        "origin": 1793960433732.6,
+        "installedAt": 11,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "input": 21,
+          "readingCard": 24,
+          "skeletonGone": 24
+        },
+        "frame": {
+          "input": 28,
+          "readingCard": 28,
+          "skeletonGone": 28
+        },
+        "paint": {
+          "first-paint": 64,
+          "first-contentful-paint": 64
+        },
+        "boot": {
+          "total": 436,
+          "marks": [
+            [
+              "正在读取网页数据…",
+              24
+            ]
+          ]
+        },
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 56,
+        "bookmarkCards": 0,
+        "theme": "light"
+      },
+      "screenshot": "/private/tmp/lateron-instant-native-work/measure-50k-2026-11-06T10-20-09-573Z/screens/baseline-r0-sidepanel-warm.png",
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 129,
+        "counts": {
+          "reading": 173,
+          "bookmarks": 0
+        }
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 133,
+        "counts": {
+          "reading": 1,
+          "bookmarks": 0
+        }
+      },
+      "openTarget": {
+        "cards": 1,
+        "link": true,
+        "text": "site354.example.com·10月6日\n            yonder meadow island design reading umber "
+      },
+      "openResult": {
+        "ms": 904,
+        "reused": true,
+        "url": "https://site354.example.com/reading/4335"
+      },
+      "errors": [],
+      "panelDiag": {
+        "at": 1793960433961,
+        "bytes": 2339127,
+        "cache": 0,
+        "cacheHit": true,
+        "data": 194,
+        "dataRequest": 194,
+        "firstPaint": 24,
+        "items": 5000,
+        "localStorageOk": true,
+        "localStorageSlow": false,
+        "migrate": 1,
+        "other": 10,
+        "page": 23,
+        "paint": 1,
+        "prefetched": true,
+        "slow": [],
+        "total": 229
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-bookmarks-switch",
+      "rep": 0,
+      "ok": true,
+      "preloaded": false,
+      "frameState": {
+        "iframe": true,
+        "src": "chrome-extension://ifkjnimbijeafkmehbhchmamkpnhphac/bookmarks.html?surface=sidepanel",
+        "className": "sidepanel-alternate is-active",
+        "active": true,
+        "busy": null,
+        "overlayTop": false,
+        "status": "",
+        "doc": {
+          "href": "chrome-extension://ifkjnimbijeafkmehbhchmamkpnhphac/bookmarks.html?surface=sidepanel",
+          "title": "LaterOn · 书签库",
+          "readyState": "complete",
+          "overlay": false,
+          "cards": 48,
+          "status": "已连接浏览器书签，两个方向的修改实时反映。"
+        }
+      },
+      "lateFrameMarks": {
+        "origin": 1793960435808.2,
+        "installedAt": 2,
+        "late": true,
+        "readyStateAtInstall": "complete",
+        "dom": {},
+        "frame": {},
+        "paint": {
+          "first-paint": 4236,
+          "first-contentful-paint": 4236
+        },
+        "boot": null,
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 0,
+        "bookmarkCards": 48,
+        "theme": "light"
+      },
+      "primary": "clickToVisibleCardsMs (parent frame, click to visible bookmark cards)",
+      "clickToVisibleCardsMs": 4213,
+      "clickToFrameOriginMs": null,
+      "marks": null,
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 165,
+        "counts": {
+          "reading": 0,
+          "bookmarks": 48
+        }
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 107,
+        "counts": {
+          "reading": 0,
+          "bookmarks": 5
+        }
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-reading",
+      "rep": 0,
+      "workerState": "stopped",
+      "workerBefore": false,
+      "pauseMs": 22,
+      "pausedAtStart": true,
+      "query": "4350",
+      "ready": {
+        "ok": true,
+        "at": 76.60000002384186
+      },
+      "trustedClick": true,
+      "openError": null,
+      "clickToNavStartMs": 16,
+      "marks": {
+        "origin": 1793960441899.5,
+        "installedAt": 16,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "input": 28,
+          "readingCard": 31,
+          "skeletonGone": 31
+        },
+        "frame": {
+          "input": 34,
+          "readingCard": 34,
+          "skeletonGone": 34
+        },
+        "paint": {},
+        "boot": {
+          "total": 83,
+          "marks": [
+            [
+              "正在读取网页数据…",
+              31
+            ]
+          ]
+        },
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 24,
+        "bookmarkCards": 0,
+        "theme": "light"
+      },
+      "screenshot": "/private/tmp/lateron-instant-native-work/measure-50k-2026-11-06T10-20-09-573Z/screens/baseline-r0-sidepanel-cold-worker.png",
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 162,
+        "counts": {
+          "reading": 134,
+          "bookmarks": 0
+        }
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 130,
+        "counts": {
+          "reading": 1,
+          "bookmarks": 0
+        }
+      },
+      "openTarget": {
+        "cards": 1,
+        "link": true,
+        "text": "site369.example.com·10月6日\n            summit method summit orbit ripple notes 43"
+      },
+      "openResult": {
+        "ms": 1465,
+        "reused": true,
+        "url": "https://site369.example.com/reading/4350"
+      },
+      "errors": [],
+      "panelDiag": {
+        "at": 1793960441971,
+        "bytes": 2339128,
+        "cache": 0,
+        "cacheHit": true,
+        "data": 31,
+        "dataRequest": 32,
+        "firstPaint": 32,
+        "items": 5000,
+        "localStorageOk": true,
+        "localStorageSlow": false,
+        "migrate": 0,
+        "other": 9,
+        "page": 31,
+        "paint": 1,
+        "prefetched": true,
+        "slow": [],
+        "total": 72
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-reading-type-asap",
+      "rep": 0,
+      "workerState": "running",
+      "workerBefore": true,
+      "pauseMs": 19,
+      "pausedAtStart": true,
+      "query": "4365",
+      "inputFoundAt": 21,
+      "typedAt": 31,
+      "queryMatchedAt": 159,
+      "queryOk": true,
+      "valueKept": "4365",
+      "trustedClick": true,
+      "openError": null,
+      "clickToNavStartMs": 14,
+      "marks": {
+        "origin": 1793960445137.6,
+        "installedAt": 14,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "input": 18,
+          "readingCard": 24,
+          "skeletonGone": 24
+        },
+        "frame": {
+          "input": 29,
+          "readingCard": 29,
+          "skeletonGone": 29
+        },
+        "paint": {
+          "first-paint": 36,
+          "first-contentful-paint": 36
+        },
+        "boot": {
+          "total": 312,
+          "marks": [
+            [
+              "正在读取网页数据…",
+              24
+            ]
+          ]
+        },
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 1,
+        "bookmarkCards": 0,
+        "theme": "light"
+      },
+      "errors": [],
+      "panelDiag": {
+        "at": 1793960445202,
+        "bytes": 2339129,
+        "cache": 0,
+        "cacheHit": true,
+        "data": 30,
+        "dataRequest": 33,
+        "firstPaint": 25,
+        "items": 5000,
+        "localStorageOk": true,
+        "localStorageSlow": false,
+        "migrate": 1,
+        "other": 8,
+        "page": 24,
+        "paint": 1,
+        "prefetched": true,
+        "slow": [],
+        "total": 64
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "quick-switcher-web",
+      "rep": 0,
+      "workerState": "running",
+      "workerBefore": true,
+      "workerAtTrigger": true,
+      "stop": null,
+      "validCold": true,
+      "query": "4380",
+      "contextName": "LaterOn · Project Web Manager",
+      "showToShadowMs": 44,
+      "showToInputMs": 44,
+      "showToFocusedMs": 44,
+      "showToFirstRowsMs": 751,
+      "initialRows": 50,
+      "screenshot": "/private/tmp/lateron-instant-native-work/measure-50k-2026-11-06T10-20-09-573Z/screens/baseline-r0-switcher-warm.png",
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 71,
+        "rows": 50
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 63,
+        "rows": 42
+      },
+      "openResult": {
+        "ms": 648,
+        "url": "https://site399.example.com/reading/4380",
+        "tabId": 1927138082
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "quick-switcher-web",
+      "rep": 0,
+      "workerState": "stopped",
+      "workerBefore": false,
+      "workerAtTrigger": false,
+      "stop": {
+        "stopped": true,
+        "attempts": 1
+      },
+      "validCold": true,
+      "query": "4395",
+      "contextName": "LaterOn · Project Web Manager",
+      "showToShadowMs": 311,
+      "showToInputMs": 311,
+      "showToFocusedMs": 311,
+      "showToFirstRowsMs": 2783,
+      "initialRows": 50,
+      "screenshot": "/private/tmp/lateron-instant-native-work/measure-50k-2026-11-06T10-20-09-573Z/screens/baseline-r0-switcher-cold.png",
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 70,
+        "rows": 50
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 62,
+        "rows": 42
+      },
+      "openResult": {
+        "ms": 714,
+        "url": "https://site414.example.com/reading/4395",
+        "tabId": 1927138086
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "tab-bookmarks.html",
+      "rep": 0,
+      "workerState": "stopped",
+      "workerBefore": false,
+      "ok": true,
+      "createToNavStartMs": 16,
+      "marks": {
+        "origin": 1793960453158.8,
+        "installedAt": 28,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "skeletonGone": 46,
+          "input": 46,
+          "bookmarkCard": 2302,
+          "folderRow": 2302
+        },
+        "frame": {
+          "skeletonGone": 47,
+          "input": 47,
+          "bookmarkCard": 2347,
+          "folderRow": 2347
+        },
+        "paint": {
+          "first-paint": 76,
+          "first-contentful-paint": 76
+        },
+        "boot": null,
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 0,
+        "bookmarkCards": 48,
+        "theme": "light"
+      },
+      "screenshot": "/private/tmp/lateron-instant-native-work/measure-50k-2026-11-06T10-20-09-573Z/screens/baseline-r0-bookmarks-tab.png",
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 129,
+        "counts": {
+          "reading": 0,
+          "bookmarks": 5
+        }
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "tab-library.html",
+      "rep": 0,
+      "workerState": "running",
+      "workerBefore": true,
+      "ok": true,
+      "createToNavStartMs": 8,
+      "marks": {
+        "origin": 1793960456112.9,
+        "installedAt": 11,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "skeletonGone": 25,
+          "input": 25,
+          "libraryCard": 337
+        },
+        "frame": {
+          "skeletonGone": 31,
+          "input": 31,
+          "libraryCard": 337
+        },
+        "paint": {
+          "first-paint": 64,
+          "first-contentful-paint": 64
+        },
+        "boot": null,
+        "overlay": false,
+        "libraryCards": 21,
+        "readingCards": 0,
+        "bookmarkCards": 0,
+        "theme": "light"
+      },
+      "screenshot": "/private/tmp/lateron-instant-native-work/measure-50k-2026-11-06T10-20-09-573Z/screens/baseline-r0-library-tab.png",
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-reading",
+      "rep": 1,
+      "workerState": "running",
+      "workerBefore": true,
+      "pauseMs": 27,
+      "pausedAtStart": true,
+      "query": "4410",
+      "ready": {
+        "ok": true,
+        "at": 228.59999999403954
+      },
+      "trustedClick": true,
+      "openError": null,
+      "clickToNavStartMs": 8,
+      "marks": {
+        "origin": 1793960458126.5,
+        "installedAt": 25,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "input": 34,
+          "readingCard": 37,
+          "skeletonGone": 37
+        },
+        "frame": {
+          "input": 40,
+          "readingCard": 40,
+          "skeletonGone": 40
+        },
+        "paint": {
+          "first-paint": 60,
+          "first-contentful-paint": 60
+        },
+        "boot": {
+          "total": 442,
+          "marks": [
+            [
+              "正在读取网页数据…",
+              37
+            ]
+          ]
+        },
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 56,
+        "bookmarkCards": 0,
+        "theme": "light"
+      },
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 127,
+        "counts": {
+          "reading": 129,
+          "bookmarks": 0
+        }
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 133,
+        "counts": {
+          "reading": 1,
+          "bookmarks": 0
+        }
+      },
+      "openTarget": {
+        "cards": 1,
+        "link": true,
+        "text": "site429.example.com·10月6日\n            yonder juniper protocol analysis meadow or"
+      },
+      "openResult": {
+        "ms": 807,
+        "reused": true,
+        "url": "https://site429.example.com/reading/4410"
+      },
+      "errors": [],
+      "panelDiag": {
+        "at": 1793960458354,
+        "bytes": 2339129,
+        "cache": 0,
+        "cacheHit": true,
+        "data": 182,
+        "dataRequest": 183,
+        "firstPaint": 37,
+        "items": 5000,
+        "localStorageOk": true,
+        "localStorageSlow": false,
+        "migrate": 0,
+        "other": 9,
+        "page": 36,
+        "paint": 1,
+        "prefetched": true,
+        "slow": [],
+        "total": 228
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-bookmarks-switch",
+      "rep": 1,
+      "ok": true,
+      "preloaded": false,
+      "frameState": {
+        "iframe": true,
+        "src": "chrome-extension://ifkjnimbijeafkmehbhchmamkpnhphac/bookmarks.html?surface=sidepanel",
+        "className": "sidepanel-alternate is-active",
+        "active": true,
+        "busy": null,
+        "overlayTop": false,
+        "status": "",
+        "doc": {
+          "href": "chrome-extension://ifkjnimbijeafkmehbhchmamkpnhphac/bookmarks.html?surface=sidepanel",
+          "title": "LaterOn · 书签库",
+          "readyState": "complete",
+          "overlay": false,
+          "cards": 48,
+          "status": "已连接浏览器书签，两个方向的修改实时反映。"
+        }
+      },
+      "lateFrameMarks": {
+        "origin": 1793960460158.4,
+        "installedAt": 2,
+        "late": true,
+        "readyStateAtInstall": "complete",
+        "dom": {},
+        "frame": {},
+        "paint": {},
+        "boot": null,
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 0,
+        "bookmarkCards": 48,
+        "theme": "light"
+      },
+      "primary": "clickToVisibleCardsMs (parent frame, click to visible bookmark cards)",
+      "clickToVisibleCardsMs": 2433,
+      "clickToFrameOriginMs": null,
+      "marks": null,
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 173,
+        "counts": {
+          "reading": 0,
+          "bookmarks": 48
+        }
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 148,
+        "counts": {
+          "reading": 0,
+          "bookmarks": 5
+        }
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-reading",
+      "rep": 1,
+      "workerState": "stopped",
+      "workerBefore": false,
+      "pauseMs": 20,
+      "pausedAtStart": true,
+      "query": "4425",
+      "ready": {
+        "ok": true,
+        "at": 73.09999999403954
+      },
+      "trustedClick": true,
+      "openError": null,
+      "clickToNavStartMs": 16,
+      "marks": {
+        "origin": 1793960464445.1,
+        "installedAt": 13,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "input": 26,
+          "readingCard": 28,
+          "skeletonGone": 28
+        },
+        "frame": {
+          "input": 33,
+          "readingCard": 33,
+          "skeletonGone": 33
+        },
+        "paint": {},
+        "boot": {
+          "total": 83,
+          "marks": [
+            [
+              "正在读取网页数据…",
+              28
+            ]
+          ]
+        },
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 24,
+        "bookmarkCards": 0,
+        "theme": "light"
+      },
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 208,
+        "counts": {
+          "reading": 102,
+          "bookmarks": 0
+        }
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 135,
+        "counts": {
+          "reading": 1,
+          "bookmarks": 0
+        }
+      },
+      "openTarget": {
+        "cards": 1,
+        "link": true,
+        "text": "site444.example.com·10月6日\n            island orbit zephyr willow vector vector 4"
+      },
+      "openResult": {
+        "ms": 1442,
+        "reused": true,
+        "url": "https://site444.example.com/reading/4425"
+      },
+      "errors": [],
+      "panelDiag": {
+        "at": 1793960464516,
+        "bytes": 2339130,
+        "cache": 0,
+        "cacheHit": true,
+        "data": 34,
+        "dataRequest": 35,
+        "firstPaint": 28,
+        "items": 5000,
+        "localStorageOk": true,
+        "localStorageSlow": false,
+        "migrate": 0,
+        "other": 9,
+        "page": 27,
+        "paint": 1,
+        "prefetched": true,
+        "slow": [],
+        "total": 71
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-reading-type-asap",
+      "rep": 1,
+      "workerState": "running",
+      "workerBefore": true,
+      "pauseMs": 21,
+      "pausedAtStart": true,
+      "query": "4440",
+      "inputFoundAt": 29,
+      "typedAt": 31,
+      "queryMatchedAt": 157,
+      "queryOk": true,
+      "valueKept": "4440",
+      "trustedClick": true,
+      "openError": null,
+      "clickToNavStartMs": 14,
+      "marks": {
+        "origin": 1793960467613.3,
+        "installedAt": 15,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "input": 23,
+          "readingCard": 26,
+          "skeletonGone": 26
+        },
+        "frame": {
+          "input": 29,
+          "readingCard": 29,
+          "skeletonGone": 29
+        },
+        "paint": {
+          "first-paint": 36,
+          "first-contentful-paint": 36
+        },
+        "boot": {
+          "total": 319,
+          "marks": [
+            [
+              "正在读取网页数据…",
+              26
+            ]
+          ]
+        },
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 1,
+        "bookmarkCards": 0,
+        "theme": "light"
+      },
+      "errors": [],
+      "panelDiag": {
+        "at": 1793960467680,
+        "bytes": 2339144,
+        "cache": 0,
+        "cacheHit": true,
+        "data": 31,
+        "dataRequest": 31,
+        "firstPaint": 27,
+        "items": 5000,
+        "localStorageOk": true,
+        "localStorageSlow": false,
+        "migrate": 1,
+        "other": 8,
+        "page": 26,
+        "paint": 1,
+        "prefetched": true,
+        "slow": [],
+        "total": 67
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "quick-switcher-web",
+      "rep": 1,
+      "workerState": "running",
+      "workerBefore": true,
+      "workerAtTrigger": true,
+      "stop": null,
+      "validCold": true,
+      "query": "4455",
+      "contextName": "LaterOn · Project Web Manager",
+      "showToShadowMs": 42,
+      "showToInputMs": 42,
+      "showToFocusedMs": 42,
+      "showToFirstRowsMs": 730,
+      "initialRows": 50,
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 64,
+        "rows": 50
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 64,
+        "rows": 42
+      },
+      "openResult": {
+        "ms": 639,
+        "url": "https://site474.example.com/reading/4455",
+        "tabId": 1927138098
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "quick-switcher-web",
+      "rep": 1,
+      "workerState": "stopped",
+      "workerBefore": false,
+      "workerAtTrigger": false,
+      "stop": {
+        "stopped": true,
+        "attempts": 1
+      },
+      "validCold": true,
+      "query": "4470",
+      "contextName": "LaterOn · Project Web Manager",
+      "showToShadowMs": 301,
+      "showToInputMs": 301,
+      "showToFocusedMs": 301,
+      "showToFirstRowsMs": 2890,
+      "initialRows": 50,
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 72,
+        "rows": 50
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 60,
+        "rows": 42
+      },
+      "openResult": {
+        "ms": 729,
+        "url": "https://site489.example.com/reading/4470",
+        "tabId": 1927138102
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "tab-bookmarks.html",
+      "rep": 1,
+      "workerState": "running",
+      "workerBefore": true,
+      "ok": true,
+      "createToNavStartMs": 4,
+      "marks": {
+        "origin": 1793960474933.7,
+        "installedAt": 11,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "skeletonGone": 23,
+          "input": 23,
+          "bookmarkCard": 1930,
+          "folderRow": 1930
+        },
+        "frame": {
+          "skeletonGone": 23,
+          "input": 23,
+          "bookmarkCard": 2168,
+          "folderRow": 2168
+        },
+        "paint": {
+          "first-paint": 52,
+          "first-contentful-paint": 52
+        },
+        "boot": null,
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 0,
+        "bookmarkCards": 48,
+        "theme": "light"
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 145,
+        "counts": {
+          "reading": 0,
+          "bookmarks": 5
+        }
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "tab-library.html",
+      "rep": 1,
+      "workerState": "running",
+      "workerBefore": true,
+      "ok": true,
+      "createToNavStartMs": 8,
+      "marks": {
+        "origin": 1793960477971.6,
+        "installedAt": 11,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "skeletonGone": 25,
+          "input": 25,
+          "libraryCard": 541
+        },
+        "frame": {
+          "skeletonGone": 28,
+          "input": 28,
+          "libraryCard": 541
+        },
+        "paint": {
+          "first-paint": 56,
+          "first-contentful-paint": 56
+        },
+        "boot": null,
+        "overlay": false,
+        "libraryCards": 21,
+        "readingCards": 0,
+        "bookmarkCards": 0,
+        "theme": "light"
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-reading",
+      "rep": 2,
+      "workerState": "running",
+      "workerBefore": true,
+      "pauseMs": 13,
+      "pausedAtStart": true,
+      "query": "4485",
+      "ready": {
+        "ok": true,
+        "at": 417.69999998807907
+      },
+      "trustedClick": true,
+      "openError": null,
+      "clickToNavStartMs": 8,
+      "marks": {
+        "origin": 1793960479644.1,
+        "installedAt": 10,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "input": 20,
+          "readingCard": 23,
+          "skeletonGone": 23
+        },
+        "frame": {
+          "input": 26,
+          "readingCard": 26,
+          "skeletonGone": 26
+        },
+        "paint": {
+          "first-paint": 60,
+          "first-contentful-paint": 60
+        },
+        "boot": {
+          "total": 631,
+          "marks": [
+            [
+              "正在读取网页数据…",
+              23
+            ]
+          ]
+        },
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 88,
+        "bookmarkCards": 0,
+        "theme": "light"
+      },
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 133,
+        "counts": {
+          "reading": 163,
+          "bookmarks": 0
+        }
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 132,
+        "counts": {
+          "reading": 1,
+          "bookmarks": 0
+        }
+      },
+      "openTarget": {
+        "cards": 1,
+        "link": true,
+        "text": "site504.example.com·10月6日\n            beacon atlas ember protocol review beacon "
+      },
+      "openResult": {
+        "ms": 250,
+        "reused": true,
+        "url": "https://site504.example.com/reading/4485"
+      },
+      "errors": [],
+      "panelDiag": {
+        "at": 1793960480060,
+        "bytes": 2339144,
+        "cache": 0,
+        "cacheHit": true,
+        "data": 384,
+        "dataRequest": 385,
+        "firstPaint": 23,
+        "items": 5000,
+        "localStorageOk": true,
+        "localStorageSlow": false,
+        "migrate": 0,
+        "other": 9,
+        "page": 22,
+        "paint": 1,
+        "prefetched": true,
+        "slow": [],
+        "total": 416
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-bookmarks-switch",
+      "rep": 2,
+      "ok": true,
+      "preloaded": false,
+      "frameState": {
+        "iframe": true,
+        "src": "chrome-extension://ifkjnimbijeafkmehbhchmamkpnhphac/bookmarks.html?surface=sidepanel",
+        "className": "sidepanel-alternate is-active",
+        "active": true,
+        "busy": null,
+        "overlayTop": false,
+        "status": "",
+        "doc": {
+          "href": "chrome-extension://ifkjnimbijeafkmehbhchmamkpnhphac/bookmarks.html?surface=sidepanel",
+          "title": "LaterOn · 书签库",
+          "readyState": "complete",
+          "overlay": false,
+          "cards": 48,
+          "status": "已连接浏览器书签，两个方向的修改实时反映。"
+        }
+      },
+      "lateFrameMarks": {
+        "origin": 1793960481216.3,
+        "installedAt": 3,
+        "late": true,
+        "readyStateAtInstall": "complete",
+        "dom": {},
+        "frame": {},
+        "paint": {},
+        "boot": null,
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 0,
+        "bookmarkCards": 48,
+        "theme": "light"
+      },
+      "primary": "clickToVisibleCardsMs (parent frame, click to visible bookmark cards)",
+      "clickToVisibleCardsMs": 2408,
+      "clickToFrameOriginMs": null,
+      "marks": null,
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 140,
+        "counts": {
+          "reading": 0,
+          "bookmarks": 48
+        }
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 108,
+        "counts": {
+          "reading": 0,
+          "bookmarks": 5
+        }
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-reading",
+      "rep": 2,
+      "workerState": "stopped",
+      "workerBefore": false,
+      "pauseMs": 20,
+      "pausedAtStart": true,
+      "query": "4500",
+      "ready": {
+        "ok": true,
+        "at": 72.7000000178814
+      },
+      "trustedClick": true,
+      "openError": null,
+      "clickToNavStartMs": 14,
+      "marks": {
+        "origin": 1793960485496.9,
+        "installedAt": 14,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "input": 22,
+          "readingCard": 26,
+          "skeletonGone": 26
+        },
+        "frame": {
+          "input": 29,
+          "readingCard": 29,
+          "skeletonGone": 29
+        },
+        "paint": {},
+        "boot": {
+          "total": 82,
+          "marks": [
+            [
+              "正在读取网页数据…",
+              26
+            ]
+          ]
+        },
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 24,
+        "bookmarkCards": 0,
+        "theme": "light"
+      },
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 266,
+        "counts": {
+          "reading": 88,
+          "bookmarks": 0
+        }
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 137,
+        "counts": {
+          "reading": 1,
+          "bookmarks": 0
+        }
+      },
+      "openTarget": {
+        "cards": 1,
+        "link": true,
+        "text": "site519.example.com·10月6日\n            prism dataset tundra delta vector fable 45"
+      },
+      "openResult": {
+        "ms": 1568,
+        "reused": true,
+        "url": "https://site519.example.com/reading/4500"
+      },
+      "errors": [],
+      "panelDiag": {
+        "at": 1793960485567,
+        "bytes": 2339158,
+        "cache": 0,
+        "cacheHit": true,
+        "data": 36,
+        "dataRequest": 37,
+        "firstPaint": 26,
+        "items": 5000,
+        "localStorageOk": true,
+        "localStorageSlow": false,
+        "migrate": 0,
+        "other": 9,
+        "page": 25,
+        "paint": 1,
+        "prefetched": true,
+        "slow": [],
+        "total": 71
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-reading-type-asap",
+      "rep": 2,
+      "workerState": "running",
+      "workerBefore": true,
+      "pauseMs": 19,
+      "pausedAtStart": true,
+      "query": "4515",
+      "inputFoundAt": 26,
+      "typedAt": 34,
+      "queryMatchedAt": 160,
+      "queryOk": true,
+      "valueKept": "4515",
+      "trustedClick": true,
+      "openError": null,
+      "clickToNavStartMs": 15,
+      "marks": {
+        "origin": 1793960488652.6,
+        "installedAt": 13,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "input": 25,
+          "readingCard": 28,
+          "skeletonGone": 28
+        },
+        "frame": {
+          "input": 32,
+          "readingCard": 32,
+          "skeletonGone": 32
+        },
+        "paint": {
+          "first-paint": 40,
+          "first-contentful-paint": 40
+        },
+        "boot": {
+          "total": 323,
+          "marks": [
+            [
+              "正在读取网页数据…",
+              28
+            ]
+          ]
+        },
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 1,
+        "bookmarkCards": 0,
+        "theme": "light"
+      },
+      "errors": [],
+      "panelDiag": {
+        "at": 1793960488726,
+        "bytes": 2339172,
+        "cache": 0,
+        "cacheHit": true,
+        "data": 36,
+        "dataRequest": 37,
+        "firstPaint": 28,
+        "items": 5000,
+        "localStorageOk": true,
+        "localStorageSlow": false,
+        "migrate": 1,
+        "other": 8,
+        "page": 27,
+        "paint": 1,
+        "prefetched": true,
+        "slow": [],
+        "total": 73
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "quick-switcher-web",
+      "rep": 2,
+      "workerState": "running",
+      "workerBefore": true,
+      "workerAtTrigger": true,
+      "stop": null,
+      "validCold": true,
+      "query": "4530",
+      "contextName": "LaterOn · Project Web Manager",
+      "showToShadowMs": 39,
+      "showToInputMs": 39,
+      "showToFocusedMs": 39,
+      "showToFirstRowsMs": 731,
+      "initialRows": 50,
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 79,
+        "rows": 50
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 69,
+        "rows": 42
+      },
+      "openResult": {
+        "ms": 655,
+        "url": "https://site549.example.com/reading/4530",
+        "tabId": 1927138114
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "quick-switcher-web",
+      "rep": 2,
+      "workerState": "stopped",
+      "workerBefore": false,
+      "workerAtTrigger": false,
+      "stop": {
+        "stopped": true,
+        "attempts": 1
+      },
+      "validCold": true,
+      "query": "4545",
+      "contextName": "LaterOn · Project Web Manager",
+      "showToShadowMs": 304,
+      "showToInputMs": 304,
+      "showToFocusedMs": 304,
+      "showToFirstRowsMs": 2879,
+      "initialRows": 50,
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 71,
+        "rows": 50
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 60,
+        "rows": 42
+      },
+      "openResult": {
+        "ms": 724,
+        "url": "https://site564.example.com/reading/4545",
+        "tabId": 1927138118
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "tab-bookmarks.html",
+      "rep": 2,
+      "workerState": "stopped",
+      "workerBefore": false,
+      "ok": true,
+      "createToNavStartMs": 17,
+      "marks": {
+        "origin": 1793960496602.6,
+        "installedAt": 29,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "skeletonGone": 46,
+          "input": 46,
+          "bookmarkCard": 2130,
+          "folderRow": 2130
+        },
+        "frame": {
+          "skeletonGone": 46,
+          "input": 46,
+          "bookmarkCard": 2363,
+          "folderRow": 2363
+        },
+        "paint": {
+          "first-paint": 72,
+          "first-contentful-paint": 72
+        },
+        "boot": null,
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 0,
+        "bookmarkCards": 48,
+        "theme": "light"
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 162,
+        "counts": {
+          "reading": 0,
+          "bookmarks": 5
+        }
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-reading",
+      "rep": 3,
+      "workerState": "running",
+      "workerBefore": true,
+      "pauseMs": 13,
+      "pausedAtStart": true,
+      "query": "4560",
+      "ready": {
+        "ok": true,
+        "at": 868.1999999880791
+      },
+      "trustedClick": true,
+      "openError": null,
+      "clickToNavStartMs": 8,
+      "marks": {
+        "origin": 1793960499914.5,
+        "installedAt": 9,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "input": 21,
+          "readingCard": 24,
+          "skeletonGone": 24
+        },
+        "frame": {
+          "input": 29,
+          "readingCard": 29,
+          "skeletonGone": 29
+        },
+        "paint": {
+          "first-paint": 56,
+          "first-contentful-paint": 56
+        },
+        "boot": {
+          "total": 919,
+          "marks": [
+            [
+              "正在读取网页数据…",
+              24
+            ]
+          ]
+        },
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 16,
+        "bookmarkCards": 0,
+        "theme": "light"
+      },
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 133,
+        "counts": {
+          "reading": 133,
+          "bookmarks": 0
+        }
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 131,
+        "counts": {
+          "reading": 1,
+          "bookmarks": 0
+        }
+      },
+      "openTarget": {
+        "cards": 1,
+        "link": true,
+        "text": "site579.example.com·10月6日\n            delta reading umber kepler umber method 45"
+      },
+      "openResult": {
+        "ms": 465,
+        "reused": true,
+        "url": "https://site579.example.com/reading/4560"
+      },
+      "errors": [],
+      "panelDiag": {
+        "at": 1793960500670,
+        "bytes": 2339172,
+        "cache": 0,
+        "cacheHit": true,
+        "data": 724,
+        "dataRequest": 724,
+        "firstPaint": 24,
+        "items": 5000,
+        "localStorageOk": true,
+        "localStorageSlow": false,
+        "migrate": 0,
+        "other": 8,
+        "page": 23,
+        "paint": 1,
+        "prefetched": true,
+        "slow": [],
+        "total": 756
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-bookmarks-switch",
+      "rep": 3,
+      "ok": true,
+      "preloaded": false,
+      "frameState": {
+        "iframe": true,
+        "src": "chrome-extension://ifkjnimbijeafkmehbhchmamkpnhphac/bookmarks.html?surface=sidepanel",
+        "className": "sidepanel-alternate is-active",
+        "active": true,
+        "busy": null,
+        "overlayTop": false,
+        "status": "",
+        "doc": {
+          "href": "chrome-extension://ifkjnimbijeafkmehbhchmamkpnhphac/bookmarks.html?surface=sidepanel",
+          "title": "LaterOn · 书签库",
+          "readyState": "complete",
+          "overlay": false,
+          "cards": 48,
+          "status": "已连接浏览器书签，两个方向的修改实时反映。"
+        }
+      },
+      "lateFrameMarks": {
+        "origin": 1793960502115.8,
+        "installedAt": 2,
+        "late": true,
+        "readyStateAtInstall": "complete",
+        "dom": {},
+        "frame": {},
+        "paint": {
+          "first-paint": 4304,
+          "first-contentful-paint": 4304
+        },
+        "boot": null,
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 0,
+        "bookmarkCards": 48,
+        "theme": "light"
+      },
+      "primary": "clickToVisibleCardsMs (parent frame, click to visible bookmark cards)",
+      "clickToVisibleCardsMs": 4278,
+      "clickToFrameOriginMs": null,
+      "marks": null,
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 163,
+        "counts": {
+          "reading": 0,
+          "bookmarks": 48
+        }
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 108,
+        "counts": {
+          "reading": 0,
+          "bookmarks": 5
+        }
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-reading",
+      "rep": 3,
+      "workerState": "stopped",
+      "workerBefore": false,
+      "pauseMs": 21,
+      "pausedAtStart": true,
+      "query": "4575",
+      "ready": {
+        "ok": true,
+        "at": 71.40000000596046
+      },
+      "trustedClick": true,
+      "openError": null,
+      "clickToNavStartMs": 14,
+      "marks": {
+        "origin": 1793960508265.1,
+        "installedAt": 15,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "input": 20,
+          "readingCard": 27,
+          "skeletonGone": 27
+        },
+        "frame": {
+          "input": 29,
+          "readingCard": 29,
+          "skeletonGone": 29
+        },
+        "paint": {},
+        "boot": {
+          "total": 81,
+          "marks": [
+            [
+              "正在读取网页数据…",
+              27
+            ]
+          ]
+        },
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 24,
+        "bookmarkCards": 0,
+        "theme": "light"
+      },
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 205,
+        "counts": {
+          "reading": 94,
+          "bookmarks": 0
+        }
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 133,
+        "counts": {
+          "reading": 1,
+          "bookmarks": 0
+        }
+      },
+      "openTarget": {
+        "cards": 1,
+        "link": true,
+        "text": "site594.example.com·10月6日\n            design xenon willow quartz beacon yonder 4"
+      },
+      "openResult": {
+        "ms": 1437,
+        "reused": true,
+        "url": "https://site594.example.com/reading/4575"
+      },
+      "errors": [],
+      "panelDiag": {
+        "at": 1793960508334,
+        "bytes": 2339186,
+        "cache": 0,
+        "cacheHit": true,
+        "data": 33,
+        "dataRequest": 37,
+        "firstPaint": 27,
+        "items": 5000,
+        "localStorageOk": true,
+        "localStorageSlow": false,
+        "migrate": 1,
+        "other": 9,
+        "page": 26,
+        "paint": 1,
+        "prefetched": true,
+        "slow": [],
+        "total": 70
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-reading-type-asap",
+      "rep": 3,
+      "workerState": "running",
+      "workerBefore": true,
+      "pauseMs": 22,
+      "pausedAtStart": true,
+      "query": "4590",
+      "inputFoundAt": 28,
+      "typedAt": 34,
+      "queryMatchedAt": 161,
+      "queryOk": true,
+      "valueKept": "4590",
+      "trustedClick": true,
+      "openError": null,
+      "clickToNavStartMs": 14,
+      "marks": {
+        "origin": 1793960511359.3,
+        "installedAt": 15,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "input": 27,
+          "readingCard": 30,
+          "skeletonGone": 30
+        },
+        "frame": {
+          "input": 34,
+          "readingCard": 34,
+          "skeletonGone": 34
+        },
+        "paint": {
+          "first-paint": 40,
+          "first-contentful-paint": 40
+        },
+        "boot": {
+          "total": 327,
+          "marks": [
+            [
+              "正在读取网页数据…",
+              30
+            ]
+          ]
+        },
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 1,
+        "bookmarkCards": 0,
+        "theme": "light"
+      },
+      "errors": [],
+      "panelDiag": {
+        "at": 1793960511431,
+        "bytes": 2339200,
+        "cache": 0,
+        "cacheHit": true,
+        "data": 33,
+        "dataRequest": 33,
+        "firstPaint": 31,
+        "items": 5000,
+        "localStorageOk": true,
+        "localStorageSlow": false,
+        "migrate": 1,
+        "other": 8,
+        "page": 30,
+        "paint": 1,
+        "prefetched": true,
+        "slow": [],
+        "total": 73
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "quick-switcher-web",
+      "rep": 3,
+      "workerState": "running",
+      "workerBefore": true,
+      "workerAtTrigger": true,
+      "stop": null,
+      "validCold": true,
+      "query": "4605",
+      "contextName": "LaterOn · Project Web Manager",
+      "showToShadowMs": 37,
+      "showToInputMs": 37,
+      "showToFocusedMs": 37,
+      "showToFirstRowsMs": 738,
+      "initialRows": 50,
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 68,
+        "rows": 50
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 76,
+        "rows": 42
+      },
+      "openResult": {
+        "ms": 666,
+        "url": "https://site624.example.com/reading/4605",
+        "tabId": 1927138128
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "quick-switcher-web",
+      "rep": 3,
+      "workerState": "stopped",
+      "workerBefore": false,
+      "workerAtTrigger": false,
+      "stop": {
+        "stopped": true,
+        "attempts": 1
+      },
+      "validCold": true,
+      "query": "4620",
+      "contextName": "LaterOn · Project Web Manager",
+      "showToShadowMs": 307,
+      "showToInputMs": 307,
+      "showToFocusedMs": 307,
+      "showToFirstRowsMs": 2898,
+      "initialRows": 50,
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 78,
+        "rows": 50
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 55,
+        "rows": 42
+      },
+      "openResult": {
+        "ms": 727,
+        "url": "https://site639.example.com/reading/4620",
+        "tabId": 1927138132
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "tab-bookmarks.html",
+      "rep": 3,
+      "workerState": "running",
+      "workerBefore": true,
+      "ok": true,
+      "createToNavStartMs": 4,
+      "marks": {
+        "origin": 1793960518709.9,
+        "installedAt": 11,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "skeletonGone": 24,
+          "input": 24,
+          "bookmarkCard": 2124,
+          "folderRow": 2124
+        },
+        "frame": {
+          "skeletonGone": 24,
+          "input": 24,
+          "bookmarkCard": 2308,
+          "folderRow": 2308
+        },
+        "paint": {
+          "first-paint": 48,
+          "first-contentful-paint": 48
+        },
+        "boot": null,
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 0,
+        "bookmarkCards": 48,
+        "theme": "light"
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 149,
+        "counts": {
+          "reading": 0,
+          "bookmarks": 5
+        }
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-reading",
+      "rep": 4,
+      "workerState": "running",
+      "workerBefore": true,
+      "pauseMs": 13,
+      "pausedAtStart": true,
+      "query": "4635",
+      "ready": {
+        "ok": true,
+        "at": 68.59999999403954
+      },
+      "trustedClick": true,
+      "openError": null,
+      "clickToNavStartMs": 8,
+      "marks": {
+        "origin": 1793960522294.3,
+        "installedAt": 9,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "input": 16,
+          "readingCard": 20,
+          "skeletonGone": 20
+        },
+        "frame": {
+          "input": 23,
+          "readingCard": 23,
+          "skeletonGone": 23
+        },
+        "paint": {},
+        "boot": {
+          "total": 79,
+          "marks": [
+            [
+              "正在读取网页数据…",
+              20
+            ]
+          ]
+        },
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 24,
+        "bookmarkCards": 0,
+        "theme": "light"
+      },
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 272,
+        "counts": {
+          "reading": 88,
+          "bookmarks": 0
+        }
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 133,
+        "counts": {
+          "reading": 1,
+          "bookmarks": 0
+        }
+      },
+      "openTarget": {
+        "cards": 1,
+        "link": true,
+        "text": "site654.example.com·10月6日\n            method yonder summit harbor kepler beacon "
+      },
+      "openResult": {
+        "ms": 695,
+        "reused": true,
+        "url": "https://site654.example.com/reading/4635"
+      },
+      "errors": [],
+      "panelDiag": {
+        "at": 1793960522361,
+        "bytes": 2339200,
+        "cache": 0,
+        "cacheHit": true,
+        "data": 35,
+        "dataRequest": 36,
+        "firstPaint": 20,
+        "items": 5000,
+        "localStorageOk": true,
+        "localStorageSlow": false,
+        "migrate": 1,
+        "other": 11,
+        "page": 19,
+        "paint": 1,
+        "prefetched": true,
+        "slow": [],
+        "total": 67
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-bookmarks-switch",
+      "rep": 4,
+      "ok": true,
+      "preloaded": false,
+      "frameState": {
+        "iframe": true,
+        "src": "chrome-extension://ifkjnimbijeafkmehbhchmamkpnhphac/bookmarks.html?surface=sidepanel",
+        "className": "sidepanel-alternate is-active",
+        "active": true,
+        "busy": null,
+        "overlayTop": false,
+        "status": "",
+        "doc": {
+          "href": "chrome-extension://ifkjnimbijeafkmehbhchmamkpnhphac/bookmarks.html?surface=sidepanel",
+          "title": "LaterOn · 书签库",
+          "readyState": "complete",
+          "overlay": false,
+          "cards": 48,
+          "status": "已连接浏览器书签，两个方向的修改实时反映。"
+        }
+      },
+      "lateFrameMarks": {
+        "origin": 1793960523907.7,
+        "installedAt": 2,
+        "late": true,
+        "readyStateAtInstall": "complete",
+        "dom": {},
+        "frame": {},
+        "paint": {},
+        "boot": null,
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 0,
+        "bookmarkCards": 48,
+        "theme": "light"
+      },
+      "primary": "clickToVisibleCardsMs (parent frame, click to visible bookmark cards)",
+      "clickToVisibleCardsMs": 2453,
+      "clickToFrameOriginMs": null,
+      "marks": null,
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 157,
+        "counts": {
+          "reading": 0,
+          "bookmarks": 48
+        }
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 146,
+        "counts": {
+          "reading": 0,
+          "bookmarks": 5
+        }
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-reading",
+      "rep": 4,
+      "workerState": "stopped",
+      "workerBefore": false,
+      "pauseMs": 20,
+      "pausedAtStart": true,
+      "query": "4650",
+      "ready": {
+        "ok": true,
+        "at": 73.2999999821186
+      },
+      "trustedClick": true,
+      "openError": null,
+      "clickToNavStartMs": 14,
+      "marks": {
+        "origin": 1793960528146.5,
+        "installedAt": 16,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "input": 24,
+          "readingCard": 28,
+          "skeletonGone": 28
+        },
+        "frame": {
+          "input": 31,
+          "readingCard": 31,
+          "skeletonGone": 31
+        },
+        "paint": {},
+        "boot": {
+          "total": 82,
+          "marks": [
+            [
+              "正在读取网页数据…",
+              28
+            ]
+          ]
+        },
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 16,
+        "bookmarkCards": 0,
+        "theme": "light"
+      },
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 223,
+        "counts": {
+          "reading": 106,
+          "bookmarks": 0
+        }
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 136,
+        "counts": {
+          "reading": 1,
+          "bookmarks": 0
+        }
+      },
+      "openTarget": {
+        "cards": 1,
+        "link": true,
+        "text": "site669.example.com·10月6日\n            willow harbor orbit harbor summit fable 46"
+      },
+      "openResult": {
+        "ms": 1464,
+        "reused": true,
+        "url": "https://site669.example.com/reading/4650"
+      },
+      "errors": [],
+      "panelDiag": {
+        "at": 1793960528219,
+        "bytes": 2339214,
+        "cache": 0,
+        "cacheHit": true,
+        "data": 35,
+        "dataRequest": 36,
+        "firstPaint": 28,
+        "items": 5000,
+        "localStorageOk": true,
+        "localStorageSlow": false,
+        "migrate": 1,
+        "other": 9,
+        "page": 27,
+        "paint": 1,
+        "prefetched": true,
+        "slow": [],
+        "total": 73
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-reading-type-asap",
+      "rep": 4,
+      "workerState": "running",
+      "workerBefore": true,
+      "pauseMs": 21,
+      "pausedAtStart": true,
+      "query": "4665",
+      "inputFoundAt": 33,
+      "typedAt": 36,
+      "queryMatchedAt": 163,
+      "queryOk": true,
+      "valueKept": "4665",
+      "trustedClick": true,
+      "openError": null,
+      "clickToNavStartMs": 14,
+      "marks": {
+        "origin": 1793960531333.3,
+        "installedAt": 14,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "input": 27,
+          "readingCard": 29,
+          "skeletonGone": 29
+        },
+        "frame": {
+          "input": 33,
+          "readingCard": 33,
+          "skeletonGone": 33
+        },
+        "paint": {
+          "first-paint": 44,
+          "first-contentful-paint": 44
+        },
+        "boot": {
+          "total": 318,
+          "marks": [
+            [
+              "正在读取网页数据…",
+              29
+            ]
+          ]
+        },
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 1,
+        "bookmarkCards": 0,
+        "theme": "light"
+      },
+      "errors": [],
+      "panelDiag": {
+        "at": 1793960531403,
+        "bytes": 2339228,
+        "cache": 0,
+        "cacheHit": true,
+        "data": 31,
+        "dataRequest": 32,
+        "firstPaint": 29,
+        "items": 5000,
+        "localStorageOk": true,
+        "localStorageSlow": false,
+        "migrate": 1,
+        "other": 9,
+        "page": 28,
+        "paint": 1,
+        "prefetched": true,
+        "slow": [],
+        "total": 70
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "quick-switcher-web",
+      "rep": 4,
+      "workerState": "running",
+      "workerBefore": true,
+      "workerAtTrigger": true,
+      "stop": null,
+      "validCold": true,
+      "query": "4680",
+      "contextName": "LaterOn · Project Web Manager",
+      "showToShadowMs": 41,
+      "showToInputMs": 41,
+      "showToFocusedMs": 41,
+      "showToFirstRowsMs": 747,
+      "initialRows": 50,
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 64,
+        "rows": 50
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 58,
+        "rows": 42
+      },
+      "openResult": {
+        "ms": 648,
+        "url": "https://site699.example.com/reading/4680",
+        "tabId": 1927138142
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "quick-switcher-web",
+      "rep": 4,
+      "workerState": "stopped",
+      "workerBefore": false,
+      "workerAtTrigger": false,
+      "stop": {
+        "stopped": true,
+        "attempts": 1
+      },
+      "validCold": true,
+      "query": "4695",
+      "contextName": "LaterOn · Project Web Manager",
+      "showToShadowMs": 303,
+      "showToInputMs": 303,
+      "showToFocusedMs": 303,
+      "showToFirstRowsMs": 2931,
+      "initialRows": 50,
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 68,
+        "rows": 50
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 62,
+        "rows": 42
+      },
+      "openResult": {
+        "ms": 731,
+        "url": "https://site714.example.com/reading/4695",
+        "tabId": 1927138146
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "tab-bookmarks.html",
+      "rep": 4,
+      "workerState": "stopped",
+      "workerBefore": false,
+      "ok": true,
+      "createToNavStartMs": 16,
+      "marks": {
+        "origin": 1793960539310,
+        "installedAt": 27,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "skeletonGone": 45,
+          "input": 45,
+          "bookmarkCard": 2387,
+          "folderRow": 2387
+        },
+        "frame": {
+          "skeletonGone": 45,
+          "input": 45,
+          "bookmarkCard": 2430,
+          "folderRow": 2430
+        },
+        "paint": {
+          "first-paint": 76,
+          "first-contentful-paint": 76
+        },
+        "boot": null,
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 0,
+        "bookmarkCards": 48,
+        "theme": "light"
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 132,
+        "counts": {
+          "reading": 0,
+          "bookmarks": 5
+        }
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-reading",
+      "rep": "dark",
+      "workerState": "running",
+      "workerBefore": true,
+      "pauseMs": 13,
+      "pausedAtStart": true,
+      "query": "4710",
+      "ready": {
+        "ok": true,
+        "at": 637.3999999761581
+      },
+      "trustedClick": true,
+      "openError": null,
+      "clickToNavStartMs": 8,
+      "marks": {
+        "origin": 1793960542715,
+        "installedAt": 11,
+        "late": false,
+        "readyStateAtInstall": "loading",
+        "dom": {
+          "input": 14,
+          "readingCard": 21,
+          "skeletonGone": 21
+        },
+        "frame": {
+          "input": 23,
+          "readingCard": 23,
+          "skeletonGone": 23
+        },
+        "paint": {
+          "first-paint": 64,
+          "first-contentful-paint": 64
+        },
+        "boot": {
+          "total": 890,
+          "marks": [
+            [
+              "正在读取网页数据…",
+              21
+            ]
+          ]
+        },
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 80,
+        "bookmarkCards": 0,
+        "theme": "dark"
+      },
+      "screenshot": "/private/tmp/lateron-instant-native-work/measure-50k-2026-11-06T10-20-09-573Z/screens/baseline-r0-sidepanel-dark.png",
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 134,
+        "counts": {
+          "reading": 213,
+          "bookmarks": 0
+        }
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 137,
+        "counts": {
+          "reading": 1,
+          "bookmarks": 0
+        }
+      },
+      "openTarget": {
+        "cards": 1,
+        "link": true,
+        "text": "site729.example.com·10月6日\n            ripple lumen protocol cipher delta garnet "
+      },
+      "openResult": {
+        "ms": 736,
+        "reused": true,
+        "url": "https://site729.example.com/reading/4710"
+      },
+      "errors": [],
+      "panelDiag": {
+        "at": 1793960543350,
+        "bytes": 2339228,
+        "cache": 0,
+        "cacheHit": true,
+        "data": 605,
+        "dataRequest": 607,
+        "firstPaint": 21,
+        "items": 5000,
+        "localStorageOk": true,
+        "localStorageSlow": false,
+        "migrate": 1,
+        "other": 9,
+        "page": 20,
+        "paint": 1,
+        "prefetched": true,
+        "slow": [],
+        "total": 636
+      }
+    },
+    {
+      "variant": "baseline",
+      "scenario": "sidepanel-bookmarks-switch",
+      "rep": "dark",
+      "ok": true,
+      "preloaded": false,
+      "frameState": {
+        "iframe": true,
+        "src": "chrome-extension://ifkjnimbijeafkmehbhchmamkpnhphac/bookmarks.html?surface=sidepanel",
+        "className": "sidepanel-alternate is-active",
+        "active": true,
+        "busy": null,
+        "overlayTop": false,
+        "status": "",
+        "doc": {
+          "href": "chrome-extension://ifkjnimbijeafkmehbhchmamkpnhphac/bookmarks.html?surface=sidepanel",
+          "title": "LaterOn · 书签库",
+          "readyState": "complete",
+          "overlay": false,
+          "cards": 48,
+          "status": "已连接浏览器书签，两个方向的修改实时反映。"
+        }
+      },
+      "lateFrameMarks": {
+        "origin": 1793960545299.5,
+        "installedAt": 2,
+        "late": true,
+        "readyStateAtInstall": "complete",
+        "dom": {},
+        "frame": {},
+        "paint": {},
+        "boot": null,
+        "overlay": false,
+        "libraryCards": 0,
+        "readingCards": 0,
+        "bookmarkCards": 48,
+        "theme": "dark"
+      },
+      "primary": "clickToVisibleCardsMs (parent frame, click to visible bookmark cards)",
+      "clickToVisibleCardsMs": 4083,
+      "clickToFrameOriginMs": null,
+      "marks": null,
+      "screenshot": "/private/tmp/lateron-instant-native-work/measure-50k-2026-11-06T10-20-09-573Z/screens/baseline-r0-sidepanel-bookmarks-dark.png",
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 173,
+        "counts": {
+          "reading": 0,
+          "bookmarks": 48
+        }
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 144,
+        "counts": {
+          "reading": 0,
+          "bookmarks": 5
+        }
+      },
+      "errors": []
+    },
+    {
+      "variant": "baseline",
+      "scenario": "quick-switcher-web",
+      "rep": "dark",
+      "workerState": "running",
+      "workerBefore": true,
+      "workerAtTrigger": true,
+      "stop": null,
+      "validCold": true,
+      "query": "4725",
+      "contextName": "LaterOn · Project Web Manager",
+      "showToShadowMs": 1006,
+      "showToInputMs": 1006,
+      "showToFocusedMs": 1006,
+      "showToFirstRowsMs": 1735,
+      "initialRows": 50,
+      "screenshot": "/private/tmp/lateron-instant-native-work/measure-50k-2026-11-06T10-20-09-573Z/screens/baseline-r0-switcher-dark.png",
+      "denseSearch": {
+        "ok": true,
+        "typedToMatchedMs": 110,
+        "rows": 50
+      },
+      "search": {
+        "ok": true,
+        "typedToMatchedMs": 106,
+        "rows": 42
+      },
+      "openResult": {
+        "ms": 1762,
+        "url": "https://site744.example.com/reading/4725",
+        "tabId": 1927138154
+      },
+      "errors": []
+    }
+  ],
+  "errors": [],
+  "log": [
+    "[10:20:09.598] browser Chrome/156.0.8078.80 web http://127.0.0.1:57644/article.html out /private/tmp/lateron-instant-native-work/measure-50k-2026-11-06T10-20-09-573Z",
+    "[10:20:19.078] install#0 baseline: settle=post-reload check observed version 1.74.2 ping {\"ms\":5,\"reply\":{\"ok\":false,\"error\":\"quickSwitcherUnavailable\"}} republished+2780ms nodes 50822 pending 0 bytes 30556529",
+    "[10:20:19.079] seed: existing marker kept {\"at\":1793957765209,\"bookmarks\":50000,\"items\":5000,\"previews\":300}",
+    "[10:20:28.406] post-seed reload baseline: settle=post-reload check observed version 1.74.2 ping {\"ms\":139,\"reply\":{\"ok\":false,\"error\":\"quickSwitcherUnavailable\"}} republished+2707ms nodes 50822 pending 0 bytes 30556529",
+    "[10:20:28.409] extension baseline: {\"state\":\"ENABLED\",\"runtimeErrors\":[],\"manifestErrors\":[]}",
+    "[10:20:30.167] sidepanel-reading baseline #first-after-reload running: click->nav 16 FCP 164 card 108 input 108 cards 88 search 130ms(1) open 270ms reused=true pause 24 err 0",
+    "[10:20:32.984] sidepanel-bookmarks baseline #first-after-reload: click->visible+cards 2327 preloaded=false click->frame null FCP undefined card undefined input undefined cards undefined search 107ms(5)",
+    "[10:20:35.801] sidepanel-reading baseline #0 running: click->nav 9 FCP 64 card 28 input 28 cards 56 search 133ms(1) open 904ms reused=true pause 14 err 0",
+    "[10:20:40.445] sidepanel-bookmarks baseline #0: click->visible+cards 4213 preloaded=false click->frame null FCP undefined card undefined input undefined cards undefined search 107ms(5)",
+    "[10:20:44.416] sidepanel-reading baseline #0 stopped: click->nav 16 FCP undefined card 34 input 34 cards 24 search 130ms(1) open 1465ms reused=true pause 22 err 0",
+    "[10:20:45.451] sidepanel-reading-type-asap baseline #0 running: click->nav 14 FCP 36 card 29 input 29 cards 1 typed@31 matched@159 ok=true pause 19 err 0",
+    "[10:20:47.569] quick-switcher-web baseline #0 running: shadow 44 focused 44 rows 751(50) dense 71(50) search 63(42) open 648",
+    "[10:20:52.443] quick-switcher-web baseline #0 stopped: shadow 311 focused 311 rows 2783(50) dense 70(50) search 62(42) open 714",
+    "[10:20:55.826] tab bookmarks.html baseline #0 stopped: ok=true overlay=false FCP 76 card 2347(48) input 47 search 129",
+    "[10:20:56.697] tab library.html baseline #0 running: ok=true overlay=false FCP 64 card 337(21) input 31 search undefined",
+    "[10:21:00.150] sidepanel-reading baseline #1 running: click->nav 8 FCP 60 card 40 input 40 cards 56 search 133ms(1) open 807ms reused=true pause 27 err 0",
+    "[10:21:03.032] sidepanel-bookmarks baseline #1: click->visible+cards 2433 preloaded=false click->frame null FCP undefined card undefined input undefined cards undefined search 148ms(5)",
+    "[10:21:06.895] sidepanel-reading baseline #1 stopped: click->nav 16 FCP undefined card 33 input 33 cards 24 search 135ms(1) open 1442ms reused=true pause 20 err 0",
+    "[10:21:07.934] sidepanel-reading-type-asap baseline #1 running: click->nav 14 FCP 36 card 29 input 29 cards 1 typed@31 matched@157 ok=true pause 21 err 0",
+    "[10:21:09.924] quick-switcher-web baseline #1 running: shadow 42 focused 42 rows 730(50) dense 64(50) search 64(42) open 639",
+    "[10:21:14.863] quick-switcher-web baseline #1 stopped: shadow 301 focused 301 rows 2890(50) dense 72(50) search 60(42) open 729",
+    "[10:21:17.447] tab bookmarks.html baseline #1 running: ok=true overlay=false FCP 52 card 2168(48) input 23 search 145",
+    "[10:21:18.595] tab library.html baseline #1 running: ok=true overlay=false FCP 56 card 541(21) input 28 search undefined",
+    "[10:21:21.210] sidepanel-reading baseline #2 running: click->nav 8 FCP 60 card 26 input 26 cards 88 search 132ms(1) open 250ms reused=true pause 13 err 0",
+    "[10:21:24.032] sidepanel-bookmarks baseline #2: click->visible+cards 2408 preloaded=false click->frame null FCP undefined card undefined input undefined cards undefined search 108ms(5)",
+    "[10:21:27.946] sidepanel-reading baseline #2 stopped: click->nav 14 FCP undefined card 29 input 29 cards 24 search 137ms(1) open 1568ms reused=true pause 20 err 0",
+    "[10:21:28.976] sidepanel-reading-type-asap baseline #2 running: click->nav 15 FCP 40 card 32 input 32 cards 1 typed@34 matched@160 ok=true pause 19 err 0",
+    "[10:21:30.980] quick-switcher-web baseline #2 running: shadow 39 focused 39 rows 731(50) dense 79(50) search 69(42) open 655",
+    "[10:21:35.888] quick-switcher-web baseline #2 stopped: shadow 304 focused 304 rows 2879(50) dense 71(50) search 60(42) open 724",
+    "[10:21:39.197] tab bookmarks.html baseline #2 stopped: ok=true overlay=false FCP 72 card 2363(48) input 46 search 162",
+    "[10:21:42.106] sidepanel-reading baseline #3 running: click->nav 8 FCP 56 card 29 input 29 cards 16 search 131ms(1) open 465ms reused=true pause 13 err 0",
+    "[10:21:46.812] sidepanel-bookmarks baseline #3: click->visible+cards 4278 preloaded=false click->frame null FCP undefined card undefined input undefined cards undefined search 108ms(5)",
+    "[10:21:50.670] sidepanel-reading baseline #3 stopped: click->nav 14 FCP undefined card 29 input 29 cards 24 search 133ms(1) open 1437ms reused=true pause 21 err 0",
+    "[10:21:51.687] sidepanel-reading-type-asap baseline #3 running: click->nav 14 FCP 40 card 34 input 34 cards 1 typed@34 matched@161 ok=true pause 22 err 0",
+    "[10:21:53.707] quick-switcher-web baseline #3 running: shadow 37 focused 37 rows 738(50) dense 68(50) search 76(42) open 666",
+    "[10:21:58.641] quick-switcher-web baseline #3 stopped: shadow 307 focused 307 rows 2898(50) dense 78(50) search 55(42) open 727",
+    "[10:22:01.387] tab bookmarks.html baseline #3 running: ok=true overlay=false FCP 48 card 2308(48) input 24 search 149",
+    "[10:22:03.902] sidepanel-reading baseline #4 running: click->nav 8 FCP undefined card 23 input 23 cards 24 search 133ms(1) open 695ms reused=true pause 13 err 0",
+    "[10:22:06.767] sidepanel-bookmarks baseline #4: click->visible+cards 2453 preloaded=false click->frame null FCP undefined card undefined input undefined cards undefined search 146ms(5)",
+    "[10:22:10.633] sidepanel-reading baseline #4 stopped: click->nav 14 FCP undefined card 31 input 31 cards 16 search 136ms(1) open 1464ms reused=true pause 20 err 0",
+    "[10:22:11.653] sidepanel-reading-type-asap baseline #4 running: click->nav 14 FCP 44 card 33 input 33 cards 1 typed@36 matched@163 ok=true pause 21 err 0",
+    "[10:22:13.635] quick-switcher-web baseline #4 running: shadow 41 focused 41 rows 747(50) dense 64(50) search 58(42) open 648",
+    "[10:22:18.602] quick-switcher-web baseline #4 stopped: shadow 303 focused 303 rows 2931(50) dense 68(50) search 62(42) open 731",
+    "[10:22:21.948] tab bookmarks.html baseline #4 stopped: ok=true overlay=false FCP 76 card 2430(48) input 45 search 132",
+    "[10:22:25.292] sidepanel-reading baseline #dark running: click->nav 8 FCP 64 card 23 input 23 cards 80 search 137ms(1) open 736ms reused=true pause 13 err 0",
+    "[10:22:29.852] sidepanel-bookmarks baseline #dark: click->visible+cards 4083 preloaded=false click->frame null FCP undefined card undefined input undefined cards undefined search 144ms(5)",
+    "[10:22:34.332] quick-switcher-web baseline #dark running: shadow 1006 focused 1006 rows 1735(50) dense 110(50) search 106(42) open 1762"
+  ],
+  "browser": "Chrome/156.0.8078.80",
+  "summary": {
+    "baseline|sidepanel-reading|running": {
+      "clickToNav": {
+        "median": 8,
+        "range": [
+          8,
+          9
+        ],
+        "n": 5
+      },
+      "fcp": {
+        "median": 60,
+        "range": [
+          56,
+          64
+        ],
+        "n": 4
+      },
+      "firstReadingCardFrame": {
+        "median": 28,
+        "range": [
+          23,
+          40
+        ],
+        "n": 5
+      },
+      "firstLibraryCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "overlayRows": 0,
+      "notReady": 0,
+      "firstBookmarkCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "inputFrame": {
+        "median": 28,
+        "range": [
+          23,
+          40
+        ],
+        "n": 5
+      },
+      "clickToVisibleBookmarkCards": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "clickToFirstCard": {
+        "median": 37,
+        "range": [
+          31,
+          48
+        ],
+        "n": 5
+      },
+      "invalidCold": 0,
+      "searchTypedToMatched": {
+        "median": 133,
+        "range": [
+          131,
+          133
+        ],
+        "n": 5
+      },
+      "denseTypedToMatched": {
+        "median": 133,
+        "range": [
+          127,
+          272
+        ],
+        "n": 5
+      },
+      "openResult": {
+        "median": 695,
+        "range": [
+          250,
+          904
+        ],
+        "n": 5
+      },
+      "typeAsapMatchedAt": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "switcherFocused": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "switcherRows": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "pause": {
+        "median": 13,
+        "range": [
+          13,
+          27
+        ],
+        "n": 5
+      },
+      "lateRecorder": 0,
+      "errors": 0
+    },
+    "baseline|sidepanel-bookmarks-switch|-": {
+      "clickToNav": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "fcp": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "firstReadingCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "firstLibraryCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "overlayRows": 0,
+      "notReady": 0,
+      "firstBookmarkCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "inputFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "clickToVisibleBookmarkCards": {
+        "median": 2453,
+        "range": [
+          2408,
+          4278
+        ],
+        "n": 5
+      },
+      "clickToFirstCard": {
+        "median": 2453,
+        "range": [
+          2408,
+          4278
+        ],
+        "n": 5
+      },
+      "invalidCold": 0,
+      "searchTypedToMatched": {
+        "median": 108,
+        "range": [
+          107,
+          148
+        ],
+        "n": 5
+      },
+      "denseTypedToMatched": {
+        "median": 163,
+        "range": [
+          140,
+          173
+        ],
+        "n": 5
+      },
+      "openResult": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "typeAsapMatchedAt": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "switcherFocused": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "switcherRows": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "pause": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "lateRecorder": 0,
+      "errors": 0
+    },
+    "baseline|sidepanel-reading|stopped": {
+      "clickToNav": {
+        "median": 14,
+        "range": [
+          14,
+          16
+        ],
+        "n": 5
+      },
+      "fcp": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "firstReadingCardFrame": {
+        "median": 31,
+        "range": [
+          29,
+          34
+        ],
+        "n": 5
+      },
+      "firstLibraryCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "overlayRows": 0,
+      "notReady": 0,
+      "firstBookmarkCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "inputFrame": {
+        "median": 31,
+        "range": [
+          29,
+          34
+        ],
+        "n": 5
+      },
+      "clickToVisibleBookmarkCards": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "clickToFirstCard": {
+        "median": 45,
+        "range": [
+          43,
+          50
+        ],
+        "n": 5
+      },
+      "invalidCold": 0,
+      "searchTypedToMatched": {
+        "median": 135,
+        "range": [
+          130,
+          137
+        ],
+        "n": 5
+      },
+      "denseTypedToMatched": {
+        "median": 208,
+        "range": [
+          162,
+          266
+        ],
+        "n": 5
+      },
+      "openResult": {
+        "median": 1464,
+        "range": [
+          1437,
+          1568
+        ],
+        "n": 5
+      },
+      "typeAsapMatchedAt": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "switcherFocused": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "switcherRows": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "pause": {
+        "median": 20,
+        "range": [
+          20,
+          22
+        ],
+        "n": 5
+      },
+      "lateRecorder": 0,
+      "errors": 0
+    },
+    "baseline|sidepanel-reading-type-asap|running": {
+      "clickToNav": {
+        "median": 14,
+        "range": [
+          14,
+          15
+        ],
+        "n": 5
+      },
+      "fcp": {
+        "median": 40,
+        "range": [
+          36,
+          44
+        ],
+        "n": 5
+      },
+      "firstReadingCardFrame": {
+        "median": 32,
+        "range": [
+          29,
+          34
+        ],
+        "n": 5
+      },
+      "firstLibraryCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "overlayRows": 0,
+      "notReady": 0,
+      "firstBookmarkCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "inputFrame": {
+        "median": 32,
+        "range": [
+          29,
+          34
+        ],
+        "n": 5
+      },
+      "clickToVisibleBookmarkCards": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "clickToFirstCard": {
+        "median": 47,
+        "range": [
+          43,
+          48
+        ],
+        "n": 5
+      },
+      "invalidCold": 0,
+      "searchTypedToMatched": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "denseTypedToMatched": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "openResult": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "typeAsapMatchedAt": {
+        "median": 160,
+        "range": [
+          157,
+          163
+        ],
+        "n": 5
+      },
+      "switcherFocused": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "switcherRows": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "pause": {
+        "median": 21,
+        "range": [
+          19,
+          22
+        ],
+        "n": 5
+      },
+      "lateRecorder": 0,
+      "errors": 0
+    },
+    "baseline|quick-switcher-web|running": {
+      "clickToNav": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "fcp": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "firstReadingCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "firstLibraryCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "overlayRows": 0,
+      "notReady": 0,
+      "firstBookmarkCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "inputFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "clickToVisibleBookmarkCards": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "clickToFirstCard": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "invalidCold": 0,
+      "searchTypedToMatched": {
+        "median": 64,
+        "range": [
+          58,
+          76
+        ],
+        "n": 5
+      },
+      "denseTypedToMatched": {
+        "median": 68,
+        "range": [
+          64,
+          79
+        ],
+        "n": 5
+      },
+      "openResult": {
+        "median": 648,
+        "range": [
+          639,
+          666
+        ],
+        "n": 5
+      },
+      "typeAsapMatchedAt": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "switcherFocused": {
+        "median": 41,
+        "range": [
+          37,
+          44
+        ],
+        "n": 5
+      },
+      "switcherRows": {
+        "median": 738,
+        "range": [
+          730,
+          751
+        ],
+        "n": 5
+      },
+      "pause": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "lateRecorder": 0,
+      "errors": 0
+    },
+    "baseline|quick-switcher-web|stopped": {
+      "clickToNav": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "fcp": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "firstReadingCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "firstLibraryCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "overlayRows": 0,
+      "notReady": 0,
+      "firstBookmarkCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "inputFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "clickToVisibleBookmarkCards": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "clickToFirstCard": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "invalidCold": 0,
+      "searchTypedToMatched": {
+        "median": 60,
+        "range": [
+          55,
+          62
+        ],
+        "n": 5
+      },
+      "denseTypedToMatched": {
+        "median": 71,
+        "range": [
+          68,
+          78
+        ],
+        "n": 5
+      },
+      "openResult": {
+        "median": 727,
+        "range": [
+          714,
+          731
+        ],
+        "n": 5
+      },
+      "typeAsapMatchedAt": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "switcherFocused": {
+        "median": 304,
+        "range": [
+          301,
+          311
+        ],
+        "n": 5
+      },
+      "switcherRows": {
+        "median": 2890,
+        "range": [
+          2783,
+          2931
+        ],
+        "n": 5
+      },
+      "pause": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "lateRecorder": 0,
+      "errors": 0
+    },
+    "baseline|tab-bookmarks.html|stopped": {
+      "clickToNav": {
+        "median": 16,
+        "range": [
+          16,
+          17
+        ],
+        "n": 3
+      },
+      "fcp": {
+        "median": 76,
+        "range": [
+          72,
+          76
+        ],
+        "n": 3
+      },
+      "firstReadingCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "firstLibraryCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "overlayRows": 0,
+      "notReady": 0,
+      "firstBookmarkCardFrame": {
+        "median": 2363,
+        "range": [
+          2347,
+          2430
+        ],
+        "n": 3
+      },
+      "inputFrame": {
+        "median": 46,
+        "range": [
+          45,
+          47
+        ],
+        "n": 3
+      },
+      "clickToVisibleBookmarkCards": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "clickToFirstCard": {
+        "median": 2380,
+        "range": [
+          2363,
+          2446
+        ],
+        "n": 3
+      },
+      "invalidCold": 0,
+      "searchTypedToMatched": {
+        "median": 132,
+        "range": [
+          129,
+          162
+        ],
+        "n": 3
+      },
+      "denseTypedToMatched": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "openResult": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "typeAsapMatchedAt": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "switcherFocused": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "switcherRows": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "pause": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "lateRecorder": 0,
+      "errors": 0
+    },
+    "baseline|tab-library.html|running": {
+      "clickToNav": {
+        "median": 8,
+        "range": [
+          8,
+          8
+        ],
+        "n": 2
+      },
+      "fcp": {
+        "median": 64,
+        "range": [
+          56,
+          64
+        ],
+        "n": 2
+      },
+      "firstReadingCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "firstLibraryCardFrame": {
+        "median": 541,
+        "range": [
+          337,
+          541
+        ],
+        "n": 2
+      },
+      "overlayRows": 0,
+      "notReady": 0,
+      "firstBookmarkCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "inputFrame": {
+        "median": 31,
+        "range": [
+          28,
+          31
+        ],
+        "n": 2
+      },
+      "clickToVisibleBookmarkCards": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "clickToFirstCard": {
+        "median": 549,
+        "range": [
+          345,
+          549
+        ],
+        "n": 2
+      },
+      "invalidCold": 0,
+      "searchTypedToMatched": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "denseTypedToMatched": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "openResult": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "typeAsapMatchedAt": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "switcherFocused": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "switcherRows": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "pause": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "lateRecorder": 0,
+      "errors": 0
+    },
+    "baseline|tab-bookmarks.html|running": {
+      "clickToNav": {
+        "median": 4,
+        "range": [
+          4,
+          4
+        ],
+        "n": 2
+      },
+      "fcp": {
+        "median": 52,
+        "range": [
+          48,
+          52
+        ],
+        "n": 2
+      },
+      "firstReadingCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "firstLibraryCardFrame": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "overlayRows": 0,
+      "notReady": 0,
+      "firstBookmarkCardFrame": {
+        "median": 2308,
+        "range": [
+          2168,
+          2308
+        ],
+        "n": 2
+      },
+      "inputFrame": {
+        "median": 24,
+        "range": [
+          23,
+          24
+        ],
+        "n": 2
+      },
+      "clickToVisibleBookmarkCards": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "clickToFirstCard": {
+        "median": 2312,
+        "range": [
+          2172,
+          2312
+        ],
+        "n": 2
+      },
+      "invalidCold": 0,
+      "searchTypedToMatched": {
+        "median": 149,
+        "range": [
+          145,
+          149
+        ],
+        "n": 2
+      },
+      "denseTypedToMatched": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "openResult": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "typeAsapMatchedAt": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "switcherFocused": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "switcherRows": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "pause": {
+        "median": null,
+        "range": null,
+        "n": 0
+      },
+      "lateRecorder": 0,
+      "errors": 0
+    }
+  }
+}

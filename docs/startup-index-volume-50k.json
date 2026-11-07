@@ -1,0 +1,73 @@
+{
+  "buildMs": 5725,
+  "writeTransactions": 163,
+  "omittedKeys": 367,
+  "stats": {
+    "r": {
+      "rows": 5000,
+      "limit": 2048,
+      "keys": 2036,
+      "positions": 299549,
+      "omittedKeys": 88,
+      "omittedPositions": 371317
+    },
+    "a": {
+      "rows": 55000,
+      "limit": 11000,
+      "keys": 2364,
+      "positions": 2099675,
+      "omittedKeys": 279,
+      "omittedPositions": 7342150
+    }
+  },
+  "rBytes": {
+    "before": 2683464,
+    "after": 1198196
+  },
+  "aBytes": {
+    "before": 37767300,
+    "after": 8398700
+  },
+  "parity": {
+    "e": {
+      "total": 55000,
+      "same": true,
+      "fakeIdbMs": 60
+    },
+    "atlas": {
+      "total": 15235,
+      "same": true,
+      "fakeIdbMs": 61
+    },
+    "atlas beacon": {
+      "total": 3731,
+      "same": true,
+      "fakeIdbMs": 69
+    },
+    "atlas 4999": {
+      "total": 6,
+      "same": true,
+      "fakeIdbMs": 66
+    },
+    "site17": {
+      "total": 710,
+      "same": true,
+      "fakeIdbMs": 60
+    },
+    "prtcl": {
+      "total": 6472,
+      "same": true,
+      "fakeIdbMs": 59
+    },
+    "orbit 12345": {
+      "total": 0,
+      "same": true,
+      "fakeIdbMs": 64
+    },
+    "zzzzq": {
+      "total": 0,
+      "same": true,
+      "fakeIdbMs": 45
+    }
+  }
+}

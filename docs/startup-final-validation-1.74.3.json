@@ -1,0 +1,114 @@
+{
+  "version": "1.74.3",
+  "verifiedAt": "2026-11-07T21:55:03.308661+08:00",
+  "status": "accepted_with_recorded_boundaries",
+  "runtimeFiles": 70,
+  "runtimeHashes": {
+    "quick-switcher-background.js": "97a6842a9afa7ded178116d0be6b5a2142bd6fb0b87d749f4e25e633be3ab310",
+    "bookmark-sync.js": "4e6d8c88eb45218ee8e12511dfbd5e2df3467cae6bcdef10729594bf97101f51",
+    "local-index.js": "6c9e96b23a66c03c719cdfc6b0242e7dd0143a6fe698f8ef313138474ec7000d"
+  },
+  "regression": {
+    "complete": true,
+    "passedFiles": 107,
+    "failedFiles": []
+  },
+  "native": {
+    "browser": "Chrome/156.0.8078.80",
+    "bookmarks": 50000,
+    "readingItems": 5000,
+    "projects": 24,
+    "previews": 300,
+    "acceptedCoreRows": 42,
+    "acceptedPressureRows": 27,
+    "pressureComposition": {
+      "originalNonStructuralRows": 24,
+      "correctedStructuralRows": 3
+    },
+    "excludedRows": {
+      "report": "docs/startup-native-final-pressure-50k.json",
+      "scenario": "structural-update-during-query",
+      "reps": [
+        0,
+        1,
+        2
+      ],
+      "reason": "Quick remained open while waiting for background preparation; recorded quiesce timeouts retained. Corrected closing order separately measured three times."
+    },
+    "sourceHashesEqual": true,
+    "independentEvidenceReview": "passed",
+    "preparedQuick": {
+      "runningWorkerFirstRowsMs": {
+        "median": 33,
+        "range": [
+          31,
+          37
+        ],
+        "reps": 5
+      },
+      "stoppedWorkerFirstRowsMs": {
+        "median": 83,
+        "range": [
+          70,
+          94
+        ],
+        "reps": 5
+      }
+    },
+    "upgrade": {
+      "actual1742StateOnlyFixture": true,
+      "fixtureFileSha256": "4027fce3449fe17d361f2749f4dbbb7a0c726b9dc4908d640ac0ec3911509c89",
+      "successfulReps": 3,
+      "indexesAndMarkersComplete": true,
+      "workerAttachedDuringPreparation": false,
+      "workerReclaimedDuringPreparation": false
+    },
+    "manualPreviewPressure": {
+      "reps": 3,
+      "batchesPerRep": 5,
+      "requestsPerBatch": 12,
+      "updatedPerRep": 0,
+      "failedPerRep": 60,
+      "producerFinished": true,
+      "controlledNetworkFailure": true
+    }
+  },
+  "package": {
+    "version": "1.74.3",
+    "files": 70,
+    "bytes": 629527,
+    "sha256": "472df115e0979e0594b95185db8dd6c8f8d22b31de79c3ef78f9ab55bd93ef5b",
+    "archive": "/Users/jzh/Library/CloudStorage/OneDrive-Personal/Dev/LaterOn/dist/LaterOn-1.74.3.zip",
+    "folder": "/Users/jzh/Library/CloudStorage/OneDrive-Personal/Dev/LaterOn/dist/LaterOn-1.74.3",
+    "crc": true,
+    "archiveSourceExtractedEqual": true,
+    "localReferences": 42,
+    "localesValid": true,
+    "nativeDefaultShortcuts": 4,
+    "bookmarksPermission": "optional"
+  },
+  "evidenceSha256": {
+    "docs/startup-native-final-core-50k.json": "f29f7861da4c3c89a262c3fddf47b33e450c561467b16ca8ec7f2a89ff327c26",
+    "docs/startup-native-final-pressure-50k.json": "41f5ae4370846340b440348c5a2d36f28b030600eccc899f5f7cc38e59e1cf57",
+    "docs/startup-native-final-structure-50k.json": "321ab8a5252e7f5a2813063ecf160330e6104e7555420867ba9a2906063a87bf",
+    "docs/startup-regression-1.74.3.json": "10758d1b503ab46603acda29f6fdcc56f29614e6213d22eb9510c60687c5657b",
+    "docs/startup-index-volume-50k.json": "ee781de83854ad0eaff96c8b5568780a580d04d7c752c1254ebef99694380902"
+  },
+  "boundaries": [
+    "Synthetic owned Chrome profile; actual user profile and OS Alt/Option+O shortcut not measured.",
+    "Opening measures native tab activation and exact URL, not completion of external webpage loading.",
+    "Not every operation is under 100 ms: Book switch includes 216 ms; absent-index native bookmark query approximately half a second.",
+    "Initial index preparation after real 1.74.2 upgrade takes tens of seconds, while input and provisional real results remain available.",
+    "Manual preview pressure covers controlled failure and producer cleanup, not successful external preview or CDN loading."
+  ],
+  "ownedBrowserCleanup": {
+    "launcherPid": 83395,
+    "browserPid": 83396,
+    "stopReason": "STOP file",
+    "browserExitCode": 0
+  },
+  "documentationSha256": {
+    "docs/startup-performance.md": "17d64772b02c101afc1f696aa4a6138b7e7ba99da5b7acadfffa4560bd42dacc",
+    "CHANGELOG.md": "43d066f0d7c6dbde57a2f2733fc0682fceb816844dcef03ee307764cda25f26c"
+  }
+}
