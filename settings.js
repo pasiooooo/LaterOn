@@ -19,6 +19,7 @@ async function init() {
   // 浏览器标签页的标题也跟着语言走（HTML 里的 <title> 只是中文默认值）。
   document.title = `LaterOn · ${t("settings")}`;
   const current = await settings.get();
+  window.LaterOnQuickModeSettings?.init(current);
 
   // 还原控件当前值
   document.querySelectorAll("[data-setting]").forEach((el) => {
@@ -55,11 +56,11 @@ async function init() {
       button.addEventListener("click", async () => {
         seg.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
         button.classList.add("active");
-        await settings.set({ [key]: button.dataset.value });
         if (key === "language") {
-          await window.LaterOnI18n?.setLanguage(button.dataset.value);
+          if (window.LaterOnI18n) await window.LaterOnI18n.setLanguage(button.dataset.value);
+          else await settings.set({ language: button.dataset.value });
           window.setTimeout(() => window.location.reload(), 0);
-        }
+        } else await settings.set({ [key]: button.dataset.value });
       });
     });
   });

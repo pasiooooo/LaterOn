@@ -1,4 +1,4 @@
-importScripts("page-metadata.js", "url-utils.js", "content-preferences-background.js", "quick-switcher-search.js", "local-index.js", "quick-switcher-background.js", "reading-position-background.js", "webdav-sync-core.js", "webdav-directory.js", "webdav-sync.js", "import-metadata-background.js", "import-urls-background.js", "tab-batch-background.js", "bookmark-previews.js", "bookmark-sync.js", "current-page-background.js");
+importScripts("page-metadata.js", "url-utils.js", "quick-switcher-modes.js", "settings-background.js", "content-preferences-background.js", "quick-switcher-search.js", "local-index.js", "quick-switcher-background.js", "reading-position-background.js", "webdav-sync-core.js", "webdav-directory.js", "webdav-sync.js", "import-metadata-background.js", "import-urls-background.js", "tab-batch-background.js", "bookmark-previews.js", "bookmark-sync.js", "current-page-background.js");
 const normalizeUrl = LaterOnUrl.normalize;
 
 const STORAGE_KEY = "laterOnItems";

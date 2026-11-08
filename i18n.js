@@ -32,7 +32,7 @@
       syncPassword: "密码 / 应用专用密码",
       syncPrivacy: "自动在此地址下创建并使用 LaterOn 文件夹，无需手动建目录。建议使用 HTTPS；账号密码仅保存在本机，请保护服务器访问权限。",
       syncLegacyDirectory: "旧版配置仍使用原目录。重新保存后将使用地址下的 LaterOn 文件夹；请在其他设备上同步更新配置。",
-      syncMergeHint: "备份名为 lateron-backup-YYYY-MM-DD.json，可下载后直接导入。同步网页、项目、阅读状态、封面、排序和阅读位置，删除与清空也会同步。首次合并两端数据；主题、语言和快捷键留在本机。",
+      syncMergeHint: "备份名为 lateron-backup-YYYY-MM-DD.json，可下载后直接导入。同步网页、项目、阅读状态、封面、排序和阅读位置，删除与清空也会同步。首次合并两端数据；主题、语言、快捷键和搜索模式留在本机。",
       syncTest: "测试连接",
       syncSave: "保存配置",
       syncNow: "立即同步",
@@ -91,7 +91,22 @@
       autoCleanDaysLabel: "已读网页自动清除天数", loading: "读取中…",
       shortcutsNote: "使用快捷键快速搜索、切换网页或添加网页。浏览器快捷键可在 Chrome 的快捷键页面更改；整窗添加也提供可关闭的网页备用按键。",
       quickSwitcher: "快速切换", quickSwitcherShortcut: "快速切换 · Alt / Option + O", quickSwitcherUnavailable: "暂时无法打开快速切换，请重试。",
-      quickSwitcherHint: "搜索阅读库与书签库中的所有已存网页，优先切换到已打开的标签页。", tryQuickSwitcher: "试用快速切换",
+      quickSwitcherHint: "搜索已打开的标签页、阅读库和书签库，按引导符切换搜索范围。", tryQuickSwitcher: "试用快速切换",
+      quickModesTitle: "快速切换 · 搜索模式",
+      quickModesHint: "每次唤起先使用默认模式。按引导符或点击模式按钮切换范围，每种模式都可任意组合下列来源。",
+      quickModesDefault: "默认唤起", quickModesSlot: "模式 {number}", quickModesOnOpen: "唤起时", quickModesNoPrefix: "无引导符",
+      quickModesTrigger: "引导符", quickModesTab: "Tab", quickModesSpace: "空格", quickModesCustom: "自定义",
+      quickModesSources: "搜索范围", quickModesTabs: "标签页（所有窗口）",
+      quickModesCustomLabel: "模式 {number} 的自定义引导符", quickModesCustomPlaceholder: "例如 /、r:、'",
+      quickModesPrefixHint: "自定义引导符可用 1–8 个字符，区分大小写；只识别搜索框开头的引导符，词语之间的空格照常输入。",
+      quickModesSave: "保存模式", quickModesReset: "恢复默认", quickModesUnsaved: "配置已修改，保存后生效。",
+      quickModesSaving: "正在保存…", quickModesSaved: "搜索模式已保存，已打开的快速切换也会更新。",
+      quickModesResetDraft: "已恢复默认配置，点击「保存模式」生效。",
+      quickModesSourceRequired: "每种模式至少选择一个搜索来源。",
+      quickModesInvalidPrefix: "引导符须为 Tab、单个空格或 1–8 个字符，不能包含控制字符。",
+      quickModesConflict: "模式 {first} 与模式 {second} 的引导符重复或互为开头，请分别设置。",
+      quickModesSaveFailed: "保存未完成，请重试；当前修改已保留。",
+      quickModesChangedElsewhere: "其他页面更新了搜索模式；当前编辑的修改尚未保存。",
       windowShortcutFallback: "整窗添加的网页备用快捷键", windowShortcutFallbackHint: "未设置浏览器快捷键时，可在网页中使用 Alt / Option + Shift + 2。关闭后不再接管此按键。",
       cmdSavePage: "添加当前网页", cmdSaveSelectedTabs: "添加所选全部网页", cmdSaveTabGroup: "添加当前标签组所有标签", cmdSaveAllTabs: "添加当前窗口所有标签",
       inLibrary: "在 LaterOn 内", searchFocusHint: "按 ⌘ / Ctrl + K 聚焦搜索框", manageShortcuts: "在 Chrome 中管理快捷键",
@@ -224,7 +239,7 @@
       syncPassword: "Password / app password",
       syncPrivacy: "A LaterOn folder is created and used automatically under this URL. Use HTTPS when possible. Credentials stay on this device; protect access to your server.",
       syncLegacyDirectory: "Your existing configuration still uses its original directory. Saving again switches to the LaterOn folder under this URL; update the configuration on your other devices too.",
-      syncMergeHint: "Backups use lateron-backup-YYYY-MM-DD.json and can be downloaded and imported directly. Sync pages, projects, reading status, covers, ordering and reading positions, including deletions. First sync merges both libraries; theme, language and shortcuts stay local.",
+      syncMergeHint: "Backups use lateron-backup-YYYY-MM-DD.json and can be downloaded and imported directly. Sync pages, projects, reading status, covers, ordering and reading positions, including deletions. First sync merges both libraries; theme, language, shortcuts and search modes stay local.",
       syncTest: "Test connection",
       syncSave: "Save configuration",
       syncNow: "Sync now",
@@ -283,7 +298,22 @@
       autoCleanDaysLabel: "Days before read pages are removed", loading: "Loading…",
       shortcutsNote: "Use shortcuts to search, switch or add pages. Change browser shortcuts on Chrome’s shortcut page; adding the current window also has an optional web-page fallback.",
       quickSwitcher: "Quick Switcher", quickSwitcherShortcut: "Quick Switcher · Alt / Option + O", quickSwitcherUnavailable: "Couldn’t open Quick Switcher. Please try again.",
-      quickSwitcherHint: "Search all saved pages in Reading and Bookmarks, and switch to an existing tab when available.", tryQuickSwitcher: "Try Quick Switcher",
+      quickSwitcherHint: "Search open tabs, Reading and Bookmarks. Use a prefix to change the search scope.", tryQuickSwitcher: "Try Quick Switcher",
+      quickModesTitle: "Quick Switcher · Search modes",
+      quickModesHint: "Every invocation starts in the default mode. Use a prefix or a mode button to change scope. Each mode can combine any of the sources below.",
+      quickModesDefault: "Default on opening", quickModesSlot: "Mode {number}", quickModesOnOpen: "On opening", quickModesNoPrefix: "No prefix",
+      quickModesTrigger: "Prefix", quickModesTab: "Tab", quickModesSpace: "Space", quickModesCustom: "Custom",
+      quickModesSources: "Search scope", quickModesTabs: "Open tabs (all windows)",
+      quickModesCustomLabel: "Custom prefix for mode {number}", quickModesCustomPlaceholder: "e.g. /, r:, '",
+      quickModesPrefixHint: "Custom prefixes use 1–8 characters and are case sensitive. Prefixes apply only at the start; spaces between query words remain ordinary text.",
+      quickModesSave: "Save modes", quickModesReset: "Restore defaults", quickModesUnsaved: "Configuration changed. Save to apply it.",
+      quickModesSaving: "Saving…", quickModesSaved: "Search modes saved. Open Quick Switchers will update too.",
+      quickModesResetDraft: "Defaults restored in the editor. Select Save modes to apply them.",
+      quickModesSourceRequired: "Select at least one source for each mode.",
+      quickModesInvalidPrefix: "Use Tab, one space, or 1–8 characters without control characters.",
+      quickModesConflict: "Prefixes for modes {first} and {second} are identical or overlap. Choose separate prefixes.",
+      quickModesSaveFailed: "Could not save. Your edits remain available; please retry.",
+      quickModesChangedElsewhere: "Another page updated the modes. Your current edits have not been saved.",
       windowShortcutFallback: "Web-page shortcut for adding this window", windowShortcutFallbackHint: "When no browser shortcut is assigned, use Alt / Option + Shift + 2 on web pages. Turn this off to leave the key combination to the page.",
       cmdSavePage: "Add current page", cmdSaveSelectedTabs: "Add all selected pages", cmdSaveTabGroup: "Add all tabs in the current group", cmdSaveAllTabs: "Add all tabs in this window",
       inLibrary: "Inside the library", searchFocusHint: "Press ⌘ / Ctrl + K to focus the search box", manageShortcuts: "Manage shortcuts in Chrome",
@@ -399,8 +429,11 @@
   async function setLanguage(next) {
     language = next === "en" ? "en" : "zh-CN";
     try {
-      const result = await chrome.storage.local.get(KEY);
-      await chrome.storage.local.set({ [KEY]: { ...(result[KEY] || {}), language } });
+      if (window.LaterOnSettings) await window.LaterOnSettings.set({ language });
+      else {
+        const result = await chrome.storage.local.get(KEY);
+        await chrome.storage.local.set({ [KEY]: { ...(result[KEY] || {}), language } });
+      }
     } catch {}
     document.documentElement.lang = language === "en" ? "en" : "zh-CN";
     window.LaterOnAppearance?.update({ language });

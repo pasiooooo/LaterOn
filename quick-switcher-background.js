@@ -15,8 +15,80 @@
   const nativeIds = new Set(), nativeEvents = new Map();
   let liveSource = null, live = null, liveReadingTask = null, readingGeneration = 0;
   let presentingUntil = 0;
+  let tabGeneration = 0, tabRows = null, tabModel = null, tabTask = null, tabNotice = null, modeGeneration = 0, permissionGeneration = 0;
+  let tabDeltas = [];
+  const queries = new Map();
+  const leanTab = tab => Object.fromEntries(['id', 'windowId', 'index', 'url', 'pendingUrl', 'title', 'active', 'lastAccessed', 'incognito']
+    .filter(key => tab?.[key] !== undefined).map(key => [key, tab[key]]));
+  function tabsChanged() {
+    tabGeneration++; tabModel = null;
+    if (tabNotice) return;
+    tabNotice = setTimeout(() => {
+      tabNotice = null;
+      const message = { type: 'LATERON_QUICK_SWITCHER_CHANGED', change: 'tabs', generation, tabGeneration };
+      globalThis.LaterOnContentMessages?.broadcast(message);
+      try { chrome.runtime.sendMessage?.(message)?.catch?.(() => {}); } catch {}
+    }, 25);
+    tabNotice.unref?.();
+  }
+  function changeTab(id, changes = {}, full = null) {
+    if (tabRows) {
+      const previous = tabRows.get(id);
+      const next = full ? leanTab(full) : previous ? leanTab({ ...previous, ...changes, id }) : null;
+      if (next && JSON.stringify(next) === JSON.stringify(previous)) return;
+      if (next) tabRows.set(id, next);
+      else tabRows = null;
+    } else if (tabTask) {
+      const value = full ? leanTab(full) : null, patch = { ...changes };
+      tabDeltas.push(rows => {
+        const previous = rows.get(id);
+        if (value) rows.set(id, value);
+        else if (previous) rows.set(id, leanTab({ ...previous, ...patch, id }));
+      });
+    }
+    tabsChanged();
+  }
+  async function liveTabs() {
+    if (tabModel) return tabModel;
+    if (!tabRows) {
+      if (tabTask) return tabTask;
+      // Subscribe before the native snapshot request, then replay its overlap
+      // events. Chasing a quiet generation would never finish under creation
+      // or navigation churn; one snapshot plus ordered deltas is sufficient.
+      tabDeltas = [];
+      const task = Promise.resolve().then(() => chrome.tabs.query({})).then(tabs => {
+        tabRows = new Map((tabs || []).filter(tab => Number.isInteger(tab?.id)).map(tab => [tab.id, leanTab(tab)]));
+        for (const apply of tabDeltas) apply(tabRows);
+        tabDeltas = [];
+        return liveTabs();
+      });
+      tabTask = task;
+      try { return await task; } finally { if (tabTask === task) tabTask = null; }
+    }
+    const index = LaterOnQuickSearch.buildTabs([...tabRows.values()].filter(tab => !isPopup(tab.pendingUrl || tab.url)));
+    return tabModel = { index, generation: tabGeneration };
+  }
+  chrome.tabs.onCreated?.addListener?.(tab => changeTab(tab.id, {}, tab));
+  chrome.tabs.onUpdated?.addListener?.((id, changes, tab) => {
+    if (['url', 'pendingUrl', 'title', 'status'].some(key => Object.hasOwn(changes || {}, key))) changeTab(id, changes, tab);
+  });
+  chrome.tabs.onMoved?.addListener?.((id, info) => changeTab(id, { windowId: info.windowId, index: info.toIndex }));
+  function removeTab(id) {
+    if (tabRows) tabRows.delete(id);
+    else if (tabTask) tabDeltas.push(rows => rows.delete(id));
+    tabsChanged();
+  }
+  chrome.tabs.onDetached?.addListener?.(removeTab);
+  chrome.tabs.onAttached?.addListener?.((id, info) => {
+    const version = tabGeneration;
+    Promise.resolve().then(() => chrome.tabs.get(id)).then(tab => {
+      if (version === tabGeneration) changeTab(id, { windowId: info.newWindowId, index: info.newPosition }, tab);
+      else { tabRows = null; tabsChanged(); }
+    }).catch(() => { tabRows = null; tabsChanged(); });
+  });
   const activeClients = new Map();
-  const clientKey = sender => sender?.tab?.id ? `tab:${sender.tab.id}` : `page:${sender?.url || ''}`;
+  const clientKey = sender => sender?.documentId ? `document:${sender.documentId}`
+    : sender?.tab?.id ? `tab:${sender.tab.id}` : `page:${sender?.url || ''}`;
   const interactive = () => {
     const now = Date.now();
     for (const [key, value] of activeClients) if (now - value.at > 60000) activeClients.delete(key);
@@ -40,10 +112,19 @@
     if (scheduled || dirty || forceBuild) scheduleWarm();
   }
   chrome.tabs.onRemoved?.addListener?.(tabId => {
+    removeTab(tabId);
     for (const [key, value] of activeClients) if (value.tabId === tabId) activeClients.delete(key);
     if ((dirty || forceBuild) && !interactive()) resumeWarm();
   });
   chrome.tabs.onActivated?.addListener?.(info => {
+    const at = Date.now(), activate = rows => {
+      for (const [id, tab] of rows) if (tab.windowId === info.windowId)
+        rows.set(id, { ...tab, active: id === info.tabId, ...(id === info.tabId ? { lastAccessed: at } : {}) });
+    };
+    if (tabRows) activate(tabRows);
+    else if (tabTask) tabDeltas.push(activate);
+    if (tabRows && !tabRows.has(info.tabId)) tabRows = null;
+    tabsChanged();
     for (const [key, value] of activeClients) if (value.windowId === info.windowId && value.tabId && value.tabId !== info.tabId) activeClients.delete(key);
     if ((dirty || forceBuild) && !interactive()) resumeWarm();
   });
@@ -94,6 +175,13 @@
   }
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
+    if (changes.laterOnSettings && JSON.stringify(changes.laterOnSettings.oldValue?.quickSwitcherModes)
+      !== JSON.stringify(changes.laterOnSettings.newValue?.quickSwitcherModes)) {
+      modeGeneration++;
+      const message = { type: 'LATERON_QUICK_SWITCHER_CHANGED', generation, modeGeneration };
+      globalThis.LaterOnContentMessages?.broadcast(message);
+      try { chrome.runtime.sendMessage?.(message)?.catch?.(() => {}); } catch {}
+    }
     const items = changes.laterOnItems && !sameFields(changes.laterOnItems, ['id', 'url', 'title', 'titleEdited', 'source', 'projectId', 'savedAt']);
     const projects = changes.laterOnProjects && !sameFields(changes.laterOnProjects, ['id', 'name']);
     const reading = !!(items || projects);
@@ -126,7 +214,9 @@
   });
   // Persistent indexes hold separate Reading and combined variants. Permission
   // changes select the Reading variant immediately, without rebuilding either.
-  const permissionChanged = () => {
+  const permissionChanged = permissions => {
+    permissionGeneration++;
+    if (permissions?.permissions?.includes('tabs') || permissions?.origins?.length) { tabRows = null; tabsChanged(); }
     cached = null;
     registerNativeEvents();
     globalThis.LaterOnContentMessages?.broadcast({ type: 'LATERON_QUICK_SWITCHER_CHANGED', generation });
@@ -164,32 +254,38 @@
     return Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(Error('quickSwitcherUnavailable')), milliseconds); })])
       .finally(() => clearTimeout(timer));
   }
-  async function index() {
-    if (cached) return cached;
-    if (building) return building;
+  async function index(current) {
     const version = generation;
-    const task = (async () => {
-      const stored = await chrome.storage.local.get(KEYS);
-      if (!stored.laterOnBookmarkSearchState) Object.assign(stored, await chrome.storage.local.get('laterOnBookmarkState'));
-      thinKnown = !!stored.laterOnBookmarkSearchState;
-      let permission = false;
-      try { permission = await chrome.permissions?.contains({ permissions: ['bookmarks'] }); } catch {}
-      const value = LaterOnQuickSearch.build({ items: stored.laterOnItems, projects: stored.laterOnProjects,
-        bookmarks: stored.laterOnBookmarkSearchState || stored.laterOnBookmarkState,
-        bookmarkConfig: permission ? stored.laterOnBookmarkConfig : { enabled: false } });
-      if (version !== generation) return index();
-      cached = value;
-      return value;
-    })();
-    building = task;
-    try { return await task; } finally { if (building === task) building = null; }
+    if (!cached) {
+      if (!building) {
+        const task = (async () => {
+          const stored = await chrome.storage.local.get(KEYS);
+          if (!stored.laterOnBookmarkSearchState) Object.assign(stored, await chrome.storage.local.get('laterOnBookmarkState'));
+          thinKnown = !!stored.laterOnBookmarkSearchState;
+          if (version === generation) cached = { stored, variants: new Map() };
+        })();
+        building = task;
+        task.finally(() => { if (building === task) building = null; }).catch(() => {});
+      }
+      await building;
+      if (version !== generation) return index(current);
+    }
+    const key = JSON.stringify([current.sources, current.bookmarkPermission, current.bookmarkConfig]);
+    if (!cached.variants.has(key)) {
+      const stored = cached.stored;
+      cached.variants.set(key, LaterOnQuickSearch.build({ items: stored.laterOnItems, projects: stored.laterOnProjects,
+        bookmarks: stored.laterOnBookmarkSearchState || stored.laterOnBookmarkState, sources: current.sources,
+        bookmarkConfig: current.bookmarkPermission ? current.bookmarkConfig : { enabled: false } }));
+    }
+    return cached.variants.get(key);
   }
-  async function context() {
-    const [stored, permission] = await Promise.all([
-      chrome.storage.local.get('laterOnBookmarkConfig'),
-      Promise.resolve().then(() => chrome.permissions?.contains({ permissions: ['bookmarks'] })).catch(() => false)
-    ]);
-    return { bookmarkConfig: stored.laterOnBookmarkConfig || { enabled: false }, bookmarkPermission: permission === true };
+  async function context(modeId = 'default') {
+    const stored = await chrome.storage.local.get(['laterOnSettings', 'laterOnBookmarkConfig']);
+    const mode = LaterOnQuickModes.get(stored.laterOnSettings?.quickSwitcherModes, modeId);
+    const permission = mode.sources.includes('bookmarks') && await Promise.resolve()
+      .then(() => chrome.permissions?.contains({ permissions: ['bookmarks'] })).catch(() => false);
+    return { bookmarkConfig: stored.laterOnBookmarkConfig || { enabled: false }, bookmarkPermission: permission === true,
+      sources: mode.sources, modeId: mode.id };
   }
   async function preparePersistent() {
     if (!persistent()) return null;
@@ -206,7 +302,9 @@
       }
       if (!forceBuild) {
         const meta = await globalThis.LaterOnLocalIndex.info();
-        if (!dirty && meta?.ready && (Number(meta.revision) || 0) >= required && version === generation) {
+        // Older schema-5 snapshots remain readable, but need one publication
+        // of the Book-only source view before they can skip maintenance.
+        if (!dirty && meta?.ready && meta.sourceViews === true && (Number(meta.revision) || 0) >= required && version === generation) {
           thinKnown = meta.thinBookmarks === true; dirty = false; return meta;
         }
       }
@@ -288,7 +386,7 @@
     liveReadingTask = task;
     try { return await task; } finally { if (liveReadingTask === task) liveReadingTask = null; }
   }
-  const bookmarkAllowed = current => current.bookmarkPermission === true && current.bookmarkConfig?.enabled === true;
+  const bookmarkAllowed = current => current.sources?.includes('bookmarks') !== false && current.bookmarkPermission === true && current.bookmarkConfig?.enabled === true;
   async function nativeNodes(ids) {
     if (!ids.length) return [];
     try { return await chrome.bookmarks.get(ids); }
@@ -393,7 +491,7 @@
     return nativeIndex(await nativeNodes(ids), current);
   }
   function combine(reading, bookmark, edited) {
-    if (!bookmark) return { ...reading };
+    if (!bookmark) return reading ? { ...reading } : { readingIds: [], bookmarkIds: [] };
     const base = { ...bookmark, readingIds: [], projectNames: [] };
     if (!reading) return base;
     return { ...base, title: edited || !bookmark.bookmarkIds?.length ? reading.title : bookmark.title,
@@ -404,7 +502,8 @@
   // snapshot supplies bookmark identities, the live Reading library supplies
   // current Reading identities, and both are re-ranked with the same rules.
   async function provisional(query, snapshot, current) {
-    const reading = await liveReading(), allowBookmarks = bookmarkAllowed(current);
+    const reading = current.sources.includes('reading') ? await liveReading() : { index: [], byUrl: new Map(), edited: new Set() };
+    const allowBookmarks = bookmarkAllowed(current);
     const merged = new Map();
     const add = (url, bookmark) => {
       const previous = merged.get(url);
@@ -413,9 +512,10 @@
       const entry = combine(reading.byUrl.get(url), mark && mark.bookmarkIds?.length ? mark : null, reading.edited.has(url));
       if (entry.readingIds.length || entry.bookmarkIds?.length) merged.set(url, entry); else merged.delete(url);
     };
-    const verified = bookmarksChanged ? await currentBookmarkEntries(snapshot?.results || [], current) : null;
+    const snapshotEntries = [...(snapshot?.results || []), ...(snapshot?.lookupEntries || []).map(row => row.entry)];
+    const verified = bookmarksChanged ? await currentBookmarkEntries(snapshotEntries, current) : null;
     const verifiedByUrl = verified && new Map(verified.map(entry => [entry.url, entry]));
-    for (const entry of snapshot?.results || []) {
+    for (const entry of snapshotEntries) {
       if (verifiedByUrl && entry.bookmarkIds?.length) {
         const bookmark = verifiedByUrl.get(entry.url);
         if (bookmark || reading.byUrl.has(entry.url)) add(entry.url, bookmark || null);
@@ -440,33 +540,80 @@
       for (const entry of bookmarks) if (reading.byUrl.has(entry.url)) add(entry.url, entry);
     }
     for (const entry of readingMatches) if (!merged.has(entry.url)) add(entry.url, null);
+    for (const url of current.lookupUrls || []) if (reading.byUrl.has(url) && !merged.has(url)) add(url, null);
     if (!snapshot || allowBookmarks && snapshot.bookmarkVariant !== true || bookmarksChanged)
       for (const entry of await nativeEntries(query, current, !readingMatches.length && !merged.size)) add(entry.url, entry);
     const ranked = LaterOnQuickSearch.search([...merged.values()], query, { limit: 50 });
+    const lookupEntries = (current.lookupUrls || []).map(url => merged.get(url)).filter(Boolean).map(entry => {
+      const values = LaterOnQuickSearch.fields(entry), hit = LaterOnQuickSearch.matchAll([entry], query)[0];
+      return { entry, values, libraryScore: hit ? hit.score : null };
+    });
     // The total is a lower bound (the matches known now), never an estimate.
-    return { results: ranked.results, total: ranked.total, provisional: true, complete: false, revision: snapshot?.revision || 0 };
+    return { results: ranked.results, total: ranked.total, lookupEntries, sourcesFiltered: true,
+      provisional: true, complete: false, revision: snapshot?.revision || 0 };
   }
-  async function search(query) {
+  async function librarySearch(query, current) {
     if (persistent()) {
-      const current = await context();
       const [snapshot, required] = await Promise.all([globalThis.LaterOnLocalIndex.search(query, current).catch(() => null), loadPending()]);
+      // The index returns null when an issued query was superseded. It is
+      // not evidence of a missing snapshot and must not force a rebuild.
+      if (typeof current.isCurrent === 'function' && !current.isCurrent())
+        return { results: [], total: 0, cancelled: true, sourcesFiltered: true };
       const missingBookmarks = bookmarkAllowed(current) && snapshot?.bookmarkVariant !== true;
-      if (snapshot && !missingBookmarks && !dirty && (Number(snapshot.revision) || 0) >= required) return snapshot;
+      if (snapshot?.sourcesFiltered === true && !missingBookmarks && !dirty && (Number(snapshot.revision) || 0) >= required) return snapshot;
       // Never wait for a full rebuild: answer now and announce the fresh
       // commit, which makes open dialogs search again.
-      scheduleWarm(!snapshot || missingBookmarks);
-      if (!snapshot && !String(query || '').trim() && !live && bookmarkAllowed(current)) {
+      scheduleWarm(!snapshot || snapshot.sourcesFiltered !== true || missingBookmarks);
+      if (!snapshot && current.sources.includes('reading') && !String(query || '').trim() && !live && bookmarkAllowed(current)) {
         const reading = liveReading();
         const recent = await nativeEntries('', current);
         if (recent.length && !live) {
           reading.then(() => announce(false)).catch(() => {});
           const ranked = LaterOnQuickSearch.search(recent, '', { limit: 50 });
-          return { ...ranked, provisional: true, complete: false, revision: 0 };
+          return { ...ranked, sourcesFiltered: true, lookupEntries: [], provisional: true, complete: false, revision: 0 };
         }
       }
-      return provisional(query, snapshot, current);
+      return provisional(query, snapshot?.sourcesFiltered === true ? snapshot : null, current);
     }
-    return LaterOnQuickSearch.search(await index(), query);
+    const entries = await index(current), ranked = LaterOnQuickSearch.search(entries, query);
+    const wanted = new Set(current.lookupUrls || []), byUrl = entries.filter(entry => wanted.has(entry.url));
+    return { ...ranked, sourcesFiltered: true, lookupEntries: byUrl.map(entry => ({ entry, values: LaterOnQuickSearch.fields(entry),
+      libraryScore: LaterOnQuickSearch.matchAll([entry], query)[0]?.score ?? null })) };
+  }
+  async function search(query, current, isCurrent = () => true, retry = 0) {
+    const hasTabs = current.sources.includes('tabs'), hasLibrary = current.sources.some(source => source !== 'tabs');
+    let tabs = hasTabs ? await liveTabs() : { index: [], generation: tabGeneration };
+    if (!isCurrent()) return { results: [], total: 0, cancelled: true, sourcesFiltered: true };
+    if (!hasLibrary) return { ...LaterOnQuickSearch.search(tabs.index, query), sourcesFiltered: true,
+      tabGeneration: tabs.generation, modeId: current.modeId };
+    const lookedUp = new Set(tabs.index.map(entry => entry.url));
+    const library = await librarySearch(query, { ...current, lookupUrls: hasTabs ? [...lookedUp] : [], isCurrent });
+    if (!isCurrent()) return { results: [], total: 0, cancelled: true, sourcesFiltered: true };
+    if (!hasTabs) return { ...library, modeId: current.modeId };
+    if (tabs.generation !== tabGeneration) {
+      tabs = await liveTabs();
+      if (tabs.index.some(entry => !lookedUp.has(entry.url)) && retry < 2) return search(query, current, isCurrent, retry + 1);
+    }
+    if (!isCurrent()) return { results: [], total: 0, cancelled: true, sourcesFiltered: true };
+    const tabUrls = new Set(tabs.index.map(entry => entry.url));
+    const lookup = (library.lookupEntries || []).filter(row => tabUrls.has(row.entry?.url));
+    for (const entry of library.results || []) if (tabUrls.has(entry.url) && !lookedUp.has(entry.url)) {
+      lookup.push({ entry, values: LaterOnQuickSearch.fields(entry), libraryScore: entry.score }); lookedUp.add(entry.url);
+    }
+    const merged = LaterOnQuickSearch.mergeTabs(tabs.index, lookup, current.sources);
+    const tabMatches = LaterOnQuickSearch.matchAll(merged, query);
+    const duplicateCount = lookup.filter(row => row.libraryScore !== null && row.libraryScore !== undefined).length;
+    const disjointLibrary = (library.results || []).filter(entry => !tabUrls.has(entry.url));
+    const results = LaterOnQuickSearch.rankScored([...disjointLibrary, ...tabMatches]);
+    const unknownUrls = tabs.index.some(entry => !lookedUp.has(entry.url));
+    const knownMatches = unknownUrls ? tabMatches.filter(entry => lookedUp.has(entry.url)).length : tabMatches.length;
+    // Every displayed library URL outside live tabs is proven disjoint from
+    // every matched native URL. This union remains a lower bound even when a
+    // continuously arriving URL has not received its library lookup yet.
+    const provenUnion = new Set(disjointLibrary.map(entry => entry.url)).size + tabMatches.length;
+    const total = Math.max(Math.max(0, library.total - duplicateCount) + knownMatches, provenUnion, results.length);
+    return { ...library, results, total, ...(unknownUrls ? { provisional: true, complete: false } : {}),
+      tabGeneration: tabs.generation, modeId: current.modeId, sourcesFiltered: true };
   }
   async function options() {
     if (!stylesPromise) stylesPromise = Promise.all(['theme-vars.css', 'quick-switcher.css'].map(async file => {
@@ -476,7 +623,7 @@
     })).then(([theme, component]) => ({ theme, component })).catch(error => { stylesPromise = null; throw error; });
     const [styles, stored] = await Promise.all([stylesPromise, chrome.storage.local.get('laterOnSettings')]);
     const settings = stored.laterOnSettings || {};
-    return { styles, theme: settings.theme || 'light', language: settings.language === 'en' ? 'en' : 'zh-CN' };
+    return { styles, theme: settings.theme || 'light', language: settings.language === 'en' ? 'en' : 'zh-CN', modes: LaterOnQuickModes.normalize(settings.quickSwitcherModes) };
   }
   async function popup(tab, presentation) {
     const url = new URL(popupUrl());
@@ -525,7 +672,7 @@
     } catch {}
     if (webUrl(tab.url)) {
       try {
-        await deadline(chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['picker-keyboard-guard.js', 'quick-switcher-ui.js', 'quick-switcher-client.js'] }));
+        await deadline(chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['quick-switcher-modes.js', 'content-preferences.js', 'picker-keyboard-guard.js', 'quick-switcher-ui.js', 'quick-switcher-client.js'] }));
         const result = await deadline(chrome.scripting.executeScript({ target: { tabId: tab.id },
           func: options => {
             if (Date.now() >= options.expiresAt) return false;
@@ -556,6 +703,29 @@
     return sender.tab?.windowId;
   }
   async function openResult(message, sender) {
+    const current = await context(message.modeId);
+    if (typeof message.id === 'string' && message.id.startsWith('tab:')) {
+      const match = /^tab:(\d+):(.+)$/.exec(message.id);
+      let expected;
+      try { expected = match && decodeURIComponent(match[2]); } catch {}
+      if (!match || !current.sources.includes('tabs') || !expected || LaterOnQuickSearch.tabUrl(expected) !== expected) throw Error('quickSwitcherMissing');
+      let tab;
+      try { tab = await chrome.tabs.get(Number(match[1])); } catch { throw Error('quickSwitcherMissing'); }
+      if (LaterOnQuickSearch.tabUrl(tab.pendingUrl || tab.url) !== expected || isPopup(expected)) throw Error('quickSwitcherMissing');
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const modeVersion = modeGeneration, latest = await context(current.modeId);
+        if (modeVersion !== modeGeneration) continue;
+        if (!latest.sources.includes('tabs')) throw Error('quickSwitcherMissing');
+        const nativeVersion = tabGeneration;
+        tab = await chrome.tabs.get(Number(match[1])).catch(() => null);
+        if (nativeVersion !== tabGeneration || modeVersion !== modeGeneration) continue;
+        if (!tab || LaterOnQuickSearch.tabUrl(tab.pendingUrl || tab.url) !== expected) throw Error('quickSwitcherMissing');
+        await chrome.tabs.update(tab.id, { active: true }); await chrome.windows.update(tab.windowId, { focused: true });
+        activeClients.delete(clientKey(sender)); if (dirty || forceBuild) resumeWarm();
+        return { reused: true, source: 'tabs' };
+      }
+      throw Error('quickSwitcherMissing');
+    }
     if (typeof message.id !== 'string' || !message.id.startsWith('page:')) throw Error('quickSwitcherMissing');
     const url = webUrl(message.id.slice(5));
     if (!url || url !== message.id.slice(5)) throw Error('quickSwitcherMissing');
@@ -564,16 +734,18 @@
     // Current Reading items and native bookmarks decide; an index rebuild is
     // never awaited, so a page saved a moment ago opens immediately.
     const version = generation;
-    const [current, required, metadata, tabs] = await Promise.all([
-      persistent() ? context() : null,
-      persistent() ? loadPending() : 0,
-      persistent() ? globalThis.LaterOnLocalIndex.info().catch(() => null) : null,
-      message.newTab === true ? [] : chrome.tabs.query({})
+    let readingVersion = readingGeneration, readingSource = liveSource;
+    const hasLibrary = current.sources.some(source => source !== 'tabs');
+    const [required, metadata, tabs] = await Promise.all([
+      persistent() && hasLibrary ? loadPending() : 0,
+      persistent() && hasLibrary ? globalThis.LaterOnLocalIndex.info().catch(() => null) : null,
+      message.newTab === true && !current.sources.includes('tabs') ? [] : chrome.tabs.query({})
     ]);
-    const known = persistent() ? await globalThis.LaterOnLocalIndex.getEntry(message.id, current).catch(() => null)
-      : (await index()).find(entry => entry.id === message.id);
+    const known = hasLibrary ? persistent() ? await globalThis.LaterOnLocalIndex.getEntry(message.id, current).catch(() => null)
+      : (await index(current)).find(entry => entry.id === message.id) : null;
     let readingIds;
-    if (persistent() && known && !dirty && version === generation && metadata?.ready && (Number(metadata.revision) || 0) >= required) {
+    if (!current.sources.includes('reading')) readingIds = [];
+    else if (persistent() && known && !dirty && version === generation && metadata?.ready && (Number(metadata.revision) || 0) >= required) {
       // Current publication already proves Reading membership. Copying the
       // whole library before opening one result defeats the bounded index.
       readingIds = [...(known.readingIds || [])];
@@ -585,17 +757,64 @@
       readingIds = items.filter(item => item && webUrl(item.url) === url).map(item => String(item.id));
     }
     const entry = { id: message.id, url, readingIds,
-      bookmarkIds: [...(known?.bookmarkIds || [])] };
-    if (!entry.readingIds.length && !await nativeBookmarkExists(entry)) {
+      bookmarkIds: current.sources.includes('bookmarks') ? [...(known?.bookmarkIds || [])] : [] };
+    let libraryAllowed = !!entry.readingIds.length || await nativeBookmarkExists(entry, current);
+    if (!libraryAllowed && current.sources.includes('bookmarks')) {
       let found = [];
       try { found = (await chrome.bookmarks?.search?.({ url })) || []; } catch {}
       entry.bookmarkIds = found.filter(node => webUrl(node?.url) === url).map(node => node.id).filter(id => !entry.bookmarkIds.includes(id));
-      if (!entry.bookmarkIds.length || !await nativeBookmarkExists(entry)) throw Error('quickSwitcherMissing');
+      libraryAllowed = !!entry.bookmarkIds.length && await nativeBookmarkExists(entry, current);
     }
     const windowId = await originWindow(sender);
     const matches = tabs.filter(tab => webUrl(tab.pendingUrl || tab.url) === entry.url);
-    const existing = matches.find(tab => tab.windowId === windowId && tab.active)
+    let existing = matches.find(tab => tab.windowId === windowId && tab.active)
       || matches.find(tab => tab.windowId === windowId) || matches[0];
+    const modeVersion = modeGeneration, latest = await context(current.modeId);
+    if (JSON.stringify(latest.sources) !== JSON.stringify(current.sources)) throw Error('quickSwitcherMissing');
+    const readingChanged = () => current.sources.includes('reading')
+      && (readingVersion !== readingGeneration || readingSource !== liveSource);
+    let readingMembershipLost = false, recoveredBookmark = false;
+    async function refreshReadingProof() {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const value = readingGeneration, source = liveSource;
+        const items = source?.items || (await chrome.storage.local.get('laterOnItems')).laterOnItems || [];
+        if (value !== readingGeneration || source !== liveSource) continue;
+        const ids = items.filter(item => item && webUrl(item.url) === url).map(item => String(item.id));
+        if (entry.readingIds.length && !ids.length) readingMembershipLost = true;
+        entry.readingIds = ids;
+        readingVersion = value; readingSource = source; return;
+      }
+      throw Error('quickSwitcherMissing');
+    }
+    let proven = false;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (modeVersion !== modeGeneration) throw Error('quickSwitcherMissing');
+      if (current.sources.includes('reading') && readingChanged()) await refreshReadingProof();
+      const readingAllowed = !!entry.readingIds.length;
+      let bookmarkAllowedNow = !readingAllowed && await nativeBookmarkExists(entry, latest);
+      if (!readingAllowed && !bookmarkAllowedNow && current.sources.includes('bookmarks') && readingMembershipLost && !recoveredBookmark) {
+        recoveredBookmark = true;
+        let found = [];
+        try { found = await chrome.bookmarks?.search?.({ url }) || []; } catch {}
+        entry.bookmarkIds = found.filter(node => webUrl(node?.url) === url).map(node => node.id);
+        bookmarkAllowedNow = await nativeBookmarkExists(entry, latest);
+      }
+      const bookVersion = generation, bookPermission = permissionGeneration;
+      libraryAllowed = readingAllowed || bookmarkAllowedNow;
+      const nativeVersion = tabGeneration;
+      if (existing && (message.newTab !== true || !libraryAllowed)) {
+        const fresh = typeof chrome.tabs.get === 'function' ? await chrome.tabs.get(existing.id).catch(() => null)
+          : (await chrome.tabs.query({})).find(tab => tab.id === existing.id);
+        if (nativeVersion !== tabGeneration) continue;
+        existing = fresh && webUrl(fresh.pendingUrl || fresh.url) === entry.url ? fresh : null;
+      }
+      if (readingChanged() || modeVersion !== modeGeneration) continue;
+      if (bookmarkAllowedNow && (bookVersion !== generation || bookPermission !== permissionGeneration)) continue;
+      proven = true; break;
+    }
+    if (!proven) throw Error('quickSwitcherMissing');
+    if (!libraryAllowed && !(current.sources.includes('tabs') && existing)) throw Error('quickSwitcherMissing');
+    if (message.newTab === true && libraryAllowed) existing = null;
     if (existing) {
       await chrome.tabs.update(existing.id, { active: true });
       await chrome.windows.update(existing.windowId, { focused: true });
@@ -605,27 +824,32 @@
       const created = await chrome.tabs.create({ url: entry.url, active: true, ...(Number.isInteger(windowId) ? { windowId } : {}) });
       if (created.windowId != null) await chrome.windows.update(created.windowId, { focused: true });
     }
-    if (entry.readingIds.length) {
+    if (entry.readingIds.length && !readingChanged() && modeVersion === modeGeneration) {
       try { Promise.resolve(chrome.storage.local.set({ laterOnCurrentItem: entry.readingIds[0] })).catch(() => {}); } catch {}
     }
     activeClients.delete(clientKey(sender));
     if (dirty || forceBuild) resumeWarm();
     return { reused: !!existing };
   }
-  async function nativeBookmarkExists(entry) {
-    const config = (await chrome.storage.local.get('laterOnBookmarkConfig')).laterOnBookmarkConfig;
-    if (!config?.enabled || !await chrome.permissions.contains({ permissions: ['bookmarks'] })) return false;
-    for (const id of entry.bookmarkIds) {
-      try {
-        let node = (await chrome.bookmarks.get(id))[0];
-        if (webUrl(node?.url) !== entry.url) continue;
-        const seen = new Set();
-        while (node && !seen.has(node.id)) {
-          if (!config.scopeId || node.id === config.scopeId) return true;
-          seen.add(node.id);
-          node = node.parentId ? (await chrome.bookmarks.get(node.parentId))[0] : null;
-        }
-      } catch { /* Native deletion/move can precede publication of its cache. */ }
+  async function nativeBookmarkExists(entry, current) {
+    if (!current?.sources.includes('bookmarks')) return false;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const version = generation, permission = permissionGeneration;
+      const config = (await chrome.storage.local.get('laterOnBookmarkConfig')).laterOnBookmarkConfig;
+      let found = false;
+      if (config?.enabled && await chrome.permissions.contains({ permissions: ['bookmarks'] })) for (const id of entry.bookmarkIds) {
+        try {
+          let node = (await chrome.bookmarks.get(id))[0];
+          if (webUrl(node?.url) !== entry.url) continue;
+          const seen = new Set();
+          while (node && !seen.has(node.id)) {
+            if (!config.scopeId || node.id === config.scopeId) { found = true; break; }
+            seen.add(node.id); node = node.parentId ? (await chrome.bookmarks.get(node.parentId))[0] : null;
+          }
+          if (found) break;
+        } catch { /* Native deletion/move can precede publication of its cache. */ }
+      }
+      if (version === generation && permission === permissionGeneration) return found;
     }
     return false;
   }
@@ -655,7 +879,16 @@
       // A live client query also renews activity after a worker restart. The
       // flag is emitted only by an open UI, so quiet diagnostics stay quiet.
       if (message.active === true) activeClients.set(clientKey(sender), { at: Date.now(), tabId: sender.tab?.id, windowId: sender.tab?.windowId });
-      return search(String(message.query || '').slice(0, 500));
+      const key = clientKey(sender), sequence = (queries.get(key) || 0) + 1, modeVersion = modeGeneration;
+      const sourceVersion = generation, permissionVersion = permissionGeneration;
+      queries.set(key, sequence);
+      const current = await context(message.modeId);
+      const value = await search(String(message.query || '').slice(0, 500), current,
+        () => queries.get(key) === sequence && modeVersion === modeGeneration
+          && (!current.sources.some(source => source !== 'tabs') || sourceVersion === generation)
+          && (!current.sources.includes('bookmarks') || permissionVersion === permissionGeneration));
+      const { lookupEntries, ...reply } = value;
+      return reply;
     }
     if (message.type === 'QUICK_SWITCHER_OPEN') return openResult(message, sender);
     if (message.type === 'QUICK_SWITCHER_LEGACY_STATUS') {

@@ -1,15 +1,57 @@
 # Quick Switcher
 
-The job is to reach a saved page with minimal reading and keystrokes. Alt/Option+O opens one search field over the current page. Each result uses a title line and a smaller URL/location line; library markers identify Reading, Bookmarks, or both. Shared theme tokens, font weights, orange selection, light/dark surfaces and reduced motion keep it part of LaterOn. Narrow layouts retain accessible icon markers and prioritize URL space over repeated library text. No cover grid or remote icons are loaded.
+Quick Switcher searches open tabs, Reading and connected Bookmarks in one compact dialog. Use the LaterOn launcher or the configured shortcut, normally Alt/Option+O. Results show a title, a smaller address/location line, a website icon and badges for the sources included in the selected mode. The dialog follows LaterOn's light/dark theme and keeps the selected result visible when resized.
 
-Search includes all reading states and archived projects plus bookmarks in the enabled synchronization scope. The worker builds a small in-memory index without images or summaries, invalidates it on collection/configuration/permission changes, and returns at most fifty results with the total match count. Empty input shows recent saves. Title matches rank ahead of locations and URLs; multiple Chinese words and conservative Latin subsequence matches are supported. Exact URL serialization deduplicates shared entries while preserving queries and anchors. Custom titles remain searchable.
+## Four search modes
 
-Up/down select, Enter opens or reuses an existing exact URL, Command/Control+Enter creates a tab, and Escape restores focus. Opening rechecks current membership, and bookmark-only results additionally revalidate native ID, URL, permission and scope. Search failure, empty results, opening failure, asynchronous query races and IME composition have explicit behavior. A newly typed query cannot accidentally open the previous query's selected result.
+Every new opening starts in the configured Default mode. The initial configuration is:
 
-The web-page dialog uses a closed shadow root and the early keyboard guard. Only the worker can summon it through extension messaging; arbitrary page elements and synthetic keyboard events cannot open or operate it. Search results are not exposed through an open shadow root or public page-world globals. Extension documents use targeted runtime messaging; content scripts use tab messaging. Only the active retained sidebar surface responds.
+| Mode | Trigger inside the search field | Initial sources |
+| --- | --- | --- |
+| Default / All | Open Quick Switcher | Tabs + Reading + Bookmarks |
+| Tabs | Tab | Tabs |
+| Reading | Space at the beginning | Reading |
+| Bookmarks | Apostrophe (`'`) at the beginning | Bookmarks |
 
-Chrome's [Commands API](https://developer.chrome.com/docs/extensions/reference/api/commands) permits at most four suggested default shortcuts. The native defaults are Alt+O, Alt+1, Alt+2 and Alt+Shift+1. The `save-window-tabs` command ID remains available for custom assignments, and `keyboard-shortcuts.js` supplies Alt+Shift+2 on ordinary web pages, including frames, and LaterOn pages when no native assignment exists. `windowShortcutFallback` controls this fallback. Settings show actual browser assignments instead of claiming an unavailable binding. Existing pages need a refresh after extension reload to register the fallback listener.
+The four visible mode controls also work with a mouse or normal button focus. Their labels and the scope hint reflect the configured sources. Switching with a button or Tab preserves the current query. Each reopening starts in Default rather than retaining the previous mode.
 
-Protected browser pages cannot host injected content. They use `quick-switcher.html` in a small extension popup with the same component, retaining the originating normal window for new tabs. Escape and successful selection close only the search window or its own tab, never an unrelated normal window. Native browser shortcut registration, platform conflicts and protected-page popup behavior require an installed-extension check; isolated tests and browser fixtures do not establish those platform outcomes.
+Plain Tab selects whichever mode currently has the Tab trigger, while focus is in the search field. If no mode uses Tab, it remains focus navigation within the dialog. Shift+Tab always retains normal focus navigation.
 
-Verification on 2026-11-04: all 88 test files pass; runtime syntax, both locales, the four-default command limit and the 66-file package pass validation. Chromium fixtures exercise physical keyboard input, search and new-tab selection, Escape/focus restoration, empty results, closed shadow roots, a 320×480 dark English dialog, and the 280px sidebar launcher. Resizing after selecting the ninth result retains that result inside the scroll viewport without moving the underlying page. The 10,000-entry search fixture, native membership changes, safe window closing, worker/client message targeting and custom-shortcut fallback are covered with isolated API fixtures.
+Printable triggers are recognized only at the beginning of user input, including pasted input. For example, `'quantum dots` selects Bookmarks and searches for `quantum dots`; a leading space selects Reading. Optional whitespace after a pasted/custom trigger is removed so it cannot become a second trigger. Spaces between ordinary search words remain part of the query. Input-method composition is left intact until composition ends; IME Enter does not open a result.
+
+Backspace in an empty query returns to Default. Changing mode configuration preserves the current query and selected stable mode; it updates that mode's sources and trigger without interpreting existing text as a new trigger. Mode or configuration changes cancel old results and pending Enter confirmation, so a result from the previous scope cannot be opened accidentally.
+
+## Configure sources and triggers
+
+Open Settings and find **Quick Switcher search modes** (「快速切换搜索模式」). Each of the four rows can use any nonempty combination of Tabs, Reading and Bookmarks: three single-source choices, three pairs, or all three. The initial labels are defaults, not fixed source restrictions.
+
+Default has no input trigger. The other three rows support Tab, Space or a custom printable prefix of 1–8 characters. Choose distinct prefixes; empty, conflicting or unsupported triggers cannot be saved. A prefix is recognized at the beginning of fresh input, so a punctuation prefix is useful when a word prefix would overlap ordinary search terms.
+
+Edits remain a draft until **Save**. Save applies the four rows together. **Reset** restores the default draft; press Save to make that reset take effect. Saved changes update an open switcher without closing it or discarding its query. Search-mode changes do not rebuild the library indexes.
+
+## Search sources and website icons
+
+Tabs are read live from accessible browser windows. They are session data and are not copied into Reading, Bookmarks, backups or synchronized indexes. Reading search includes saved reading states and archived projects. Bookmarks search uses the currently enabled synchronization scope and current browser permission.
+
+Source filtering happens before result limits and counts. Results are deduplicated by their complete URL, preserving query strings and fragments. A URL present in more than one selected source can have multiple badges; excluded sources and their project/folder context are not shown. Custom Reading titles remain searchable.
+
+Website icons use Chrome's cached favicon endpoint where available. The dialog requests icons for the displayed result slice as rows become visible, and never waits for image loading before accepting input or showing results. It does not load cover images or hydrate the whole preview library for icons. If a favicon is unavailable or fails, a transparent site-letter or globe placeholder remains. An icon's appearance depends on the browser cache; a particular website's real icon is not guaranteed.
+
+## Select and open
+
+- Up/Down selects a result; Enter opens or switches to it.
+- Library results normally reuse an existing tab with the exact URL. Command/Control+Enter requests a new tab for a library result.
+- Tab-only results activate the verified existing tab, including browser pages that cannot be injected with content scripts. Their titles and addresses are displayed as safe text.
+- Escape closes the dialog and restores the previous page focus.
+
+Opening rechecks the current source membership. Tab IDs and their current URLs are checked again, so a closed or navigated tab-only result cannot recreate an obsolete page. Bookmark actions also recheck native ID, complete URL, permission and synchronization scope. Cached results never grant permission or expand the selected sources. Failed searches expose retry, and failed opening leaves the dialog available for another selection.
+
+On ordinary web pages the dialog uses a closed shadow root and the extension's keyboard guard. Browser pages that cannot host injected content use the same component in a small extension-owned popup. Closing that popup affects only the search window or its own tab. Mode triggers operate inside the dialog and do not add browser-wide default shortcuts. Existing web pages need a refresh after extension reload to load changed content scripts; Settings show the browser's actual shortcut assignments.
+
+## Validation status
+
+This document describes release `1.74.4`. Its runtime matches the accepted `1.74.4-test.1` build; the formal release removes the test display label. Earlier 1.74.3 startup reports cover the earlier implementation. The current [validation record](quick-switcher-validation.md) includes this build's native evidence, regression reports and limits.
+
+All 114 test files pass. Controlled browser checks cover mode/source combinations, leading prefixes and ordinary spaces, pasted input, IME, configuration changes, stale queries and confirmation, icon loading/failure, focus restoration and narrow layouts. An isolated native Chrome profile with 50k Bookmarks and 5k Reading passes 20 checks, including seven source combinations, live-tab actions, real settings persistence, a cached local-site favicon and schema-5 repair.
+
+With its index prepared, the native test's first usable rows appeared in 14.5–63.6 ms with a running worker and 76.7–86.7 ms after forcing the worker to stop. Initial full preparation took 38.8 seconds. OS shortcut behavior, the user's actual profile, protected-page popup and every remote website icon remain outside this native run. Input readiness, first rows, search and opening are recorded separately.

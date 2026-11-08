@@ -13,6 +13,7 @@ const db = new IDBFactory();
 const source = {
   laterOnItems: [{ id: 'r1', title: 'Saved reading', url: 'https://reading.test/paper?q=x#one', savedAt: 100 }],
   laterOnProjects: [], laterOnBookmarkConfig: { enabled: true, scopeId: null },
+  laterOnSettings: { quickSwitcherModes: [{ id: 'default', prefix: '', sources: ['reading', 'bookmarks'] }] },
   laterOnBookmarkSearchState: { enabled: true, scopeId: null, nodes: [{ id: 'b1', title: 'Bookmark only', url: 'https://book.test/', dateAdded: 200 }] }
 };
 const local = {};
@@ -49,12 +50,13 @@ function worker(database = db, native = null) {
   };
   const context = vm.createContext({ indexedDB: database, IDBKeyRange, chrome, URL, setTimeout, clearTimeout, console,
     LaterOnContentMessages: { broadcast(message) { broadcasts.push(message); } } });
-  for (const file of ['url-utils.js', 'quick-switcher-search.js', 'local-index.js', 'quick-switcher-background.js']) vm.runInContext(read(file), context);
+  for (const file of ['url-utils.js', 'quick-switcher-modes.js', 'quick-switcher-search.js', 'local-index.js', 'quick-switcher-background.js']) vm.runInContext(read(file), context);
   const ext = { url: 'chrome-extension://fixture/library.html' };
   return { store: context.LaterOnLocalIndex, gets, messages, broadcasts, creates,
     installed: () => chrome.runtime.onInstalled.emit({ reason: 'update' }),
+    startup: () => chrome.runtime.onStartup.emit(), prepare: () => context.LaterOnQuickSwitcher.prepare(),
     expireActivity: () => vm.runInContext(`Date.now = () => ${Date.now() + 61000}`, context),
-    search: query => context.LaterOnQuickSwitcher.handle({ type: 'QUICK_SWITCHER_SEARCH', query }, ext),
+    search: (query, modeId) => context.LaterOnQuickSwitcher.handle({ type: 'QUICK_SWITCHER_SEARCH', query, modeId }, ext),
     activeSearch: query => context.LaterOnQuickSwitcher.handle({ type: 'QUICK_SWITCHER_SEARCH', query, active: true }, { url: 'https://source.test/', tab: { ...tabs[0] } }),
     activity: active => context.LaterOnQuickSwitcher.handle({ type: 'QUICK_SWITCHER_ACTIVITY', active }, { url: 'https://source.test/', tab: { ...tabs[0] } }),
     open: id => context.LaterOnQuickSwitcher.handle({ type: 'QUICK_SWITCHER_OPEN', id }, { url: 'https://source.test/', tab: { ...tabs[0] } }),
@@ -66,16 +68,50 @@ function worker(database = db, native = null) {
     bookmarkChange(oldValue, newValue) { changes.emit({ laterOnBookmarkSearchState: { oldValue, newValue } }, 'local'); },
     change(oldValue, newValue) { changes.emit({ laterOnItems: { oldValue, newValue } }, 'local'); } };
 }
+async function upgradeOldSourceViews() {
+  for (const trigger of ['startup', 'prepare']) {
+    const database = new IDBFactory(), seed = worker(database);
+    await seed.store.putSearchSource(source, 1);
+    const oldMeta = plain(await seed.store.info()); delete oldMeta.sourceViews; delete oldMeta.sharedPages;
+    // A synthetic schema-5 snapshot with the pre-mode capability metadata:
+    // Reading/combined data stays ready, but the new Book-only mask is absent.
+    await new Promise((resolve, reject) => {
+      const request = database.open('lateron-local-index-v1', 5);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const connection = request.result, transaction = connection.transaction('searchMeta', 'readwrite');
+        transaction.objectStore('searchMeta').put(oldMeta); transaction.objectStore('searchMeta').delete('searchSources');
+        transaction.oncomplete = () => { connection.close(); resolve(); };
+        transaction.onerror = () => reject(transaction.error);
+      };
+    });
+    assert.equal((await seed.store.info()).sourceViews, undefined); assert.equal(local[PENDING], undefined);
+    const upgraded = worker(database); upgraded.allow();
+    if (trigger === 'startup') upgraded.startup(); else await upgraded.prepare();
+    await until(async () => (await upgraded.store.info()).sourceViews === true && !local[PENDING], `A clean old snapshot upgrades automatically on ${trigger}`);
+    const current = await upgraded.store.info(), sourceReads = upgraded.gets.filter(key => Array.isArray(key) && key.includes('laterOnBookmarkSearchState')).length;
+    assert(current.generation > oldMeta.generation, 'The capability upgrade atomically publishes a new generation');
+    assert.equal(sourceReads, 1, 'The upgrade reads the source exactly once');
+    const book = await upgraded.search('Bookmark only', 'mode3');
+    assert.notEqual(book.provisional, true); assert.equal(book.sourcesFiltered, true); assert.equal(book.total, 1);
+    assert.deepEqual(plain(book.results[0].readingIds), [], 'The upgraded Book-only view does not expose Reading membership');
+    await upgraded.prepare(); upgraded.startup(); await tick(350);
+    assert.equal((await upgraded.store.info()).generation, current.generation, 'A subsequent warm-up reuses the upgraded snapshot');
+    assert.equal(upgraded.gets.filter(key => Array.isArray(key) && key.includes('laterOnBookmarkSearchState')).length, sourceReads);
+  }
+}
 (async () => {
+  await upgradeOldSourceViews();
   const first = worker();
   await first.store.putSearchSource(source, 1);
   const restarted = worker();
   assert.equal((await restarted.search('')).total, 2);
   assert.equal((await restarted.search('Bookmark only')).results.length, 1);
-  assert(restarted.gets.every(key => key === 'laterOnBookmarkConfig' || key === PENDING), 'Cold worker queries reuse persisted data without large source messages');
+  const onlyMetadata = key => key === PENDING || Array.isArray(key) && key.every(value => ['laterOnSettings', 'laterOnBookmarkConfig'].includes(value));
+  assert(restarted.gets.every(onlyMetadata), 'Cold worker queries reuse persisted data without large source messages');
   restarted.installed();
   await tick(350);
-  assert(restarted.gets.every(key => key === 'laterOnBookmarkConfig' || key === PENDING), 'An installed/update details object does not force an unchanged prepared index to rebuild');
+  assert(restarted.gets.every(onlyMetadata), 'An installed/update details object does not force an unchanged prepared index to rebuild');
   restarted.blockItems();
   const beforeFreshOpen = restarted.gets.length;
   await Promise.race([

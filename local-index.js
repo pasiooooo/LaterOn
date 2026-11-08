@@ -305,6 +305,63 @@
       }
     }
     for (const [key, list] of postings) { const counts = stats[key[0]]; counts.keys++; counts.positions += list.length; }
+    // Source views for mode searches. Each combined row records its library
+    // membership (bit 1 Reading, bit 2 Bookmarks). A URL in both libraries
+    // also gets a bookmark-only row ('b', at its combined position) built from
+    // bookmark data alone, so a Bookmarks search never matches, ranks or shows
+    // Reading titles, projects or inbox state. Pages only in Bookmarks already
+    // equal their bookmark-only form. Combined postings contain every
+    // bookmark-only term, so they stay a valid candidate filter.
+    const mask = new Uint8Array(all.length), shared = new Map(), sharedDates = new Map();
+    let bookmarkTotal = 0;
+    for (const [position, entry] of all.entries()) {
+      if (++work % 1000 === 0) await pause();
+      const bits = (entry.readingIds?.length ? 1 : 0) | (entry.bookmarkIds?.length ? 2 : 0);
+      mask[position] = bits;
+      if (bits & 2) bookmarkTotal++;
+      if (bits === 3) shared.set(entry.url, position);
+    }
+    if (shared.size) {
+      const href = value => { try { return new URL(value).href; } catch { return ''; } };
+      const nodes = (Array.isArray(input.bookmarks?.nodes) ? input.bookmarks.nodes : []).filter(node => node && (!node.url || shared.has(href(node.url))));
+      const bookmarkOnly = await search.buildAsync({ bookmarks: { ...input.bookmarks, nodes }, bookmarkConfig: input.bookmarkConfig }, pause);
+      const normalized = search.preparedFields(bookmarkOnly), views = [];
+      for (const [index, entry] of bookmarkOnly.entries()) {
+        const position = shared.get(entry.url);
+        if (position !== undefined) {
+          views.push({ kind: 'b', position, entry, values: normalized[index] });
+          sharedDates.set(position, entry.savedAt);
+        }
+      }
+      views.sort((a, b) => a.position - b.position);
+      let block = null;
+      for (const view of views) {
+        if (++work % 250 === 0) await pause();
+        rows.push(view);
+        const key = Math.floor(view.position / QUERY_BLOCK_SIZE);
+        if (block?.block !== key) {
+          block = { kind: 'b', block: key, start: key * QUERY_BLOCK_SIZE, positions: [],
+            savedAt: [], title: [], aliases: [], source: [], url: [], locations: [], inbox: [] };
+          queryBlocks.push(block);
+        }
+        const values = view.values;
+        block.positions.push(view.position); block.savedAt.push(view.entry.savedAt); block.title.push(values.title);
+        block.aliases.push(values.aliases); block.source.push(values.source); block.url.push(values.url);
+        block.locations.push(values.locations); block.inbox.push(values.inbox);
+      }
+    }
+    // Bookmarks use their own recent order, including URL order when native
+    // timestamps tie. Combined positions can be ordered by Reading savedAt,
+    // so keep the ranking position separate from the row used for hydration.
+    const bookmarkOrder = [];
+    for (let position = 0; position < all.length; position++) {
+      if (++work % 1000 === 0) await pause();
+      if (mask[position] & 2) bookmarkOrder.push(position);
+    }
+    bookmarkOrder.sort((a, b) => (sharedDates.get(b) ?? all[b].savedAt) - (sharedDates.get(a) ?? all[a].savedAt)
+      || all[a].url.localeCompare(all[b].url));
+    const bookmarkRank = new Uint32Array(all.length);
+    bookmarkOrder.forEach((position, rank) => { bookmarkRank[position] = rank; });
     const fields = { counts: { r: reading.length, a: all.length }, readingItems: Array.isArray(input.items) ? input.items.length : 0,
       bookmarkPages: (input.bookmarks?.nodes || []).filter(node => node?.url).length,
       bookmarkEnabled: input.bookmarkConfig?.enabled === true && input.bookmarks?.enabled === true,
@@ -312,7 +369,10 @@
       thinBookmarks: !!source.laterOnBookmarkSearchState,
       // Every fresh snapshot carries the list (possibly empty); older
       // snapshots without it have every posting stored.
-      omittedPostings: [...omitted], postingStats: stats };
+      omittedPostings: [...omitted], postingStats: stats,
+      // Published together with the `searchSources` record below; snapshots
+      // without it cannot answer a Bookmarks-only mode.
+      sourceViews: true, sharedPages: shared.size };
     if (!live()) throw Error('staleLocalIndex');
     return serial('search', async () => {
       if (!live()) throw Error('staleLocalIndex');
@@ -346,6 +406,11 @@
           const next = { ...current, ...fields, key: 'search', schema: SCHEMA, ready: true, generation: gen, pending: null,
             revision: time(revision), updatedAt: Date.now() };
           tx.objectStore('searchMeta').put(next);
+          // One small record, replaced in the same transaction as the
+          // metadata, so readers never pair one generation's rows with
+          // another generation's membership.
+          tx.objectStore('searchMeta').put({ key: 'searchSources', generation: gen, mask, bookmarkTotal,
+            bookmarkRank, bookmarkOrder: new Uint32Array(bookmarkOrder) });
           return next;
         });
         sweep('search');
@@ -368,92 +433,190 @@
       if (current) tx.objectStore(META[key]).put({ ...current, ready: false });
     });
   }
+  // Library selection for a mode search. Without `context.sources` the
+  // original behavior holds: combined rows when bookmarks are allowed.
+  function selection(meta, context) {
+    const sources = Array.isArray(context?.sources) ? context.sources : null;
+    const books = bookmarkAllowed(meta, context) && (!sources || sources.includes('bookmarks'));
+    const reading = !sources || sources.includes('reading');
+    return { sources, reading, books, bookOnly: !!sources && books && !reading, none: !!sources && !books && !reading,
+      kind: books ? 'a' : 'r' };
+  }
+  // Bookmark-only membership and views of the published generation, or null
+  // for an older snapshot without them.
+  async function sourceViews(tx, meta) {
+    const views = await request(tx.objectStore('searchMeta').get('searchSources'));
+    return views?.generation === meta.generation && views.mask?.length === meta.counts?.a
+      && views.bookmarkRank?.length === views.mask.length && views.bookmarkOrder?.length === views.bookmarkTotal ? views : null;
+  }
   async function search(query, context, { limit = 50 } = {}) {
     if (!supported() || !globalThis.LaterOnQuickSearch) return null;
-    return transaction(['searchMeta', 'records', 'postings', 'searchQueries'], 'readonly', async tx => {
+    const current = () => typeof context?.isCurrent !== 'function' || context.isCurrent();
+    const check = () => { if (!current()) throw Error('cancelledLocalIndex'); };
+    if (!current()) return null;
+    try { return await transaction(['searchMeta', 'records', 'postings', 'searchQueries'], 'readonly', async tx => {
       const meta = await readMeta(tx, 'search');
+      check();
       if (!meta?.ready || !published(meta)) return null;
-      const gen = meta.generation, kind = bookmarkAllowed(meta, context) ? 'a' : 'r', count = meta.counts[kind];
+      const pick = selection(meta, context), gen = meta.generation, kind = pick.kind;
+      const views = pick.bookOnly ? await sourceViews(tx, meta) : null;
+      check();
+      if (pick.bookOnly && !views) return null;
+      const count = pick.bookOnly ? views.bookmarkTotal : meta.counts[kind];
       const engine = globalThis.LaterOnQuickSearch, phrase = engine.fold(engine.text(query, 512));
       const maximum = Math.max(0, Math.min(100, Number.isFinite(Number(limit)) ? Math.floor(Number(limit)) : 50));
-      const records = tx.objectStore('records'), terms = tx.objectStore('postings');
+      const records = tx.objectStore('records'), terms = tx.objectStore('postings'), queries = tx.objectStore('searchQueries');
       // `bookmarkVariant` states whether this answer came from the combined
       // Reading + Bookmarks rows; false means Reading rows only.
+      // `sourcesFiltered` states that matching, ranking, totals and every
+      // returned field use only the selected libraries.
       const facts = { persistent: true, revision: meta.revision, bookmarkVariant: kind === 'a',
+        ...(pick.sources ? { sourcesFiltered: true, generation: gen } : {}),
         ...(meta.pending && time(meta.pending.revision) > time(meta.revision) ? { pending: true } : {}) };
-      if (!phrase) {
-        const rows = maximum ? await request(records.getAll(range(gen, kind), maximum)) : [];
-        return { results: rows.map(row => ({ ...row.entry, score: 0 })), total: count, ...facts };
-      }
-      // Terms whose lists were too dense to store impose no filter (`ALL`);
-      // the exact verification below decides every match. Older snapshots
-      // have no such list and store every posting.
-      const ALL = null, omitted = new Set(Array.isArray(meta.omittedPostings) ? meta.omittedPostings : []);
-      const cache = new Map();
-      function posting(term) {
-        const key = `${kind}:${term}`;
-        if (!cache.has(key)) cache.set(key, request(terms.get([gen, key])).then(row => row?.positions || []));
-        return cache.get(key);
-      }
-      async function intersectTerms(keys) {
-        const stored = [...keys].filter(term => !omitted.has(`${kind}:${term}`));
-        if (!stored.length) return ALL;
-        const lists = await Promise.all(stored.map(posting));
-        lists.sort((a, b) => a.length - b.length);
-        let result = lists[0] || [];
-        for (let i = 1; i < lists.length && result.length; i++) result = intersection(result, lists[i]);
-        return result;
-      }
-      let candidates = ALL;
-      for (const term of new Set(phrase.split(/\s+/).filter(Boolean))) {
-        // Two separated trigrams bound I/O even for a very long pasted URL.
-        // Verification below checks the complete term, including punctuation.
-        const literal = term.length >= 3 ? new Set([`g:${term.slice(0, 3)}`, `g:${term.slice(-3)}`])
-          : new Set([...grams(term, 1)].map(letter => `c:${letter}`));
-        let ids = await intersectTerms(literal);
-        if (ids !== ALL && /^[a-z0-9]{3,32}$/.test(term)) {
-          const fuzzy = await intersectTerms(new Set([...term].map(letter => `f:${letter}`)));
-          ids = fuzzy === ALL ? ALL : union(ids, fuzzy);
+      // Bookmarks-only: pages in both libraries use their bookmark-only row.
+      const member = position => !views || (views.mask[position] & 2) !== 0;
+      const rowKind = position => views && views.mask[position] === 3 ? 'b' : kind;
+      const hydrate = position => request(records.get([gen, rowKind(position), position]));
+      const forRanking = row => views ? { ...row, position: views.bookmarkRank[row.position] } : row;
+      const lookup = async () => {
+        check();
+        const urls = [...new Set(Array.isArray(context?.lookupUrls) ? context.lookupUrls.filter(url => typeof url === 'string') : [])];
+        if (!pick.sources || pick.none || !urls.length) return {};
+        const ids = records.index('id'), found = [];
+        for (let start = 0; start < urls.length; start += QUERY_BLOCK_SIZE) {
+          check();
+          // All batches stay in this one readonly snapshot. Await the issued
+          // requests before cancellation; never present a partial lookup as a
+          // proof that omitted URLs have no library membership.
+          const batch = await Promise.allSettled(urls.slice(start, start + QUERY_BLOCK_SIZE).map(async url => {
+            let row = await request(ids.get([gen, kind, `page:${url}`]));
+            check();
+            if (row && views) row = !member(row.position) ? null : rowKind(row.position) === 'b' ? await hydrate(row.position) : row;
+            check();
+            if (!row) return;
+            const match = engine.searchRecords([row], query, { limit: 1 }).results[0];
+            found.push({ url, entry: row.entry, values: row.values, libraryScore: match ? match.score : null });
+          }));
+          check();
+          const failure = batch.find(result => result.status === 'rejected');
+          if (failure) throw failure.reason;
         }
-        if (ids !== ALL) candidates = candidates === ALL ? ids : intersection(candidates, ids);
-        if (candidates !== ALL && !candidates.length) break;
-      }
-      if (candidates === ALL ? !count : !candidates.length) return { results: [], total: 0, ...facts };
-      if (candidates !== ALL && candidates.length <= 2 * maximum) {
-        const rows = (await Promise.all(Array.from(candidates, position => request(records.get([gen, kind, position]))))).filter(Boolean);
-        return { ...engine.searchRecords(rows, query, { limit: maximum }), ...facts };
-      }
-      // More candidates than a page: rank from the light column blocks that
-      // contain them (all blocks when dense or unfiltered), then hydrate only
-      // the winners.
-      const queries = tx.objectStore('searchQueries'), dense = candidates === ALL || candidates.length > count / 5;
-      const blocks = dense ? await request(queries.getAll(range(gen, kind))) : (await Promise.all(
-        [...new Set(Array.from(candidates, position => Math.floor(position / QUERY_BLOCK_SIZE)))]
-          .map(block => request(queries.get([gen, kind, block]))))).filter(Boolean);
-      const allowed = dense ? null : new Set(candidates);
-      function* queryRows() {
-        for (const block of blocks) for (let i = 0; i < block.savedAt.length; i++) {
-          const position = block.start + i;
-          if (allowed && !allowed.has(position)) continue;
-          yield { position, entry: { position, savedAt: block.savedAt[i] }, values: {
-            title: block.title[i], aliases: block.aliases[i], source: block.source[i], url: block.url[i],
-            locations: block.locations[i], inbox: block.inbox[i]
-          } };
+        const order = new Map(urls.map((url, index) => [url, index]));
+        return { lookupEntries: found.sort((a, b) => order.get(a.url) - order.get(b.url)) };
+      };
+      const answer = async () => {
+        check();
+        if (pick.none) return { results: [], total: 0 };
+        if (!phrase) {
+          if (!views) {
+            const rows = maximum ? await request(records.getAll(range(gen, kind), maximum)) : [];
+            check();
+            return { results: rows.map(row => ({ ...row.entry, score: 0 })), total: count };
+          }
+          const rows = (await Promise.all(Array.from(views.bookmarkOrder.slice(0, maximum), hydrate))).filter(Boolean);
+          check();
+          return { results: rows.map(row => ({ ...row.entry, score: 0 })), total: count };
         }
-      }
-      const ranked = engine.searchRecords(queryRows(), query, { limit: maximum });
-      const winners = await Promise.all(ranked.results.map(hit => request(records.get([gen, kind, hit.position]))));
-      return { results: winners.map((row, i) => row && { ...row.entry, score: ranked.results[i].score }).filter(Boolean),
-        total: ranked.total, ...facts };
-    });
+        // Terms whose lists were too dense to store impose no filter (`ALL`);
+        // the exact verification below decides every match. Older snapshots
+        // have no such list and store every posting.
+        const ALL = null, omitted = new Set(Array.isArray(meta.omittedPostings) ? meta.omittedPostings : []);
+        const cache = new Map();
+        function posting(term) {
+          const key = `${kind}:${term}`;
+          if (!cache.has(key)) cache.set(key, request(terms.get([gen, key])).then(row => row?.positions || []));
+          return cache.get(key);
+        }
+        async function intersectTerms(keys) {
+          const stored = [...keys].filter(term => !omitted.has(`${kind}:${term}`));
+          if (!stored.length) return ALL;
+          const lists = await Promise.all(stored.map(posting));
+          check();
+          lists.sort((a, b) => a.length - b.length);
+          let result = lists[0] || [];
+          for (let i = 1; i < lists.length && result.length; i++) result = intersection(result, lists[i]);
+          return result;
+        }
+        let candidates = ALL;
+        for (const term of new Set(phrase.split(/\s+/).filter(Boolean))) {
+          // Two separated trigrams bound I/O even for a very long pasted URL.
+          // Verification below checks the complete term, including punctuation.
+          const literal = term.length >= 3 ? new Set([`g:${term.slice(0, 3)}`, `g:${term.slice(-3)}`])
+            : new Set([...grams(term, 1)].map(letter => `c:${letter}`));
+          let ids = await intersectTerms(literal);
+          if (ids !== ALL && /^[a-z0-9]{3,32}$/.test(term)) {
+            const fuzzy = await intersectTerms(new Set([...term].map(letter => `f:${letter}`)));
+            ids = fuzzy === ALL ? ALL : union(ids, fuzzy);
+          }
+          if (ids !== ALL) candidates = candidates === ALL ? ids : intersection(candidates, ids);
+          if (candidates !== ALL && !candidates.length) break;
+        }
+        if (candidates !== ALL && views) candidates = candidates.filter(member);
+        if (candidates === ALL ? !count : !candidates.length) return { results: [], total: 0 };
+        if (candidates !== ALL && candidates.length <= 2 * maximum) {
+          const rows = (await Promise.all(Array.from(candidates, hydrate))).filter(Boolean);
+          check();
+          return engine.searchRecords(rows.map(forRanking), query, { limit: maximum });
+        }
+        // More candidates than a page: rank from the light column blocks that
+        // contain them (all blocks when dense or unfiltered), then hydrate only
+        // the winners.
+        const dense = candidates === ALL || candidates.length > count / 5;
+        const keys = dense ? null : [...new Set(Array.from(candidates, position => Math.floor(position / QUERY_BLOCK_SIZE)))];
+        const blocks = dense ? await request(queries.getAll(range(gen, kind)))
+          : (await Promise.all(keys.map(block => request(queries.get([gen, kind, block]))))).filter(Boolean);
+        check();
+        const shared = new Map();
+        if (views) {
+          const own = dense ? await request(queries.getAll(range(gen, 'b')))
+            : (await Promise.all(keys.map(block => request(queries.get([gen, 'b', block]))))).filter(Boolean);
+          check();
+          for (const block of own) block.positions.forEach((position, i) => shared.set(position, [block, i]));
+        }
+        const allowed = dense ? null : new Set(candidates);
+        function* queryRows() {
+          for (const block of blocks) for (let i = 0; i < block.savedAt.length; i++) {
+            if (i % QUERY_BLOCK_SIZE === 0) check();
+            const position = block.start + i;
+            if (allowed ? !allowed.has(position) : !member(position)) continue;
+            const [source, at] = shared.get(position) || [block, i];
+            yield { position: views ? views.bookmarkRank[position] : position, entry: { position, savedAt: source.savedAt[at] }, values: {
+              title: source.title[at], aliases: source.aliases[at], source: source.source[at], url: source.url[at],
+              locations: source.locations[at], inbox: source.inbox[at]
+            } };
+          }
+        }
+        const ranked = engine.searchRecords(queryRows(), query, { limit: maximum });
+        check();
+        const winners = await Promise.all(ranked.results.map(hit => hydrate(hit.position)));
+        check();
+        return { results: winners.map((row, i) => row && { ...row.entry, score: ranked.results[i].score }).filter(Boolean),
+          total: ranked.total };
+      };
+      const complete = await Promise.allSettled([answer(), lookup()]);
+      check();
+      const failure = complete.find(result => result.status === 'rejected');
+      if (failure) throw failure.reason;
+      return { ...complete[0].value, ...facts, ...complete[1].value };
+    }); } catch (error) {
+      if (error?.message === 'cancelledLocalIndex') return null;
+      throw error;
+    }
   }
+  // One result for opening, with the same source selection as search.
   async function getEntry(id, context) {
     if (!supported()) return null;
     return transaction(['searchMeta', 'records'], 'readonly', async tx => {
       const meta = await readMeta(tx, 'search');
       if (!meta?.ready || !published(meta)) return null;
-      const kind = bookmarkAllowed(meta, context) ? 'a' : 'r';
-      const row = await request(tx.objectStore('records').index('id').get([meta.generation, kind, id]));
+      const pick = selection(meta, context);
+      if (pick.none) return null;
+      const records = tx.objectStore('records');
+      let row = await request(records.index('id').get([meta.generation, pick.kind, id]));
+      if (row && pick.bookOnly) {
+        const views = await sourceViews(tx, meta), bits = views?.mask[row.position] || 0;
+        row = !(bits & 2) ? null : bits === 3 ? await request(records.get([meta.generation, 'b', row.position])) : row;
+      }
       return row?.entry || null;
     });
   }

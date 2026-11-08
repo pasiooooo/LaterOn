@@ -908,12 +908,15 @@ async function commitSidepanelCardOrder(dropIndex) {
   render();
   status.textContent = tr(wasCustom ? "orderSaved" : "customSortEnabled");
 
-  const stored = await chrome.storage.local.get(SETTINGS_KEY);
-  const settings = stored[SETTINGS_KEY] || {};
-  await chrome.storage.local.set({
-    [ORDER_KEY]: nextOrders,
-    [SETTINGS_KEY]: { ...settings, defaultSort: "custom" }
-  });
+  if (window.LaterOnSettings) await window.LaterOnSettings.set({ defaultSort: "custom" }, { order: nextOrders });
+  else {
+    const stored = await chrome.storage.local.get(SETTINGS_KEY);
+    const settings = stored[SETTINGS_KEY] || {};
+    await chrome.storage.local.set({
+      [ORDER_KEY]: nextOrders,
+      [SETTINGS_KEY]: { ...settings, defaultSort: "custom" }
+    });
+  }
 }
 
 list.addEventListener("contextmenu", (event) => {

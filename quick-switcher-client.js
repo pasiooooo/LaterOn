@@ -2,7 +2,24 @@
   if (globalThis.LaterOnQuickSwitcherClient?.runtime === chrome.runtime) return;
   const popup = location.href.split('?')[0] === chrome.runtime.getURL('quick-switcher.html');
   const ownPage = location.href.startsWith(chrome.runtime.getURL(''));
-  let active = null;
+  const modeTools = globalThis.LaterOnQuickModes;
+  let active = null, knownModes = null, displayedModes = null, settingsVersion = 0, searchSequence = 0;
+  function applyModes(raw) {
+    const next = modeTools.normalize(raw);
+    if (JSON.stringify(next) === JSON.stringify(knownModes)) return;
+    const changed = JSON.stringify(next) !== JSON.stringify(knownModes || displayedModes);
+    knownModes = next;
+    if (changed) { searchSequence++; displayedModes = next; active?.setModes?.(next); }
+  }
+  // Web frames already receive this small snapshot. They never subscribe to
+  // full storage changes just to learn which modes are configured.
+  globalThis.LaterOnContentPreferences?.subscribe?.(value => { settingsVersion++; applyModes(value?.quickSwitcherModes); });
+  if (ownPage && chrome.storage.local?.get) {
+    const version = settingsVersion;
+    Promise.resolve().then(() => chrome.storage.local.get('laterOnSettings')).then(stored => {
+      if (version === settingsVersion) applyModes(stored?.laterOnSettings?.quickSwitcherModes);
+    }).catch(() => {});
+  }
   async function send(message) {
     const response = await chrome.runtime.sendMessage(message);
     if (!response?.ok) throw Error(response?.error || 'quickSwitcherUnavailable');
@@ -13,16 +30,17 @@
     if (options?.localPresentation) {
       const styles = globalThis.LaterOnQuickSwitcherStyles;
       const presentation = globalThis.LaterOnContentPreferences?.value;
-      const local = ownPage ? pageOptions() : styles && presentation ? { styles, theme: presentation.theme, language: presentation.language } : null;
+      const local = ownPage ? pageOptions() : styles && presentation ? { styles, theme: presentation.theme, language: presentation.language, modes: presentation.quickSwitcherModes } : null;
       if (!local) return false;
       options = { ...local, expiresAt: options.expiresAt };
     }
     if (globalThis.LaterOnQuickSwitcherUI.active) { globalThis.LaterOnQuickSwitcherUI.close(); return; }
-    active = globalThis.LaterOnQuickSwitcherUI.open({ ...options,
-      search: query => localSearch(query),
-      onOpen: (result, options) => send({ type: 'QUICK_SWITCHER_OPEN', id: result.id, newTab: options?.newTab === true }),
+    displayedModes = knownModes || modeTools.normalize(options?.modes);
+    active = globalThis.LaterOnQuickSwitcherUI.open({ ...options, modes: displayedModes,
+      search: (query, context) => localSearch(query, context),
+      onOpen: (result, options) => send({ type: 'QUICK_SWITCHER_OPEN', id: result.id, modeId: modeTools.get(knownModes || displayedModes, options?.modeId).id, newTab: options?.newTab === true }),
       onClose() {
-        active = null;
+        active = null; searchSequence++;
         send({ type: 'QUICK_SWITCHER_ACTIVITY', active: false }).catch(() => {});
         if (popup) {
           Promise.resolve().then(() => chrome.tabs?.getCurrent?.()).then(tab => chrome.runtime.sendMessage({ type: 'QUICK_SWITCHER_CLOSE', tabId: tab?.id })).catch(() => {});
@@ -35,21 +53,32 @@
   window.addEventListener('pagehide', () => {
     if (active) send({ type: 'QUICK_SWITCHER_ACTIVITY', active: false }).catch(() => {});
   });
-  async function localSearch(query) {
+  async function localSearch(query, context = {}) {
+    const sequence = ++searchSequence, isCurrent = () => sequence === searchSequence;
+    const cancelled = () => ({ results: [], total: 0, cancelled: true });
+    let mode = modeTools.get(knownModes || displayedModes, context.modeId);
     // Extension surfaces can read their prepared index directly. A dormant
     // service worker need not wake just to display the first result slice.
-    if (ownPage && globalThis.LaterOnLocalIndex?.supported?.() && globalThis.LaterOnQuickSearch) {
+    if (ownPage && !mode.sources.includes('tabs') && globalThis.LaterOnLocalIndex?.supported?.() && globalThis.LaterOnQuickSearch) {
       try {
-        const [stored, bookmarkPermission] = await Promise.all([chrome.storage.local.get(['laterOnBookmarkConfig', 'laterOnQuickSearchPending']),
+        const version = settingsVersion;
+        const [stored, bookmarkPermission] = await Promise.all([chrome.storage.local.get(['laterOnSettings', 'laterOnBookmarkConfig', 'laterOnQuickSearchPending']),
           chrome.permissions?.contains({ permissions: ['bookmarks'] })]);
-        const result = await globalThis.LaterOnLocalIndex.search(query, { bookmarkConfig: stored.laterOnBookmarkConfig, bookmarkPermission });
+        if (!isCurrent()) return cancelled();
+        if (stored.laterOnSettings && version === settingsVersion) applyModes(stored.laterOnSettings.quickSwitcherModes);
+        if (!isCurrent()) return cancelled();
+        mode = modeTools.get(knownModes || displayedModes, context.modeId);
+        if (mode.sources.includes('tabs')) return send({ type: 'QUICK_SWITCHER_SEARCH', query, modeId: mode.id, active: !!active });
+        const result = await globalThis.LaterOnLocalIndex.search(query, { sources: mode.sources, bookmarkConfig: stored.laterOnBookmarkConfig, bookmarkPermission, isCurrent });
+        if (!isCurrent()) return cancelled();
         // A pending source revision means the prepared snapshot is behind the
         // libraries; the worker merges current Reading and native bookmarks.
-        const needsBookmarks = bookmarkPermission === true && stored.laterOnBookmarkConfig?.enabled === true;
-        if (result && !(needsBookmarks && result.bookmarkVariant !== true) && !stored.laterOnQuickSearchPending?.revision) return result;
-      } catch {}
+        const needsBookmarks = mode.sources.includes('bookmarks') && bookmarkPermission === true && stored.laterOnBookmarkConfig?.enabled === true;
+        if (result?.sourcesFiltered === true && !(needsBookmarks && result.bookmarkVariant !== true) && !stored.laterOnQuickSearchPending?.revision) return result;
+      } catch { if (!isCurrent()) return cancelled(); }
     }
-    return send({ type: 'QUICK_SWITCHER_SEARCH', query, active: !!active });
+    if (!isCurrent()) return cancelled();
+    return send({ type: 'QUICK_SWITCHER_SEARCH', query, modeId: mode.id, active: !!active });
   }
   function pageOptions() {
     try {
@@ -60,11 +89,15 @@
         styles[key] = [...sheet.cssRules].map(rule => rule.cssText).join('\n');
       }
       return { styles, theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light',
-        language: document.documentElement.lang === 'en' ? 'en' : 'zh-CN' };
+        language: document.documentElement.lang === 'en' ? 'en' : 'zh-CN', modes: knownModes };
     } catch { return null; }
   }
   chrome.runtime.onMessage.addListener((message, _sender, respond) => {
-    if (message?.type === 'LATERON_QUICK_SWITCHER_CHANGED') { active?.refresh?.(); return; }
+    if (message?.type === 'LATERON_QUICK_SWITCHER_CHANGED') {
+      if (message.change === 'tabs' && !message.fresh
+        && !modeTools.get(knownModes || displayedModes, active?.modeId).sources.includes('tabs')) return;
+      active?.refresh?.(); return;
+    }
     if (message?.type !== 'LATERON_QUICK_SWITCHER_SHOW') return;
     const display = () => {
       if (message.options?.expiresAt && Date.now() >= message.options.expiresAt) { respond({ ok: false }); return; }
@@ -79,9 +112,10 @@
     }
     display();
   });
-  if (ownPage || !globalThis.LaterOnContentPreferences) chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'local' && ['laterOnItems', 'laterOnProjects', 'laterOnBookmarkConfig', 'laterOnBookmarkSearchState', 'laterOnQuickSearchPending',
-      ...(!globalThis.LaterOnContentPreferences ? ['laterOnBookmarkState'] : [])].some(key => changes[key])) active?.refresh?.();
+  if (ownPage) chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local') return;
+    if (changes.laterOnSettings) { settingsVersion++; applyModes(changes.laterOnSettings.newValue?.quickSwitcherModes); }
+    if (['laterOnItems', 'laterOnProjects', 'laterOnBookmarkConfig', 'laterOnBookmarkSearchState', 'laterOnQuickSearchPending'].some(key => changes[key])) active?.refresh?.();
   });
   document.addEventListener('click', event => {
     if (!ownPage || globalThis.LaterOnSidepanelSwitch?.isActive?.() === false) return;

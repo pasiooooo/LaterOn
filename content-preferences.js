@@ -8,7 +8,8 @@
   const subscribers = new Set();
   const snapshot = settings => ({ windowShortcutFallback: settings?.windowShortcutFallback !== false,
     theme: ['light', 'dark', 'system'].includes(settings?.theme) ? settings.theme : 'light',
-    language: settings?.language === 'en' ? 'en' : 'zh-CN' });
+    language: settings?.language === 'en' ? 'en' : 'zh-CN',
+    ...(globalThis.LaterOnQuickModes ? { quickSwitcherModes: LaterOnQuickModes.normalize(settings?.quickSwitcherModes) } : {}) });
   function apply(settings) {
     value = snapshot(settings);
     for (const subscriber of subscribers) { try { subscriber(value); } catch {} }

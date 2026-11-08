@@ -35,16 +35,28 @@
     return merged;
   }
 
-  function set(patch) {
-    return get().then((current) =>
+  let localWriteQueue = Promise.resolve();
+  function set(patch, options = {}) {
+    if (chrome.runtime?.id && typeof chrome.runtime.sendMessage === "function") {
+      return chrome.runtime.sendMessage({ type: "LATERON_SETTINGS_SET", patch,
+        ...(options.order !== undefined ? { order: options.order } : {}) }).then(response => {
+        if (response?.ok !== true) throw Error(response?.error || "settingsWriteFailed");
+        return response.settings;
+      });
+    }
+    // Standalone renderers without a runtime still serialize all local writers.
+    const pending = localWriteQueue.then(() => get()).then((current) =>
       chrome.storage.local.set({
         [KEY]: {
           ...current,
           ...patch,
           ...(Object.prototype.hasOwnProperty.call(patch, "askFolderOnSingle") ? { askFolderOnSingleOptIn: true } : {})
-        }
+        },
+        ...(options.order !== undefined ? { laterOnOrder: options.order } : {})
       })
     );
+    localWriteQueue = pending.catch(() => {});
+    return pending;
   }
 
   function watch(callback) {

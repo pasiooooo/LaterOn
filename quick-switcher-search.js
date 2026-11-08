@@ -10,12 +10,29 @@
   // priority, so worker messages (show, search, open) run first. Do not use
   // scheduler.yield(): its continuation is boosted ahead of ordinary tasks,
   // which can starve extension messages for seconds during a large build.
-  const BUDGET = 6;
+  const BUDGET = 6, BACKGROUND_WAIT = 32;
   function yieldTask() {
     if (now() - lastYield < BUDGET) return Promise.resolve();
     const done = () => { lastYield = now(); };
     if (typeof globalThis.scheduler?.postTask === 'function') {
-      return globalThis.scheduler.postTask(done, { priority: 'background' }).catch(done);
+      // A background task can remain queued indefinitely in a busy worker.
+      // An ordinary timer bounds this pause without removing CPU yields or
+      // promoting every maintenance continuation ahead of worker messages.
+      return new Promise(resolve => {
+        let settled = false, controller = null;
+        const finish = () => {
+          if (settled) return;
+          settled = true; clearTimeout(timer); done(); resolve();
+        };
+        const timer = setTimeout(() => {
+          finish();
+          try { controller?.abort(); } catch {}
+        }, BACKGROUND_WAIT);
+        try {
+          if (typeof globalThis.AbortController === 'function') controller = new globalThis.AbortController();
+          Promise.resolve(globalThis.scheduler.postTask(finish, { priority: 'background', ...(controller ? { signal: controller.signal } : {}) })).catch(finish);
+        } catch { finish(); }
+      });
     }
     if (typeof MessageChannel === 'function') {
       if (!channel) {
@@ -60,8 +77,9 @@
       locations: [...entry.projectNames || [], ...entry.folderNames || []].map(fold),
       inbox: entry.readingIds?.length && !entry.projectNames?.length ? '等待整理 inbox' : '' };
   }
-  function* construct({ items = [], projects = [], bookmarks = {}, bookmarkConfig = {} } = {}) {
-    const all = new Map(), names = new Map((Array.isArray(projects) ? projects : []).filter(Boolean).map(project => [project.id, text(project.name, 500)]));
+  function* construct({ items = [], projects = [], bookmarks = {}, bookmarkConfig = {}, sources = ['reading', 'bookmarks'] } = {}) {
+    const selected = new Set(Array.isArray(sources) ? sources : ['reading', 'bookmarks']);
+    const all = new Map(), names = new Map((selected.has('reading') && Array.isArray(projects) ? projects : []).filter(Boolean).map(project => [project.id, text(project.name, 500)]));
     const priorities = new Map();
     let work = 0;
     function record(url) {
@@ -77,7 +95,7 @@
       unique(entry.aliases, value);
       if (priority > (priorities.get(entry.url) || 0)) { entry.title = value; priorities.set(entry.url, priority); }
     }
-    for (const item of Array.isArray(items) ? items : []) {
+    for (const item of selected.has('reading') && Array.isArray(items) ? items : []) {
       if (++work % 250 === 0) yield;
       if (!item) continue;
       const url = pageUrl(item.url);
@@ -90,7 +108,7 @@
       if (text(item.source, 200)) entry.source = text(item.source, 200);
       entry.savedAt = Math.max(entry.savedAt, timestamp(item.savedAt));
     }
-    const enabled = bookmarkConfig?.enabled === true && bookmarks?.enabled === true && !bookmarks.error
+    const enabled = selected.has('bookmarks') && bookmarkConfig?.enabled === true && bookmarks?.enabled === true && !bookmarks.error
       && (bookmarkConfig.scopeId || null) === (bookmarks.scopeId || null);
     if (enabled) {
       const nodes = (Array.isArray(bookmarks.nodes) ? bookmarks.nodes : []).filter(Boolean);
@@ -230,5 +248,60 @@
     if (!normalized) { normalized = index.map(fields); prepared.set(index, normalized); }
     return normalized;
   }
-  globalThis.LaterOnQuickSearch = { build, buildAsync, search, searchRecords, fields, preparedFields, fold, text, yieldTask };
+  // Tabs are a native session model. This API is never used by a persistent
+  // library writer and retains neither page bodies nor favIconUrl payloads.
+  function tabUrl(value) {
+    try { return typeof value === 'string' && value ? new URL(value).href : ''; } catch { return ''; }
+  }
+  function buildTabs(tabs = []) {
+    const all = new Map();
+    const ordered = [...tabs].filter(tab => Number.isInteger(tab?.id) && tab.id >= 0)
+      .sort((a, b) => timestamp(b.lastAccessed) - timestamp(a.lastAccessed) || Number(b.active) - Number(a.active) || a.id - b.id);
+    for (const tab of ordered) {
+      const url = tabUrl(tab.pendingUrl || tab.url); if (!url) continue;
+      let entry = all.get(url);
+      if (!entry) {
+        const parsed = new URL(url), source = parsed.hostname.replace(/^www\./, '') || parsed.protocol.slice(0, -1);
+        entry = { id: `tab:${tab.id}:${encodeURIComponent(url)}`, url, title: text(tab.title) || url, source,
+          tabIds: [], readingIds: [], bookmarkIds: [], projectNames: [], folderNames: [], aliases: [], savedAt: 0 };
+        all.set(url, entry);
+      }
+      unique(entry.tabIds, tab.id); unique(entry.aliases, text(tab.title));
+      entry.savedAt = Math.max(entry.savedAt, timestamp(tab.lastAccessed));
+    }
+    const index = [...all.values()]; prepared.set(index, index.map(fields)); recentOrder.add(index); return index;
+  }
+  function matchAll(index, query) {
+    const phrase = fold(text(query, 512)), terms = [...new Set(phrase.split(/\s+/).filter(Boolean))];
+    const normalized = preparedFields(index), hits = [];
+    for (let i = 0; i < index.length; i++) {
+      const value = score(index[i], normalized[i], phrase, terms);
+      if (value !== null) hits.push({ ...index[i], score: value });
+    }
+    return hits;
+  }
+  function mergeTabs(tabIndex, lookupEntries = [], sources = ['tabs', 'reading', 'bookmarks']) {
+    const byUrl = new Map(lookupEntries.map(row => [row.entry?.url, row]));
+    const index = [], normalized = [];
+    for (const tab of tabIndex) {
+      const lookup = byUrl.get(tab.url), library = lookup?.entry;
+      if (!library) { index.push(tab); normalized.push(fields(tab)); continue; }
+      const entry = { ...library, tabIds: [...tab.tabIds],
+        readingIds: sources.includes('reading') ? [...(library.readingIds || [])] : [],
+        bookmarkIds: sources.includes('bookmarks') ? [...(library.bookmarkIds || [])] : [],
+        projectNames: sources.includes('reading') ? [...(library.projectNames || [])] : [],
+        folderNames: sources.includes('bookmarks') ? [...(library.folderNames || [])] : [],
+        aliases: [...new Set([...(library.aliases || []), tab.title, ...tab.aliases])], savedAt: Math.max(library.savedAt || 0, tab.savedAt) };
+      const values = lookup.values || fields(library), native = fields(tab);
+      index.push(entry); normalized.push({ ...values, aliases: [...new Set([...(values.aliases || []), native.title, ...native.aliases])] });
+    }
+    prepared.set(index, normalized); return index;
+  }
+  function rankScored(entries, { limit = 50 } = {}) {
+    return entries.map((entry, position) => ({ entry, position })).sort((a, b) => b.entry.score - a.entry.score
+      || (b.entry.savedAt || 0) - (a.entry.savedAt || 0) || a.entry.url.localeCompare(b.entry.url) || a.position - b.position)
+      .slice(0, maximumFor(limit)).map(hit => hit.entry);
+  }
+  globalThis.LaterOnQuickSearch = { build, buildAsync, search, searchRecords, fields, preparedFields, fold, text, yieldTask,
+    pageUrl, tabUrl, buildTabs, matchAll, mergeTabs, rankScored };
 })();

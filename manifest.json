@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "version": "1.74.3",
+  "version": "1.74.4",
   "default_locale": "zh_CN",
   "minimum_chrome_version": "121",
   "optional_permissions": ["bookmarks"],
@@ -13,6 +13,7 @@
     "alarms",
     "scripting",
     "tabs",
+    "favicon",
     "sidePanel",
     "contextMenus"
   ],
@@ -22,7 +23,7 @@
   ],
   "content_scripts": [{
     "matches": ["http://*/*", "https://*/*"],
-    "js": ["content-preferences.js"],
+    "js": ["quick-switcher-modes.js", "content-preferences.js"],
     "run_at": "document_start",
     "all_frames": true
   }, {
@@ -96,7 +97,8 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "icon128.png"
+        "icon128.png",
+        "_favicon/*"
       ],
       "matches": [
         "http://*/*",

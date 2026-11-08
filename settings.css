@@ -121,6 +121,23 @@ body {
 .setting-action:hover { background: var(--btn-soft); }
 .setting-action.danger { color: #df4c31; border-color: rgba(223,76,49,.3); background: var(--accent-soft); }
 .setting-action.danger:hover { background: rgba(223,76,49,.16); }
+.quick-mode-row { min-width: 0; margin: 18px 0 0; padding: 16px 0 0; border: 0; border-top: 1px solid var(--hairline); }
+.quick-mode-row legend { padding: 0 9px 0 0; color: var(--ink); font-size: 13px; font-weight: var(--weight-semibold); }
+.quick-mode-prefix { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.quick-mode-prefix-label { width: 65px; color: var(--muted); font-size: 12.5px; }
+.quick-mode-prefix .setting-select { min-width: 112px; padding-top: 8px; padding-bottom: 8px; }
+.quick-mode-default-trigger { color: var(--muted); font-size: 12.5px; }
+.quick-mode-custom { width: 140px; min-width: 0; box-sizing: border-box; border: 1px solid var(--hairline-2); border-radius: 10px; padding: 8px 10px; background: var(--field); color: var(--field-text); font: inherit; font-size: 13px; }
+.quick-mode-custom:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.quick-mode-sources { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 13px; }
+.quick-mode-sources label { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); font-size: 12.5px; cursor: pointer; }
+.quick-mode-sources input { margin: 0; width: 15px; height: 15px; accent-color: var(--accent); }
+.quick-mode-sources input:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.quick-mode-row.has-error legend, .quick-modes-feedback[data-phase="error"] { color: var(--danger, #c53830); }
+.quick-modes-note { margin-top: 18px; }
+.quick-modes-actions { margin-top: 12px; }
+.quick-modes-feedback { min-height: 1.7em; margin: 10px 0 0; }
+#quickModesSave:disabled { opacity: .5; cursor: default; }
 .data-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .danger-row { align-items: flex-start; }
 .danger-row .setting-label strong { color: #df4c31; }

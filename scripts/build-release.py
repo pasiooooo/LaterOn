@@ -57,6 +57,8 @@ RUNTIME_FILES = (
     "keyboard-shortcuts.js",
     "quick-switcher-background.js",
     "quick-switcher-search.js",
+    "quick-switcher-modes.js",
+    "quick-switcher-mode-settings.js",
     "local-index.js",
     "quick-switcher-ui.js",
     "quick-switcher-styles.js",
@@ -68,6 +70,7 @@ RUNTIME_FILES = (
     "settings.css",
     "settings.html",
     "settings.js",
+    "settings-background.js",
     "sidepanel.css",
     "sidepanel.html",
     "sidepanel.js",
@@ -137,8 +140,11 @@ def validate_manifest(files: list[Path]) -> str:
     referenced.update(manifest.get("action", {}).get("default_icon", {}).values())
     for script in manifest.get("content_scripts", []):
         referenced.update(script.get("js", []) + script.get("css", []))
+    # Chrome serves this endpoint itself when the favicon permission is present.
+    # All ordinary resources must still be real, allowlisted package files.
+    generated_resources = {"_favicon/*"} if "favicon" in manifest.get("permissions", []) else set()
     for group in manifest.get("web_accessible_resources", []):
-        referenced.update(group.get("resources", []))
+        referenced.update(resource for resource in group.get("resources", []) if resource not in generated_resources)
 
     missing = sorted(path for path in referenced if path and path not in names)
     if missing:

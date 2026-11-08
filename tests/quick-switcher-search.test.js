@@ -91,4 +91,24 @@ assert.equal(search(large, 'article/4321').results[0].url, 'https://example.test
 assert.equal(search(large, '', { limit: 5000 }).results.length, 100, 'Caller limits cannot produce an unbounded DOM payload');
 assert.equal(search([], 'anything').total, 0);
 assert.equal(build({ items: null, projects: null, bookmarks: null, bookmarkConfig: null }).length, 0);
+const readingOnly = build({ ...input, sources: ['reading'] });
+const bookOnly = build({ ...input, sources: ['bookmarks'] });
+assert(readingOnly.every(entry => !entry.bookmarkIds.length && !entry.folderNames.length));
+assert(bookOnly.every(entry => !entry.readingIds.length && !entry.projectNames.length));
+assert.equal(search(bookOnly, '博士').total, 0, 'Book-only never borrows Reading project terms');
+assert.equal(search(bookOnly, '阅读 工作流').total, 0, 'Book-only never borrows a Reading title alias');
+assert.equal(search(readingOnly, '长期研究入口').total, 0, 'Reading-only never borrows native bookmark titles');
+const liveTabs = context.LaterOnQuickSearch.buildTabs([
+  { id: 2, url: 'https://example.com/paper', title: 'NativeToken', lastAccessed: 20, projectNames: ['Not native data'] },
+  { id: 3, url: 'https://example.com/paper', title: 'Another native title', lastAccessed: 10 },
+  { id: 4, url: 'chrome://settings/', title: 'Settings', lastAccessed: 1 },
+  { id: -1, url: 'https://invalid.test/', title: 'No native id' }
+]);
+assert.equal(liveTabs.length, 2); assert.deepEqual(Array.from(liveTabs[0].tabIds), [2, 3]);
+assert.equal(search(liveTabs, 'Not native data').total, 0, 'Tabs-only matches native titles/URLs, not injected library-shaped fields');
+assert.equal(search(liveTabs, 'Settings').results[0].url, 'chrome://settings/', 'Protected native tabs remain searchable');
+const lookup = [{ entry: readingOnly.find(entry => entry.url === 'https://example.com/paper'), libraryScore: null }];
+const joined = context.LaterOnQuickSearch.mergeTabs(liveTabs, lookup, ['tabs', 'reading']);
+assert.equal(context.LaterOnQuickSearch.matchAll(joined, 'NativeToken 博士').length, 1, 'A URL can match across its selected native and Reading fields');
+assert.equal(joined[0].title, lookup[0].entry.title, 'Library title stays visible while native aliases participate in search');
 console.log('PASS quick-switcher search: cross-library deduplication, scopes, all reading states, CJK/Latin ranking, title preservation, lean serialization and 10,000-page bounds');

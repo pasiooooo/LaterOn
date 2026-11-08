@@ -9,6 +9,7 @@
     <title>LaterOn · 设置</title>
     <link rel="icon" href="icon128.png" type="image/png" />
     <script src="appearance.js"></script>
+    <script src="quick-switcher-modes.js"></script>
     <script src="picker-keyboard-guard.js" defer></script>
     <script src="keyboard-shortcuts.js" defer></script>
     <script src="quick-switcher-ui.js" defer></script>
@@ -96,7 +97,7 @@
           <h2 data-i18n="shortcuts">快捷键</h2>
           <p class="setting-note" data-i18n="shortcutsNote">在 Chrome 中使用快捷键添加当前网页、所选网页、当前标签组或整窗标签。Chrome 不允许扩展在内部修改快捷键，请在 Chrome 的快捷键页面设置。</p>
           <div class="setting-row">
-            <div class="setting-label"><strong data-i18n="quickSwitcher">快速切换</strong><span id="cmdQuickSwitcher" data-i18n="loading">读取中…</span><span data-i18n="quickSwitcherHint">搜索阅读库与书签库中的所有已存网页，优先切换到已打开的标签页。</span></div>
+            <div class="setting-label"><strong data-i18n="quickSwitcher">快速切换</strong><span id="cmdQuickSwitcher" data-i18n="loading">读取中…</span><span data-i18n="quickSwitcherHint">搜索已打开的标签页、阅读库和书签库，按引导符切换搜索范围。</span></div>
             <button class="setting-action" type="button" data-quick-switcher data-i18n="tryQuickSwitcher">试用快速切换</button>
           </div>
           <div class="setting-row">
@@ -182,6 +183,20 @@
           </form>
         </section>
 
+        <section class="settings-group" id="quickModes">
+          <h2 data-i18n="quickModesTitle">快速切换 · 搜索模式</h2>
+          <p class="setting-note" data-i18n="quickModesHint">每次唤起先使用默认模式。按引导符或点击模式按钮切换范围，每种模式都可任意组合下列来源。</p>
+          <form id="quickModesForm" novalidate>
+            <div id="quickModesRows"></div>
+            <p class="setting-note quick-modes-note" data-i18n="quickModesPrefixHint">自定义引导符可用 1–8 个字符，区分大小写；只识别搜索框开头的引导符，词语之间的空格照常输入。</p>
+            <div class="data-actions quick-modes-actions">
+              <button id="quickModesSave" class="setting-action" type="submit" data-i18n="quickModesSave">保存模式</button>
+              <button id="quickModesReset" class="setting-action" type="button" data-i18n="quickModesReset">恢复默认</button>
+            </div>
+            <p id="quickModesFeedback" class="setting-note quick-modes-feedback" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+
         <section class="settings-group">
           <h2 data-i18n="data">数据</h2>
           <div class="setting-row">
@@ -209,6 +224,7 @@
         </section>
       </main>
     </div>
+    <script src="quick-switcher-mode-settings.js"></script>
     <script src="settings.js"></script>
     <script src="webdav-settings.js"></script>
     <script src="import-metadata-settings.js"></script>

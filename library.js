@@ -818,11 +818,13 @@ sortSelect.addEventListener("change", () => {
   saveSortSetting();
 });
 async function saveSortSetting() {
+  const requestedSort = sort;
   try {
+    if (window.LaterOnSettings) { await window.LaterOnSettings.set({ defaultSort: requestedSort }); return; }
     const stored = await chrome.storage.local.get(SETTINGS_KEY);
     const settings = stored[SETTINGS_KEY] || {};
-    if (settings.defaultSort === sort) return;
-    await chrome.storage.local.set({ [SETTINGS_KEY]: { ...settings, defaultSort: sort } });
+    if (settings.defaultSort === requestedSort) return;
+    await chrome.storage.local.set({ [SETTINGS_KEY]: { ...settings, defaultSort: requestedSort } });
   } catch { /* 存不下就算了，本次会话的排序照常用 */ }
 }
 document.addEventListener("keydown", (event) => {

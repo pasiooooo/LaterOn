@@ -14,7 +14,7 @@ const sender = tab => ({ url: tab.url, tab: { ...tab } });
 
 function fixture(patch = {}) {
   const store = { laterOnItems: [{ id: 'reading', title: 'Saved paper', url: saved, savedAt: 10, status: 'done' }],
-    laterOnProjects: [], laterOnSettings: { language: 'en', theme: 'dark' },
+    laterOnProjects: [], laterOnSettings: { language: 'en', theme: 'dark', quickSwitcherModes: [{ id: 'default', prefix: '', sources: ['reading', 'bookmarks'] }] },
     laterOnBookmarkConfig: { enabled: true, scopeId: null },
     laterOnBookmarkState: { enabled: true, scopeId: null, nodes: [{ id: 'bookmark', title: 'Bookmark only', url: 'https://book.test/' }] }, ...clone(patch) };
   let granted = true, nextTab = 100;
@@ -47,7 +47,7 @@ function fixture(patch = {}) {
     setTimeout(fn, delay) { const id = ++timerId; timers.set(id, { fn, delay }); return id; }, clearTimeout(id) { timers.delete(id); },
     async fetch(url) { calls.fetches.push(url); return { ok: true, async text() { return `/* ${url} */`; } }; },
     async saveAllTabsInWindow(...args) { calls.legacy.push(args); } });
-  for (const file of ['url-utils.js', 'quick-switcher-search.js', 'quick-switcher-background.js']) vm.runInContext(read(file), context);
+  for (const file of ['url-utils.js', 'quick-switcher-modes.js', 'quick-switcher-search.js', 'quick-switcher-background.js']) vm.runInContext(read(file), context);
   return { store, chrome, tabs, windows, nativeNodes, calls, timers, clock, context, api: context.LaterOnQuickSwitcher,
     revoke() { granted = false; chrome.permissions.onRemoved.emit({ permissions: ['bookmarks'] }); },
     grant() { granted = true; chrome.permissions.onAdded.emit({ permissions: ['bookmarks'] }); },
@@ -57,12 +57,12 @@ function fixture(patch = {}) {
 (async () => {
   const cache = fixture();
   for (const query of ['', 'saved', 'saved paper', 'book']) await cache.api.handle({ type: 'QUICK_SWITCHER_SEARCH', query }, sender(sourceTab()));
-  assert.equal(cache.calls.gets.filter(Array.isArray).length, 1, 'Typing searches reuses one lean index instead of rereading the library per character');
+  assert.equal(cache.calls.gets.filter(keys => Array.isArray(keys) && keys.includes('laterOnItems')).length, 1, 'Typing searches reuses one lean index instead of rereading the library per character');
   assert.equal(cache.calls.fetches.length, 0, 'Searching uses local data and does not fetch covers or sites');
   cache.store.laterOnItems.push({ id: 'later', title: 'Added later', url: 'https://later.test/' });
   cache.chrome.storage.onChanged.emit({ laterOnItems: { newValue: cache.store.laterOnItems } }, 'local');
   assert.equal((await cache.api.handle({ type: 'QUICK_SWITCHER_SEARCH', query: 'Added later' }, sender(sourceTab()))).total, 1);
-  assert.equal(cache.calls.gets.filter(Array.isArray).length, 2, 'Collection changes invalidate the index');
+  assert.equal(cache.calls.gets.filter(keys => Array.isArray(keys) && keys.includes('laterOnItems')).length, 2, 'Collection changes invalidate the index');
   const bookId = (await cache.api.handle({ type: 'QUICK_SWITCHER_SEARCH', query: 'Bookmark only' }, sender(sourceTab()))).results[0].id;
   cache.revoke();
   await assert.rejects(cache.api.handle({ type: 'QUICK_SWITCHER_OPEN', id: bookId }, sender(sourceTab())), /quickSwitcherMissing/, 'A permission-revoked result cannot open from an old displayed slice');

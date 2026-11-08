@@ -51,6 +51,7 @@ function worker() {
   const store = {
     laterOnItems: [{ id: 'r0', title: 'Saved reading', url: SHARED, savedAt: 5000 }, ...filler],
     laterOnProjects: [], laterOnBookmarkConfig: { enabled: true, scopeId: null },
+    laterOnSettings: { quickSwitcherModes: [{ id: 'default', prefix: '', sources: ['reading', 'bookmarks'] }] },
     laterOnBookmarkSearchState: { enabled: true, scopeId: null, folders: [{ id: '1', parentId: '0', title: 'Bar' }], nodes: plain(native.slice(1)) }
   };
   const find = id => { const node = native.find(entry => entry.id === id); if (!node) throw Error(`Can't find bookmark for id.`); return plain(node); };
@@ -74,7 +75,7 @@ function worker() {
   };
   const context = vm.createContext({ indexedDB: new IDBFactory(), IDBKeyRange, chrome, URL, setTimeout, clearTimeout, console,
     scheduler: clock.api, LaterOnContentMessages: { broadcast() {} } });
-  for (const file of ['url-utils.js', 'quick-switcher-search.js', 'local-index.js', 'quick-switcher-background.js'])
+  for (const file of ['url-utils.js', 'quick-switcher-modes.js', 'quick-switcher-search.js', 'local-index.js', 'quick-switcher-background.js'])
     vm.runInContext(read(file), context, { filename: file });
   // Live Reading builds are the buildAsync calls made by the worker itself;
   // persistent builds call it from local-index.js.
@@ -157,8 +158,8 @@ const items = (w, edit) => w.store.laterOnItems.map(item => item.id === 'r0' ? {
   assert.deepEqual(plain(shared.readingIds), ['r0'], 'The shared URL keeps its Reading membership');
   assert.deepEqual(plain(shared.bookmarkIds), ['b1'], 'The shared URL keeps its live-verified bookmark membership');
 
-  // A Reading change arriving while the live model is being built: the
-  // pending query answers from the newest data.
+  // A Reading change arriving while the live model is being built cancels
+  // the old source reply. The ensuing client refresh uses the newest data.
   w.clock.suspend();
   await tick(20);
   w.emit({ laterOnItems: items(w, { title: 'Version one', titleEdited: true }) });
@@ -167,7 +168,10 @@ const items = (w, edit) => w.store.laterOnItems.map(item => item.id === 'r0' ? {
   await within(holding.reached, 1500, 'The live Reading build reaches an ordinary-priority turn');
   w.emit({ laterOnItems: items(w, { title: 'Version two', titleEdited: true }) });
   holding.release();
-  const latest = await within(racing, 1500, 'A query whose live Reading model changed mid-build did not finish');
+  const cancelled = await within(racing, 1500, 'A query whose live Reading model changed mid-build did not finish');
+  assert.equal(cancelled.cancelled, true, 'A reply from an older source generation is cancelled');
+  assert.equal(cancelled.results.length, 0, 'The cancelled source reply exposes no stale rows');
+  const latest = await within(w.search('Version'), 1500, 'The refreshed query did not finish from the newest Reading model');
   assert.equal(hit(latest, SHARED)?.title, 'Version two', 'The query answers from the Reading data current when it finished');
   assert(!latest.results.some(entry => entry.title === 'Version one'), 'The superseded model is never returned');
   assert.deepEqual(plain(hit(latest, SHARED).bookmarkIds), ['b1']);

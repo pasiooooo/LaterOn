@@ -9,7 +9,7 @@ const tick = () => new Promise(resolve => setTimeout(resolve, 10));
 const event = () => ({ addListener() {} });
 function installIndex(f, database) {
   Object.assign(f.ctx, { indexedDB: database, IDBKeyRange });
-  for (const file of ['url-utils.js', 'quick-switcher-search.js', 'local-index.js']) vm.runInContext(read(file), f.ctx);
+  for (const file of ['url-utils.js', 'quick-switcher-modes.js', 'quick-switcher-search.js', 'local-index.js']) vm.runInContext(read(file), f.ctx);
   f.native.getChildren = async id => f.nodes.filter(n => n.parentId === id);
   f.native.getRecent = async count => f.nodes.filter(n => n.url).slice().reverse().slice(0, count);
   f.native.search = async query => f.nodes.filter(n => n.url && (typeof query === 'object'

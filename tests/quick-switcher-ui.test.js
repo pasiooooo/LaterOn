@@ -17,6 +17,7 @@ function fixture() {
     url: 'https://site.test/', runScripts: 'outside-only', pretendToBeVisual: true, virtualConsole: vc
   });
   const w = dom.window;
+  w.chrome = { runtime: { getURL: file => `chrome-extension://fixture/${file}` } };
   w.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
   w.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
   w.eval(read('picker-keyboard-guard.js'));
@@ -27,7 +28,7 @@ function fixture() {
   const capture = w.LaterOnPickerKeyboard.capture;
   w.LaterOnPickerKeyboard.capture = (handle, active) => { keyboard = handle; return capture(handle, active); };
   for (const target of [w, w.document]) for (const type of ['keydown', 'keypress', 'keyup']) target.addEventListener(type, event => seen.push(`${type}:${event.key}`), true);
-  w.eval(read('quick-switcher-ui.js'));
+  w.eval(read('quick-switcher-modes.js')); w.eval(read('quick-switcher-ui.js'));
   const open = options => w.LaterOnQuickSwitcherUI.open({ language: 'en', theme: 'light', styles: { theme: read('theme-vars.css'), component: read('quick-switcher.css') }, ...options });
   const key = (node, name, extra = {}) => {
     const event = new w.KeyboardEvent('keydown', { key: name, code: name.length === 1 ? `Key${name.toUpperCase()}` : name, bubbles: true, composed: true, cancelable: true, ...extra });
@@ -43,7 +44,7 @@ function fixture() {
   try {
     const original = f.w.document.querySelector('#site-search'); original.focus();
     const opened = [], closed = [];
-    const api = f.open({ search: async () => ({ results: [result('one'), result('two', { bookmarkIds: ['native-2'], folderNames: ['理论基础 / 方法'], title: '<img src=x onerror=alert(1)> & research' })], total: 2 }),
+    const api = f.open({ search: async () => ({ results: [result('one', { tabIds: [1] }), result('two', { tabIds: [2], bookmarkIds: ['native-2'], folderNames: ['理论基础 / 方法'], title: '<img src=x onerror=alert(1)> & research' })], total: 2 }),
       onOpen: async (...args) => { opened.push(args); }, onClose: () => closed.push(true) });
     const s = api.shadow, input = s.querySelector('input');
     await waitFor(() => s.querySelectorAll('[role="option"]').length === 2, 'Initial recent results render');
@@ -52,7 +53,8 @@ function fixture() {
     assert.equal(s.activeElement, input, 'Typing starts in the query input');
     assert.equal(input.getAttribute('role'), 'combobox');
     assert.equal(input.getAttribute('aria-activedescendant'), s.querySelector('[aria-selected="true"]').id);
-    assert.equal(s.querySelectorAll('img').length, 0, 'No result favicon or cover starts remote requests');
+    assert.equal(s.querySelectorAll('img').length, 2, 'Only the returned result slice requests cached favicons');
+    assert([...s.querySelectorAll('img')].every(image => image.src.startsWith('chrome-extension://fixture/_favicon/?pageUrl=')), 'Icons use the extension cached favicon endpoint');
     assert.equal(s.querySelectorAll('.qs-badge-reading').length, 2);
     assert.equal(s.querySelectorAll('.qs-badge-bookmark').length, 1, 'A duplicate has both membership labels');
     assert.equal(s.querySelectorAll('.qs-result-title')[1].textContent, '<img src=x onerror=alert(1)> & research', 'Untrusted title remains text');
@@ -63,9 +65,13 @@ function fixture() {
     assert.deepEqual(f.seen, [], 'Early keyboard ownership isolates page capture handlers');
     assert.equal(f.key(input, 'ArrowDown').defaultPrevented, true);
     assert.equal(s.querySelector('[aria-selected="true"]').id, 'lateron-switcher-option-1');
-    f.key(input, 'Tab'); assert.equal(s.activeElement, s.querySelector('.qs-close'));
-    f.key(s.activeElement, 'Tab'); assert.equal(s.activeElement, input, 'Tab wraps inside the dialog');
-    f.key(input, 'Tab', { shiftKey: true }); assert.equal(s.activeElement, s.querySelector('.qs-close'));
+    f.key(input, 'Tab'); assert.equal(api.modeId, 'mode1'); assert.equal(s.activeElement, input, 'Unmodified Tab selects the configured mode without moving typing focus');
+    await waitFor(() => s.querySelectorAll('.qs-result').length === 2, 'Live tabs render in the selected mode');
+    assert.equal(s.querySelectorAll('.qs-badge-reading').length, 0, 'Excluded source badges are hidden');
+    s.querySelector('[data-mode-id="default"]').click();
+    await waitFor(() => s.querySelectorAll('.qs-badge-reading').length === 2, 'Visible mode control restores All');
+    f.key(input, 'ArrowDown');
+    f.key(input, 'Tab', { shiftKey: true }); assert.equal(s.activeElement, s.querySelector('[data-mode-id="mode3"]'), 'Shift+Tab retains normal modal focus navigation');
     input.focus();
     f.key(input, 'Enter', { isComposing: true }); f.key(input, 'Escape', { keyCode: 229 });
     await tick(); assert.equal(opened.length, 0); assert.equal(api.host.isConnected, true, 'IME Enter/Escape never submit or dismiss');
@@ -203,5 +209,118 @@ function fixture() {
     failure.key(second.shadow.querySelector('input'), 'Escape'); assert.equal(failure.w.LaterOnQuickSwitcherUI.active, null);
     assert.deepEqual(failure.errors, []);
   } finally { failure.w.close(); }
-  console.log('PASS Quick Switcher UI: isolated shared themes, compact dual membership, keyboard/focus/IME, async races, errors/retry, safe text and reinjection');
+  const modes = fixture();
+  try {
+    const searched = [];
+    const dual = result('both', { tabIds: [7], bookmarkIds: ['bm7'], projectNames: ['Project'], folderNames: ['Folder'] });
+    const api = modes.open({ search: async (query, context) => { searched.push({ query, ...context }); return { results: [dual], total: 1 }; }, onOpen: async () => {} });
+    const s = api.shadow, input = s.querySelector('input');
+    await waitFor(() => searched.length === 1 && s.querySelector('.qs-result'), 'All starts with a usable result');
+    assert.equal(api.modeId, 'default'); assert.equal(s.querySelectorAll('.qs-mode').length, 4);
+    assert.deepEqual(Array.from(searched[0].sources), ['tabs', 'reading', 'bookmarks']);
+    input.value = ' two words'; input.dispatchEvent(new modes.w.Event('input'));
+    await waitFor(() => searched.at(-1).query === 'two words', 'Leading space chooses Reading and preserves the following query');
+    assert.equal(api.modeId, 'mode2'); assert.equal(input.value, 'two words');
+    assert.equal(s.querySelectorAll('.qs-badge-reading').length, 1); assert.equal(s.querySelectorAll('.qs-badge-tabs, .qs-badge-bookmark').length, 0);
+    assert.equal(s.querySelector('.qs-context').textContent, 'Project', 'Other-source contexts do not leak into the selected scope');
+    input.value = 'two words more'; input.dispatchEvent(new modes.w.Event('input'));
+    await waitFor(() => searched.at(-1).query === 'two words more', 'Ordinary multiword spaces remain search text');
+    assert.equal(api.modeId, 'mode2');
+    input.value = "' folder space"; input.dispatchEvent(new modes.w.Event('input'));
+    await waitFor(() => searched.at(-1).query === 'folder space' && s.querySelector('.qs-badge-bookmark'), 'Pasted leading apostrophe chooses Bookmarks');
+    assert.equal(api.modeId, 'mode3'); assert.equal(s.querySelector('.qs-context').textContent, 'Folder');
+    input.value += ' more'; input.dispatchEvent(new modes.w.Event('input'));
+    await waitFor(() => searched.at(-1).query === 'folder space more', 'A query separator after a pasted trigger cannot switch again on the next keystroke');
+    assert.equal(api.modeId, 'mode3');
+    input.value = ''; input.dispatchEvent(new modes.w.Event('input')); modes.key(input, 'Backspace');
+    assert.equal(api.modeId, 'default', 'Backspace in an empty query returns to the default mode');
+    input.value = 'kept query'; modes.key(input, 'Tab');
+    assert.equal(api.modeId, 'mode1'); assert.equal(input.value, 'kept query'); assert.equal(s.activeElement, input);
+    const custom = modes.w.LaterOnQuickModes.normalize(); custom[1].prefix = '@'; custom[2].prefix = ':r'; custom[3].prefix = ':b';
+    input.value = ':b late query'; api.setModes(custom);
+    await waitFor(() => searched.at(-1).query === ':b late query' && searched.at(-1).modeId === 'mode1' && s.querySelector('.qs-badge-tabs'), 'Configuration updates preserve the current slot and query even when a new prefix matches');
+    assert.equal(api.modeId, 'mode1'); assert.equal(input.value, ':b late query');
+    input.dispatchEvent(new modes.w.Event('input'));
+    await waitFor(() => searched.at(-1).query === 'late query' && s.querySelector('.qs-badge-bookmark'), 'User input can interpret the newly configured prefix');
+    assert.equal(api.modeId, 'mode3'); assert.equal(input.value, 'late query');
+    const combinations = [['tabs'], ['reading'], ['bookmarks'], ['tabs', 'reading'], ['tabs', 'bookmarks'], ['reading', 'bookmarks'], ['tabs', 'reading', 'bookmarks']];
+    s.querySelector('[data-mode-id="mode1"]').click();
+    for (const sources of combinations) {
+      const next = modes.w.LaterOnQuickModes.normalize(custom); next[1].sources = sources; api.setModes(next);
+      await waitFor(() => JSON.stringify(Array.from(searched.at(-1).sources)) === JSON.stringify(sources) && s.querySelectorAll('.qs-badge').length === sources.length, 'Each nonempty source combination reaches search and controls its badges');
+      assert.equal(api.modeId, 'mode1'); assert.equal(input.value, 'late query');
+    }
+    input.value = 'research'; input.dispatchEvent(new modes.w.Event('input'));
+    await waitFor(() => searched.at(-1).query === 'research', 'An ordinary query is active before settings change');
+    const matchingPrefix = modes.w.LaterOnQuickModes.normalize(custom); matchingPrefix[3].prefix = 'r'; matchingPrefix[1].sources = ['reading'];
+    api.setModes(matchingPrefix);
+    assert.equal(api.modeId, 'mode1'); assert.equal(input.value, 'research', 'A new r trigger cannot truncate research or move it to Bookmarks');
+    await waitFor(() => searched.at(-1).query === 'research' && searched.at(-1).modeId === 'mode1' && searched.at(-1).sources.join(',') === 'reading' && s.querySelector('.qs-badge-reading'), 'Configuration refresh searches the preserved slot with its updated sources');
+    api.close(); const reopened = modes.open({ modes: custom, search: async () => ({ results: [], total: 0 }), onOpen: async () => {} });
+    assert.equal(reopened.modeId, 'default', 'Every invocation starts in its configured default slot'); reopened.close();
+  } finally { modes.w.close(); }
+
+  const composition = fixture();
+  try {
+    const searches = [];
+    const api = composition.open({ search: async (query, context) => { searches.push({ query, ...context }); return { results: [], total: 0 }; }, onOpen: async () => {} });
+    const input = api.shadow.querySelector('input'); await tick();
+    input.dispatchEvent(new composition.w.CompositionEvent('compositionstart'));
+    input.value = "'中文 两词"; input.dispatchEvent(new composition.w.InputEvent('input', { isComposing: true }));
+    composition.key(input, 'Tab'); await new Promise(resolve => setTimeout(resolve, 60));
+    assert.equal(api.modeId, 'default'); assert.equal(searches.length, 1, 'Composition neither changes mode nor starts partial searches');
+    input.dispatchEvent(new composition.w.CompositionEvent('compositionend'));
+    await waitFor(() => searches.length > 1, 'Completed composition can search');
+    assert.equal(api.modeId, 'mode3'); assert.equal(input.value, '中文 两词'); assert.equal(searches.at(-1).query, '中文 两词');
+    api.close();
+  } finally { composition.w.close(); }
+
+  const modeRace = fixture();
+  try {
+    const jobs = [], opened = [];
+    const api = modeRace.open({ search: (query, context) => new Promise(resolve => jobs.push({ query, ...context, resolve })), onOpen: async (row, context) => { opened.push({ row, ...context }); } });
+    jobs[0].resolve({ results: [result('old')], total: 1 });
+    await waitFor(() => api.shadow.querySelector('.qs-result'), 'Previous mode result is visible');
+    const input = api.shadow.querySelector('input'); input.value = 'same'; input.dispatchEvent(new modeRace.w.Event('input')); modeRace.key(input, 'Enter');
+    assert.equal(jobs.length, 2); modeRace.key(input, 'Tab'); assert.equal(jobs.length, 3);
+    assert.equal(api.shadow.querySelectorAll('.qs-result').length, 0, 'Switching mode immediately clears old actionable rows');
+    jobs[1].resolve({ results: [result('wrong-mode')], total: 1 }); await tick(); assert.equal(opened.length, 0, 'A pending Enter cannot open the previous mode result');
+    jobs[2].resolve({ results: [result('new-tab', { readingIds: [], tabIds: [42] })], total: 1 });
+    await waitFor(() => api.shadow.querySelector('.qs-badge-tabs'), 'Only current mode result becomes selectable');
+    modeRace.key(input, 'Enter'); await waitFor(() => opened.length === 1, 'A new Enter opens the current mode result');
+    assert.equal(opened[0].row.id, 'new-tab'); assert.equal(opened[0].modeId, 'mode1');
+    const nextApi = modeRace.open({ search: (query, context) => new Promise(resolve => jobs.push({ query, ...context, resolve })), onOpen: async (row, context) => { opened.push({ row, ...context }); } });
+    jobs[3].resolve({ results: [result('before-settings')], total: 1 });
+    await waitFor(() => nextApi.shadow.querySelector('.qs-result'), 'A new invocation is ready');
+    const nextInput = nextApi.shadow.querySelector('input'); nextInput.value = 'settings'; nextInput.dispatchEvent(new modeRace.w.Event('input')); modeRace.key(nextInput, 'Enter');
+    const newModes = modeRace.w.LaterOnQuickModes.normalize(); newModes[0].sources = ['bookmarks']; nextApi.setModes(newModes);
+    jobs[4].resolve({ results: [result('stale-source')], total: 1 }); await tick(); assert.equal(opened.length, 1, 'A same-slot source configuration change also cancels pending confirmation');
+    jobs[5].resolve({ results: [result('current-bookmark', { readingIds: [], bookmarkIds: ['native-9'] })], total: 1 });
+    await waitFor(() => nextApi.shadow.querySelector('.qs-badge-bookmark'), 'Updated source scope is ready');
+    modeRace.key(nextInput, 'Enter'); await waitFor(() => opened.length === 2, 'Only a fresh confirmation opens after settings change');
+    assert.equal(opened[1].row.id, 'current-bookmark'); assert.equal(opened[1].sources.join(','), 'bookmarks');
+  } finally { modeRace.w.close(); }
+
+  const icons = fixture();
+  try {
+    const observers = [];
+    icons.w.IntersectionObserver = class {
+      constructor(callback, options) { this.callback = callback; this.options = options; this.nodes = new Set(); observers.push(this); }
+      observe(node) { this.nodes.add(node); } unobserve(node) { this.nodes.delete(node); } disconnect() { this.nodes.clear(); }
+    };
+    const url = 'https://example.test/page?q=kept#fragment';
+    const api = icons.open({ search: async () => ({ results: [result('icon', { url }), result('native', { url: 'chrome://extensions/', readingIds: [], tabIds: [8], title: '<script>tab title</script>' }), result('unsafe', { url: 'javascript:alert(1)' })], total: 2 }), onOpen: async () => {} });
+    const s = api.shadow;
+    await waitFor(() => s.querySelectorAll('.qs-result').length === 2, 'Protected tabs remain safely visible while unsafe library URLs are rejected');
+    const image = s.querySelector('img'), fallback = image.parentElement.querySelector('.qs-site-fallback');
+    assert.equal(s.activeElement, s.querySelector('input')); assert.equal(image.hasAttribute('src'), false, 'Pending icon visibility never blocks focus or results');
+    assert(s.querySelectorAll('.qs-site-fallback svg').length === 1, 'Protected URLs use a transparent globe fallback');
+    assert.equal(s.querySelectorAll('.qs-result-title')[1].textContent, '<script>tab title</script>');
+    observers[0].callback([{ target: image, isIntersecting: true }]);
+    assert.equal(new icons.w.URL(image.src).searchParams.get('pageUrl'), url, 'Cached favicon key preserves complete URL');
+    image.dispatchEvent(new icons.w.Event('load')); assert.equal(fallback.hidden, true);
+    image.dispatchEvent(new icons.w.Event('error')); assert.equal(fallback.hidden, false); assert.equal(image.isConnected, false, 'Failed icons leave usable fallback without a broken image');
+    api.close(); assert.equal(observers[0].nodes.size, 0);
+  } finally { icons.w.close(); }
+  console.log('PASS Quick Switcher UI: source modes/prefixes, IME, stale confirmation, cached icons, protected tabs, isolated themes, keyboard/focus, resize, errors/retry and safe text');
 })().catch(error => { console.error(error); process.exitCode = 1; });
