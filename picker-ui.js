@@ -52,6 +52,33 @@
       moveTo: (name) => `移动到「${name}」`, saveTo: (name) => `添加到「${name}」`, createFailed: "新建项目失败，请重试。",
       failed: "操作失败，请重试。", search: "筛选项目，或输入新项目名…", noMatch: "没有匹配的项目，确认后将新建这个项目。", nameTooLong: "新项目名称最多 28 个字，请缩短后再确认。"
     };
+    const contextCopy = language === "en" ? {
+      allSaved: (n, name) => n === 1 ? `This page is already in “${name}”` : `All ${n} pages are already in “${name}”`,
+      pages: (n, total) => n > total
+        ? `View ${n} ${n === 1 ? "tab" : "tabs"} (${total} unique ${total === 1 ? "page" : "pages"})`
+        : `View ${n} ${n === 1 ? "page and its current project" : "pages and their current projects"}`,
+      mixed: (n, saved) => `${n} to add · ${saved} already saved`,
+      group: (name, n) => `“${name}” · ${n}`, more: (n) => `${n} more ${n === 1 ? "project" : "projects"}`,
+      allHere: "All already here", here: (n) => `${n} already here`,
+      pending: "To add", savedIn: (name) => `Already in “${name}”`,
+      keepTo: (name) => `Keep in “${name}”`, moveTo: (name) => `Move to “${name}”`,
+      addMove: (n, moved) => `Add ${n} and move ${moved} pages`,
+      preview: (n, kept, moved) => `Add ${n} · Keep ${kept} · Move ${moved}`,
+      target: (name) => `To “${name}”`, newTarget: (name) => `New project “${name}”`,
+      projectTotal: (n) => `${n} pages in this project`
+    } : {
+      allSaved: (n, name) => `这${n}篇都已在「${name}」`,
+      pages: (n, total) => n > total ? `查看 ${n} 个标签页（共 ${total} 个网页）` : `查看 ${n} 个网页及当前归属`,
+      mixed: (n, saved) => `${n}篇待添加 · ${saved}篇已存`,
+      group: (name, n) => `「${name}」· ${n}篇`, more: (n) => `另${n}个项目`,
+      allHere: "全部已在这里", here: (n) => `已在这里 ${n}篇`,
+      pending: "待添加", savedIn: (name) => `已在「${name}」`,
+      keepTo: (name) => `保留在「${name}」`, moveTo: (name) => `移入「${name}」`,
+      addMove: (n, moved) => `添加${n}篇并移入${moved}篇`,
+      preview: (n, kept, moved) => `新增${n} · 保留${kept} · 移入${moved}`,
+      target: (name) => `到「${name}」`, newTarget: (name) => `新项目「${name}」`,
+      projectTotal: (n) => `项目共${n}篇`
+    };
 
     try { window.__laterOnActivePickerClose?.(); } catch {}
     const HOST_ID = "lateron-folder-picker";
@@ -67,6 +94,13 @@
     let folders = Array.isArray(data.folders) ? data.folders.slice() : [];
     const pages = Array.isArray(data.pages) ? data.pages : [];
     const savedCount = Number(data.savedCount) || 0;
+    // This immutable snapshot describes this batch, not the whole project library.
+    const saveContext = !isPopover && data.saveContext && typeof data.saveContext === "object" ? data.saveContext : null;
+    const contextSaved = saveContext ? Math.max(0, Number(saveContext.savedCount) || 0) : 0;
+    const contextNew = saveContext ? Math.max(0, Number(saveContext.newCount) || 0) : 0;
+    const contextTotal = saveContext ? Math.max(0, Number(saveContext.total) || 0) : 0;
+    const hasSavedContext = !!saveContext && contextSaved > 0;
+    const contextGroups = saveContext && Array.isArray(saveContext.groups) ? saveContext.groups : [];
     let selected = typeof data.selected === "string" ? data.selected : "";
     let busy = false;
     let closed = false;
@@ -101,6 +135,7 @@
           ${brandHtml}
           <h2 class="lon-title" id="lateron-picker-title"></h2>
           <p class="lon-summary"></p>
+          <div class="lon-existing" hidden></div>
         </header>
         <details class="lon-pages">
           <summary><span class="lon-chev">▸</span><span class="lon-pages-label"></span></summary>
@@ -113,6 +148,7 @@
             <p class="lon-empty" id="lateron-project-status" role="status" hidden>${copy.noMatch}</p>
           </div>
         </div>
+        <p class="lon-action-preview" hidden></p>
         <footer class="lon-foot">
           <button type="button" class="lon-ghost">${copy.cancel}</button>
           <button type="button" class="lon-primary"></button>
@@ -125,6 +161,8 @@
     const $ = (selector) => root.querySelector(selector);
     const panel = $(".lon-panel");
     const summaryEl = $(".lon-summary");
+    const existingEl = $(".lon-existing");
+    const previewEl = $(".lon-action-preview");
     const pagesLabel = $(".lon-pages-label");
     const pageList = $(".lon-page-list");
     const folderList = $(".lon-folder-list");
@@ -149,7 +187,38 @@
         summaryEl.textContent = savedCount > 0 ? copy.batchSaved(pages.length, savedCount) : copy.batchNew(pages.length);
       }
     }
-    pagesLabel.textContent = copy.pages(pages.length);
+    if (hasSavedContext) {
+      const sameGroup = contextGroups.find(group => group.projectId === saveContext.sameProjectId);
+      summaryEl.textContent = contextNew === 0 && typeof saveContext.sameProjectId === "string"
+        ? contextCopy.allSaved(contextTotal, sameGroup?.projectName || folders.find(folder => folder.id === saveContext.sameProjectId)?.name || copy.inbox)
+        : contextCopy.mixed(contextNew, contextSaved);
+      summaryEl.setAttribute("role", "status");
+      summaryEl.setAttribute("aria-live", "polite");
+      summaryEl.setAttribute("aria-atomic", "true");
+      if (contextGroups.length && !(contextNew === 0 && typeof saveContext.sameProjectId === "string")) {
+        existingEl.hidden = false;
+        contextGroups.slice(0, 3).forEach(group => {
+          const chip = document.createElement("span");
+          chip.className = "lon-existing-group";
+          chip.textContent = contextCopy.group(group.projectName || copy.inbox, group.count);
+          chip.title = chip.textContent;
+          existingEl.append(chip);
+        });
+        if (contextGroups.length > 3) {
+          const more = document.createElement("span");
+          more.className = "lon-existing-more";
+          more.textContent = contextCopy.more(contextGroups.length - 3);
+          existingEl.append(more);
+        }
+      }
+      previewEl.hidden = false;
+      previewEl.setAttribute("role", "status");
+      previewEl.setAttribute("aria-live", "polite");
+      previewEl.setAttribute("aria-atomic", "true");
+      // A saved single page also benefits from seeing its original location.
+      $(".lon-pages").hidden = false;
+    }
+    pagesLabel.textContent = hasSavedContext ? contextCopy.pages(pages.length, contextTotal) : copy.pages(pages.length);
     pages.forEach((page, index) => {
       const li = document.createElement("li");
       const no = document.createElement("span");
@@ -159,7 +228,20 @@
       title.className = "lon-page-title";
       title.textContent = page.title || page.url;
       title.title = page.url || "";
-      li.append(no, title);
+      if (saveContext) {
+        const info = document.createElement("span");
+        info.className = "lon-page-info";
+        const url = document.createElement("span");
+        url.className = "lon-page-url";
+        url.textContent = page.url || "";
+        const status = document.createElement("span");
+        status.className = "lon-page-status";
+        status.textContent = page.saved ? contextCopy.savedIn(page.projectName || copy.inbox) : contextCopy.pending;
+        info.append(title, url, status);
+        li.append(no, info);
+      } else {
+        li.append(no, title);
+      }
       pageList.append(li);
     });
 
@@ -174,6 +256,12 @@
       if (!selected) return copy.inbox;
       return folders.find((folder) => folder.id === selected)?.name || copy.inbox;
     };
+    const actionCounts = () => {
+      const name = pendingNewName();
+      const folder = name ? null : folders.find(item => item.id === selected);
+      const kept = Math.min(contextSaved, Math.max(0, Number(folder?.matchedCount) || 0));
+      return { added: contextNew, kept, moved: contextSaved - kept };
+    };
     const applyLabel = () => {
       const name = pendingNewName();
       confirmBtn.disabled = busy || name.length > 28;
@@ -182,11 +270,19 @@
       if (name) {
         confirmBtn.textContent = busy
           ? copy.processing
-          : (isPopover ? copy.createMove(name) : copy.createSave(name));
+          : (isPopover || (hasSavedContext && contextNew === 0) ? copy.createMove(name) : copy.createSave(name));
       } else {
+        const { added, moved } = actionCounts();
         confirmBtn.textContent = busy
           ? copy.processing
-          : (isPopover ? copy.moveTo(selectedName()) : copy.saveTo(selectedName()));
+          : (hasSavedContext
+            ? (added > 0 ? (moved > 0 ? contextCopy.addMove(added, moved) : copy.saveTo(selectedName()))
+              : (moved > 0 ? contextCopy.moveTo(selectedName()) : contextCopy.keepTo(selectedName())))
+            : (isPopover ? copy.moveTo(selectedName()) : copy.saveTo(selectedName())));
+      }
+      if (hasSavedContext) {
+        const { added, kept, moved } = actionCounts();
+        previewEl.textContent = `${name ? contextCopy.newTarget(name) : contextCopy.target(selectedName())} · ${contextCopy.preview(added, kept, moved)}`;
       }
     };
 
@@ -246,10 +342,22 @@
         const count = document.createElement("strong");
         count.className = "lon-folder-count";
         count.textContent = String(folder.count || 0);
+        if (hasSavedContext) count.title = contextCopy.projectTotal(folder.count || 0);
         const tick = document.createElement("span");
         tick.className = "lon-folder-tick";
         tick.textContent = "✓";
-        button.append(icon, name, count, tick);
+        if (hasSavedContext && Number(folder.matchedCount) > 0) {
+          const label = document.createElement("span");
+          label.className = "lon-folder-matched";
+          label.textContent = Number(folder.matchedCount) === contextTotal && contextNew === 0
+            ? contextCopy.allHere : contextCopy.here(folder.matchedCount);
+          const info = document.createElement("span");
+          info.className = "lon-folder-info";
+          info.append(name, label);
+          button.append(icon, info, count, tick);
+        } else {
+          button.append(icon, name, count, tick);
+        }
 
         button.addEventListener("click", () => {
           if (busy) return;
@@ -338,7 +446,7 @@
       try { project = await create(name); } catch { /* 调用方失效时留在浮层里显示失败 */ }
       if (!project || !project.id) return { ok: false, error: copy.createFailed };
       if (!folders.some((folder) => folder.id === project.id)) {
-        folders = [...folders, { id: project.id, name: project.name || name, count: 0 }];
+        folders = [...folders, { id: project.id, name: project.name || name, count: 0, matchedCount: 0 }];
       }
       selected = project.id;
       searchInput.value = folders.find(folder => folder.id === selected).name;
@@ -475,7 +583,20 @@
     if (isPopover) positionPanel();
     searchInput.focus({ preventScroll: true });
     // 入场动画：下一帧再加类，保证 transition 生效。
-    window.requestAnimationFrame(() => root.classList.add("is-in"));
+    window.requestAnimationFrame(() => {
+      if (closed || !host.isConnected) return;
+      root.classList.add("is-in");
+      if (!hasSavedContext || contextNew !== 0 || typeof saveContext.sameProjectId !== "string" || selected !== saveContext.sameProjectId) return;
+      const row = folderList.querySelector('[role="radio"][aria-checked="true"]');
+      if (!row) return;
+      const box = $(".lon-folders");
+      const bounds = box.getBoundingClientRect();
+      const rowBounds = row.getBoundingClientRect();
+      // Rectangles reflect the panel's entrance scale; scrollTop uses layout pixels.
+      const scale = box.offsetHeight > 0 && bounds.height > 0 ? bounds.height / box.offsetHeight : 1;
+      if (rowBounds.top < bounds.top) box.scrollTop += (rowBounds.top - bounds.top) / scale;
+      else if (rowBounds.bottom > bounds.bottom) box.scrollTop += (rowBounds.bottom - bounds.bottom) / scale;
+    });
 
     return { close };
   }
@@ -547,7 +668,12 @@
         box-shadow: 0 6px 16px -6px rgba(255,80,50,.6);
       }
       .lon-title { margin: 12px 0 0; font-size: 20px; font-weight: 800; letter-spacing: -.4px; line-height: 1.3; color: var(--lon-ink); }
-      .lon-summary { margin: 7px 0 0; color: var(--lon-muted); font-size: 12.5px; line-height: 1.6; }
+      .lon-summary { margin: 7px 0 0; color: var(--lon-muted); font-size: 12.5px; line-height: 1.6; overflow-wrap: anywhere; }
+      .lon-existing { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; min-width: 0; }
+      .lon-existing[hidden], .lon-action-preview[hidden] { display: none; }
+      .lon-existing-group { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 5px; padding: 2px 6px; background: var(--lon-soft); color: var(--lon-muted); font-size: 11px; }
+      .lon-existing-more { padding: 2px 0; color: var(--lon-muted); font-size: 11px; }
+      .lon-action-preview { flex: none; margin: 0; color: var(--lon-muted); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
 
       .lon-pages { border: 1px solid var(--lon-line); border-radius: 14px; background: var(--lon-soft); padding: 10px 13px; }
       .lon-pages[hidden] { display: none; }
@@ -559,6 +685,10 @@
       .lon-page-list li { display: flex; align-items: baseline; gap: 8px; font-size: 12px; line-height: 1.5; }
       .lon-page-no { flex: none; min-width: 15px; color: var(--lon-subtle); font-size: 10.5px; font-weight: 700; text-align: right; }
       .lon-page-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--lon-ink); opacity: .82; }
+      .lon-page-info { flex: 1; min-width: 0; }
+      .lon-page-info .lon-page-title { display: block; }
+      .lon-page-url { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10.5px; color: var(--lon-subtle); }
+      .lon-page-status { display: block; overflow-wrap: anywhere; font-size: 11px; color: var(--lon-muted); }
 
       .lon-box { display: flex; flex-direction: column; gap: 9px; min-height: 0; }
       .lon-search-input { flex: none; width: 100%; border: 1px solid var(--lon-line); border-radius: 10px; padding: 10px 12px; background: var(--lon-field); color: var(--lon-ink); font: inherit; font-size: 13px; }
@@ -583,6 +713,8 @@
       .lon-folder-thumb { width: 100%; height: 100%; object-fit: cover; display: block; }
       .lon-folder-ph { width: 100%; height: 100%; display: grid; place-items: center; border-radius: 9px; background: linear-gradient(140deg, #ffd9cc, #ffb39a); color: #fff; font-size: 13px; font-weight: 800; }
       .lon-folder-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; font-weight: 600; }
+      .lon-folder-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+      .lon-folder-matched { font-size: 10.5px; font-weight: 500; color: var(--lon-muted); }
       .lon-folder-count { flex: none; color: var(--lon-subtle); font-size: 11.5px; font-weight: 700; }
       .lon-folder-tick { flex: none; width: 14px; color: var(--lon-accent); font-size: 13px; font-weight: 800; opacity: 0; transition: opacity .15s; }
       .lon-folder.is-selected .lon-folder-tick { opacity: 1; }

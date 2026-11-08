@@ -238,6 +238,10 @@ const check = (label, ok, extra = "") => {
   check("浮层里带上了将要收藏的页面清单", overlays[0]?.payload?.pages?.length === 12 && overlays[0].payload.pages[0].title === "文章一", `${overlays[0]?.payload?.pages?.length} 个页面`);
   check("浮层的主题跟着扩展设置走", overlays[0]?.payload?.theme === "light", `theme=${overlays[0]?.payload?.theme}`);
   check("提前告诉用户这一批里有几篇已经收藏过", overlays[0]?.payload?.savedCount === 1, `savedCount=${overlays[0]?.payload?.savedCount}`);
+  const firstContext = overlays[0]?.payload?.saveContext;
+  check("部分已存提前分清新增与已存数量", firstContext?.newCount === 11 && firstContext?.savedCount === 1 && firstContext?.sameProjectId === null, JSON.stringify(firstContext));
+  check("原地保留数只包含这批目标，而不是整个项目", unfiledRow?.matchedCount === 1 && workRow?.matchedCount === 0, `等待整理=${unfiledRow?.matchedCount} 工作=${workRow?.matchedCount}`);
+  check("已存页面的实际归属立即随清单传入", overlays[0]?.payload?.pages?.find(page => page.url === DUP_URL)?.projectName === "等待整理");
 
   check("这一批标签页被暂存下来了", session[PENDING_KEY]?.tabs?.length === 12, `${session[PENDING_KEY]?.tabs?.length} 个`);
   check("暂存的默认目标也是等待整理", session[PENDING_KEY]?.projectId === "", JSON.stringify(session[PENDING_KEY]?.projectId));
@@ -301,6 +305,9 @@ const check = (label, ok, extra = "") => {
   await sandbox.saveAllTabsInWindow("menu");
   const before = store.laterOnItems.length;
   check("重复触发会再弹一次浮层（覆盖旧的）", overlays.length === 2, `注入 ${overlays.length} 次`);
+  const commonPayload = overlays.at(-1)?.payload;
+  check("这批全在工作项目时，打开就选中工作", commonPayload?.selected === FOLDER_ID && commonPayload?.saveContext?.sameProjectId === FOLDER_ID, JSON.stringify(commonPayload?.saveContext));
+  check("已存项目数量即时提供，无须再次选择", commonPayload?.saveContext?.savedCount === 12 && commonPayload?.folders?.find(folder => folder.id === FOLDER_ID)?.matchedCount === 12);
   const cancelled = await sendFromPage({ type: "CANCEL_BATCH_SAVE" });
   check("取消后清掉了待处理批次", cancelled?.cancelled === true && session[PENDING_KEY] === undefined, JSON.stringify(cancelled));
   check("取消不会收藏任何东西", store.laterOnItems.length === before, `${store.laterOnItems.length} 条`);
@@ -375,6 +382,17 @@ const check = (label, ok, extra = "") => {
   await waitForBatchDone();
   check("项目已经不存在时，收藏退回「等待整理」", store.laterOnItems.length === 12 && store.laterOnItems.every((i) => (i.projectId || null) === null), `${store.laterOnItems.filter((i) => i.projectId).length} 篇带 projectId`);
   check("也不会再把它记成「上次用过的项目」", !store[LAST_PROJECT_KEY], JSON.stringify(store[LAST_PROJECT_KEY]));
+
+  console.log("\n── 第 8 步：直接确认已有共同项目 ──");
+  store.laterOnProjects = [{ id: FOLDER_ID, name: "工作", createdAt: 1 }];
+  store.laterOnItems.forEach(item => { item.projectId = FOLDER_ID; });
+  store.laterOnDiag = {};
+  await sandbox.saveAllTabsInWindow("shortcut");
+  const retained = overlays.at(-1)?.payload;
+  check("全已存时初选来自实际归属", retained?.selected === FOLDER_ID && retained?.saveContext?.newCount === 0);
+  await sendFromPage({ type: "CONFIRM_BATCH_SAVE", projectId: retained?.selected });
+  await waitForBatchDone();
+  check("直接确认保留全部网页，不新增也不搬走", store.laterOnItems.length === 12 && store.laterOnItems.every(item => item.projectId === FOLDER_ID) && store.laterOnDiag?.lastAdded === 0 && store.laterOnDiag?.lastMoved === 0, JSON.stringify({ added: store.laterOnDiag?.lastAdded, moved: store.laterOnDiag?.lastMoved }));
 
   console.log(failures === 0 ? "\n全部检查通过 🎉" : `\n有 ${failures} 项失败`);
   if (failures) process.exitCode = 1;

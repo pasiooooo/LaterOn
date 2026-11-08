@@ -1,0 +1,701 @@
+{
+  "date": "2026-11-08",
+  "version": "1.74.5",
+  "status": "validated for formal release 1.74.5",
+  "sourceHashes": {
+    "background.js": "d971815a68c1edbca1fb82eb011aeec9e8057afdef6a01043bab5707c795417a",
+    "picker-ui.js": "dcedc3bb28c5f73a4b2725d16ab6cb513699ed5964fc0cda20f939f16fae9ff3",
+    "content-folder-picker.js": "4676f16a0d442c25463108c9649394853906160735abfd66f7bf8df196247b1c",
+    "tests/picker-save-context.test.js": "23b06346f7bd8740e4ce0724d9638f7a1efcf68c0e0ae91b9136fc02d980b32d",
+    "tests/picker-add-context.test.js": "cedcd45680550b256daa81633292d296fcfeaedea208f4fd26bbb34f7e90e21c",
+    "tests/batch-save-unique-stats.test.js": "4236a93c586fe7f14d4b5ae830eda1b8c6b5fb7d7f60554868e935a4b373c2b5",
+    "tests/save-all-tabs.test.js": "456f90ec3f5bf4ff28308ff3bbefd7d4d456ec5f3a0f520351c19acdec474992",
+    "docs/add-project-context-evidence/same-dark.png": "05b5f2dbd916b7b27b8a8c16501f98d795d569e1b79ef74fba9ebcb9c0892d72",
+    "docs/add-project-context-evidence/partial-light.png": "56e6b849fa0f63239890c9367b8ba426b73456011090f99c46ec76b8f6805119",
+    "docs/add-project-context-evidence/partial-narrow-dark.png": "f40c7ddc35f435aa5187139b19744503e62289ca69470369a07b1eec0d896693",
+    "docs/add-project-context-evidence/same-many-projects.png": "08f96156d41fda60bd9c96b4acfde6efec7b294964e9b8c134bc71766db699d6",
+    "manifest.json": "e5345bbf26b485d62e7bb904a903cbb287a07deb01f618d68dc562c775be832c"
+  },
+  "regression": {
+    "passed": 117,
+    "failed": [],
+    "boundary": "Fresh complete suite run against the frozen formal 1.74.5 source, including the final initial common-project scroll fix.",
+    "fileResults": [
+      {
+        "test": "action-sidepanel.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "archive-search.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "auto-clean-settings.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "auto-clean.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "background-modules.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "batch-save-unique-stats.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "board-order.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "board-view.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "bookmark-bootstrap.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "bookmark-cache.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "bookmark-index-sync.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "bookmark-initial-ready.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "bookmark-isolation.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "bookmark-manual-previews.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "bookmark-paged.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "bookmark-preview-bounds.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "bookmark-preview-eviction.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "bookmark-preview-quality.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "bookmark-preview-queue.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "bookmark-preview-retry.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "bookmark-previews.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "bookmark-redesign.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "bookmark-sidepanel.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "bookmark-slim-sync.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "bookmark-sync.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "bookmark-view.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "bookmarks.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "card-grid.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "card-menu.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "card-order.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "cover-pick.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "cover-save-failure.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "cover-upload.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "current-page-cache.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "delete-item.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "dialog.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "douyin-spa.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "edit-item.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "filter-sync.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "folder-manage.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "folder-overlay.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "folder-reorder.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "i18n-onboarding.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "import-metadata.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "import-settings.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "import-urls.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "item-mutation.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "keyboard-shortcuts.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "library-bookmark-status.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "library-names.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "library-open-item.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "library-search.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "local-index-bookmark-source.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "local-index-dense-postings.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "local-index-generations.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "local-index-preview-patch.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "local-index-sources.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "local-index.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "metadata-extract.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "omnibox-action-state.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "omnibox-library-launch.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "panel-fast-open.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "panel-locate-current.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "panel-search.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "picker-add-context.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "picker-keyboard.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "picker-reinjection.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "picker-save-context.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "picker-search.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "project-archive.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "project-delete.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "project-pin.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "quick-switcher-background.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "quick-switcher-client.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "quick-switcher-foreground.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "quick-switcher-live-index.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "quick-switcher-live-tabs.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "quick-switcher-mode-preferences.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "quick-switcher-mode-settings.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "quick-switcher-modes.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "quick-switcher-persistent.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "quick-switcher-scheduling.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "quick-switcher-search.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "quick-switcher-ui.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "reading-bookmark-status.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "reading-first-screen.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "reading-instant-open.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "reading-position-background.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "reading-position-content.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "reading-save-tab.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "save-all-tabs.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "save-concurrency.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "save-single-page.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "search-titles.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "select-mode.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "settings-background.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "settings-navigation.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "shortcut-config.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "shortcut-startup.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "sidepanel-card-order.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "sidepanel-delete.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "sidepanel-fullscreen-context.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "sidepanel-link-actions.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "sidepanel-project-visible.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "sidepanel-shared-current.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "sidepanel-switch.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "sidepanel-three-state.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "startup-loading.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "tab-reuse.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "theme-sync.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "three-state.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "topbook-modal.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "url-utils.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "webdav-directory.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "webdav-settings.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "webdav-snapshots.test.js",
+        "exitCode": 0
+      },
+      {
+        "test": "webdav-sync.test.js",
+        "exitCode": 0
+      }
+    ]
+  },
+  "finalFocusedTests": [
+    {
+      "test": "picker-add-context.test.js",
+      "exitCode": 0,
+      "output": "PASS picker add context: 35 scenarios cover both languages, immediate same-project/Inbox status, partial membership, unique snapshot counts, filters, creates, retry/busy/IME, safe text, live status, popovers, all-new and legacy fallbacks\n"
+    },
+    {
+      "test": "picker-search.test.js",
+      "exitCode": 0,
+      "output": "PASS unified picker: one field, normalized matching, explicit no-match creation, name bounds, safe text, IME, busy and failure retries in both languages/surfaces\n"
+    },
+    {
+      "test": "folder-overlay.test.js",
+      "exitCode": 0,
+      "output": "── 渲染 ──\n✅ 浮层挂进了页面（没有新开窗口）\n✅ 浮层用 Shadow DOM 隔离页面样式\n✅ 带上了极高层级，不会被网页内容盖住\n✅ 列出了全部项目（含等待整理）  → 等待整理 / 工作 / 设计灵感\n✅ 每行显示各自已收藏数量\n✅ 默认选中传入的项目\n✅ 确认按钮写明了要存进的项目  → 添加到「工作」\n✅ 页面清单按顺序列出、并标注数量\n✅ 标题与说明文案都在\n✅ 浅色主题下没有打深色标记\n✅ 列出了取消按钮\n\n── 样式表自检（CSS 是写在 JS 字符串里的，最容易出低级错误）──\n✅ 花括号配对  → 75 组 75 个闭合\n✅ 没有残留的模板占位符\n✅ 没有漏写分号的声明（漏一条会让后面的样式整段失效）\n✅ 关键设计要素齐了（渐变按钮 / 大圆角 / 遮罩 / 深色模式）\n\n── 交互：切换项目 ──\n✅ 点一行就切换选中\n✅ 确认按钮跟着更新  → 添加到「设计灵感」\n\n── 交互：写了新项目名 → 回车一步新建并收藏 ──\n✅ 按钮实时变成「新建「临时收藏」并添加」  → 新建「临时收藏」并添加\n✅ 不再需要单独的「新建」按钮\n✅ 回车先把项目建出来  → {\"type\":\"CREATE_PROJECT\",\"name\":\"临时收藏\"}\n✅ 接着就收藏到刚建的项目里（不用再点一次收藏）  → {\"type\":\"CONFIRM_BATCH_SAVE\",\"projectId\":\"new-folder-1\"}\n✅ 一步完成后浮层自动退场\n\n── 交互：点「收藏」按钮 = 同样一步完成 ──\n✅ 按钮提示跟着输入框走  → 新建「灵感库」并添加\n✅ 点收藏按钮也会先建项目  → {\"type\":\"CREATE_PROJECT\",\"name\":\"灵感库\"}\n✅ 并收藏到新建的项目里\n\n── 交互：清空新项目名后可改选已有项目 ──\n✅ 无匹配的新名称不会同时显示旧项目\n✅ 筛选框清空后不再创建新项目\n✅ 按钮回到「添加到「工作」」  → 添加到「工作」\n\n── 交互：键盘 ──\n✅ 没写新名字时，回车 = 按选中的项目收藏  → {\"type\":\"CONFIRM_BATCH_SAVE\",\"projectId\":\"work\"}\n✅ 确认后浮层自动退场\n\n── 播放守卫：浮层开着时不让网页的视频被空格按停 ──\n✅ 浮层开着时被意外暂停的视频会立刻恢复  → 恢复了 1 次\n✅ 浮层关掉后就不再替网页恢复播放  → 恢复了 1 次\n\n── 键盘只归浮层，不漏给网页（空格暂停视频的冲突）──\n✅ 起名时按空格，网页听不到（视频不会被暂停）  → []\n✅ 浮层开着、焦点不在输入框时空格也听不到  → []\n✅ 焦点在输入框里按 Esc 也能退出浮层\n✅ Esc 确实发出了取消请求\n✅ 浮层关闭后不再拦键盘（网页恢复正常收按键）  → [\" \"]\n\n── 交互：Esc 取消 ──\n✅ 深色主题下打了深色标记\n✅ 未选中时默认落到「等待整理」  → 添加到「等待整理」\n✅ Esc 发出了取消请求\n✅ Esc 之后浮层被移除\n\n── 重复触发 ──\n✅ 重复触发只会留一个浮层（不会叠起来）  → 1 个\n\n── 摘要文案：这批里有没有已经收藏过的 ──\n✅ （准备）上一步的浮层已关掉\n✅ 知道有几篇已添加过时，会说明「一并移进所选项目」  → 共 2 个标签页，其中 2 个已经添加过——确认后会一并移进你选的项目\n✅ 没有已添加的页面时，用普通说法  → 共 2 个标签页，选好项目后就会开始逐个添加\n\n── 只收一篇时：文案与页面清单 ──\n✅ 标题改成「把这个网页添加到哪个项目？」  → 把这个网页添加到哪个项目？\n✅ 说明文案不再提「标签页」  → 选好项目后就会添加这个网页\n✅ 页面清单被收起（就是眼前这个网页，不必再列一遍）\n✅ 项目列表和确认按钮照常可用  → 添加到「工作」\n✅ 这个网页已添加过时，会说明确认后搬进所选项目  → 这个网页已经添加过——确认后会一并移进你选的项目\n\n── 品牌标识只出现在整屏弹窗里 ──\n✅ 整屏收藏弹窗保留当前 LaterOn 品牌标识  → LaterOn\n✅ 浮层认得出自己是「贴按钮」那一档\n✅ 浮层里没有品牌标识（图标和 LaterOn 字样都不出现）  → \n        <header>\n          \n          <h2 class=\"lon-title\" id=\"lateron-picker-\n✅ 浮层的标题还在（不然不知道这个浮层是干嘛的）  → 把这篇放到哪个项目？\n✅ 浮层的项目列表与按钮照常可用  → 移动到「工作」\n✅ 品牌标识按「整屏 / 浮层」分支渲染\n✅ 浮层里标题的上边距被收掉（不留一段空白）  →       .lon-root.lon-popover .lon-title { margin-top: 0; }\n\n全部检查通过 🎉\n"
+    },
+    {
+      "test": "picker-keyboard.test.js",
+      "exitCode": 0,
+      "output": "PASS picker keyboard: early capture isolation, native editing, modifiers/IME, modal Tab navigation, closing keyup, reinjection and cleanup\n"
+    },
+    {
+      "test": "picker-reinjection.test.js",
+      "exitCode": 0,
+      "output": "PASS 项目选择脚本可在同一网页连续注入两次\n"
+    },
+    {
+      "test": "select-mode.test.js",
+      "exitCode": 0,
+      "output": "✅ 三张卡片都渲染出来了  → 3 张\n\n── 进入多选模式 ──\n✅ 网格进入多选状态\n✅ 勾选圆点显示出来了\n✅ 批量操作栏出现\n✅ 计数从 0 开始  → 已选 0 篇\n\n── 点左上角圆点：勾上 / 再点取消 ──\n✅ 点圆点就勾上了\n✅ 勾选框本身也是勾上的（视觉与状态一致）\n✅ 计数跟着变  → 已选 1 篇\n✅ 再点一下就取消勾选\n✅ 勾选框也同步取消\n✅ 计数回到 0  → 已选 0 篇\n\n── 点卡片本身：只勾选，不许打开文章 ──\n✅ 点标题可以勾上这张卡\n✅ 但默认跳转被拦下了\n✅ 没有被新标签页打开\n✅ 点封面也是勾上而不是打开\n✅ 依然没有任何跳转\n✅ 两篇都算进去了  → 已选 2 篇\n\n── 把选中的文章直接在新窗口打开 ──\n✅ 只创建一个新窗口，并按页面顺序放入两篇  → [{\"url\":[\"https://example.com/a\",\"https://example.com/b\"],\"focused\":true,\"type\":\"normal\"}]\n✅ 没有创建浏览器标签组\n✅ 打开后自动退出多选\n✅ 打开后卡片不再保留高亮\n✅ 打开后勾选框也全部复位\n\n── 全选 / 取消全选 ──\n✅ 重新进入多选不会记住上次勾选  → 已选 0 篇\n✅ 之前高亮过的卡片仍可正常勾选和取消  → 已选 0 篇\n✅ 全选后三张都勾上  → 已选 3 篇\n✅ 按钮变成「取消全选」\n✅ 取消全选后都不勾了  → 已选 0 篇\n\n── 批量移动：复用单篇文章的项目选择浮层 ──\n✅ 移动前选中了两篇  → 已选 2 篇\n✅ 点击移动到后打开共享项目浮层\n✅ 标题写明本次移动两篇  → 把选中的 2 篇放到哪个项目？\n✅ 浮层显示等待整理和项目列表  → 3 行\n✅ 每行包含缩略图与数量\n✅ 点击浮层项目保留两篇选中状态  → 已选 2 篇\n✅ 两篇都移动到所选项目  → [[\"item-a\",\"work\"],[\"item-b\",\"work\"],[\"item-c\",null]]\n✅ 移动后自动退出多选\n✅ 给出批量移动完成提示  → 已将 2 篇移到「工作」\n\n── 点击页面空白仍退出多选 ──\n✅ 空白处退出多选并清空选择\n\n── 退出多选后，点文章要能正常打开 ──\n✅ 退出了多选状态\n✅ 勾选圆点收起来了（网格上不再有 .selecting）\n✅ 正常模式下点标题不会去勾选它\n✅ 文章确实被打开了  → 1 次跳转\n\n── 批量删除：真实 pointerdown + click 不能清空待删除选择 ──\n✅ 确认框显示删除两篇\n✅ 取消删除保留数据和两篇选择  → 已选 2 篇\n✅ 写入失败保留网页、封面和勾选，并提示重试\n✅ 确认后只删除选中的两篇，未选网页保留  → [\"item-c\",\"recent\"]\n✅ 清理被删网页封面并保留未选封面\n✅ 删除后界面移除对应卡片并退出多选\n✅ 删除提示数量正确  → 已删除 2 篇\n\n全部检查通过 🎉\n"
+    }
+  ],
+  "pickerDOMScenarios": 35,
+  "browser": {
+    "engine": "Ego Chromium",
+    "payload": "Generated by the actual background.js showPickerOverlay with synthetic items/projects/tabs",
+    "saving": "Actual runBatchSave loop with isolated Chrome API mocks; no personal data writes",
+    "observed": {
+      "browser-final-keyboard.json": {
+        "same": {
+          "summary": "这3篇都已在「论文写作」",
+          "details": "查看 3 个网页及当前归属",
+          "button": "保留在「论文写作」",
+          "preview": "到「论文写作」 · 新增0 · 保留3 · 移入0",
+          "messages": []
+        },
+        "cancelled": [
+          {
+            "type": "CANCEL_BATCH_SAVE"
+          }
+        ],
+        "tabFocus": "lon-folder",
+        "accepted": {
+          "messages": [
+            {
+              "type": "CANCEL_BATCH_SAVE"
+            },
+            {
+              "type": "CONFIRM_BATCH_SAVE",
+              "projectId": "writing"
+            }
+          ],
+          "focus": "open",
+          "errors": []
+        }
+      },
+      "browser-final-ui.json": {
+        "partial": {
+          "summary": "4篇待添加 · 6篇已存",
+          "details": "查看 10 个网页及当前归属",
+          "preview": "到「论文写作」 · 新增4 · 保留3 · 移入3",
+          "button": "添加4篇并移入3篇"
+        },
+        "narrow": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "panel": {
+            "left": 12,
+            "right": 378,
+            "top": 127.1015625,
+            "bottom": 716.890625,
+            "width": 366,
+            "height": 589.7890625,
+            "clientWidth": 364,
+            "scrollWidth": 364
+          },
+          "preview": {
+            "left": 29,
+            "right": 361,
+            "top": 605.25,
+            "bottom": 643.640625,
+            "width": 332,
+            "height": 38.390625,
+            "clientWidth": 332,
+            "scrollWidth": 332,
+            "text": "到「一个比较长的项目名称用来检查窄屏时的信息展示」 · 新增4 · 保留3 · 移入3"
+          },
+          "details": "查看 10 个网页及当前归属",
+          "button": {
+            "left": 165.7421875,
+            "right": 361,
+            "top": 655.640625,
+            "bottom": 701.890625,
+            "width": 195.2578125,
+            "height": 46.25,
+            "clientWidth": 195,
+            "scrollWidth": 195
+          },
+          "footer": {
+            "left": 29,
+            "right": 361,
+            "top": 655.640625,
+            "bottom": 701.890625,
+            "width": 332,
+            "height": 46.25,
+            "clientWidth": 332,
+            "scrollWidth": 332
+          },
+          "errors": []
+        }
+      },
+      "browser-many-projects.json": {
+        "selectedTop": 509.3984375,
+        "selectedBottom": 566.8984375,
+        "listTop": 336.8984375,
+        "listBottom": 566.8984375,
+        "visible": true,
+        "scrollTop": 2289.5,
+        "focused": "lon-search-input",
+        "underlyingScroll": 0,
+        "details": "查看 3 个网页及当前归属",
+        "messages": [],
+        "errors": []
+      },
+      "browser-edge-states.json": {
+        "new": {
+          "summary": "共 10 个标签页，选好项目后就会开始逐个添加",
+          "preview": "",
+          "previewHidden": true,
+          "details": "查看将要添加的 10 个网页",
+          "button": "添加到「等待整理」",
+          "groups": [],
+          "checked": [
+            "等等待整理0✓"
+          ],
+          "messages": [],
+          "errors": []
+        },
+        "archived": {
+          "summary": "这1篇都已在「归档资料（已归档）」",
+          "preview": "到「等待整理」 · 新增0 · 保留0 · 移入1",
+          "previewHidden": false,
+          "details": "查看 1 个网页及当前归属",
+          "button": "移入「等待整理」",
+          "groups": [],
+          "checked": [
+            "等等待整理0✓"
+          ],
+          "messages": [],
+          "errors": []
+        },
+        "groups": {
+          "summary": "4篇待添加 · 6篇已存",
+          "preview": "到「等待整理」 · 新增4 · 保留1 · 移入5",
+          "previewHidden": false,
+          "details": "查看 10 个网页及当前归属",
+          "button": "添加4篇并移入5篇",
+          "groups": [
+            "「论文写作」· 1篇",
+            "「课程学习」· 1篇",
+            "「参考资料」· 1篇"
+          ],
+          "more": "另3个项目",
+          "checked": [
+            "等等待整理已在这里 1篇1✓"
+          ],
+          "messages": [],
+          "errors": []
+        },
+        "english": {
+          "summary": "All 3 pages are already in “论文写作”",
+          "details": "View 3 pages and their current projects",
+          "button": "Keep in “论文写作”",
+          "errors": []
+        }
+      }
+    },
+    "taskSpaceFinished": true,
+    "ownedFixtureServerStopped": true
+  },
+  "independentReview": "Formal runtime package and source equality independently reviewed; complete regression and commit scope verified in add-project-context-release-1.74.5.json.",
+  "formalReleaseUnchanged": {
+    "version": "1.74.4",
+    "zipSHA256": "51752c51923dab8a492312ba4028ae6bcb5a670e6e53540e4f7d7ec473687a14"
+  },
+  "limitations": [
+    "Not tested in the user installed extension or with personal library data",
+    "Picker displays its opening snapshot; confirmation uses current item/project state"
+  ],
+  "implementationEvidence": {
+    "manifestVersionDuringRendererChecks": "1.74.4",
+    "currentVersion": "1.74.5",
+    "runtimeFilesUnchangedSinceFinalRendererChecks": true,
+    "boundary": "Browser checks used the actual UI and synthetic data generated by actual background code. Fresh 1.74.5 full regression includes the final visibility fix."
+  }
+}

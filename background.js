@@ -537,9 +537,6 @@ async function quickSave(tab, source = "shortcut") {
   // 设置里打开了「收藏单篇前先选项目」：跟整窗收藏走同一套流程——
   // 只在当前网页里弹出选项目浮层，用户选好之后再真正开始收藏。
   if (await shouldAskFolderForSingle()) {
-    const storedItems = (await chrome.storage.local.get(STORAGE_KEY))[STORAGE_KEY] || [];
-    const knownUrls = new Set(storedItems.map((entry) => normalizeUrl(entry.url)));
-    const savedCount = knownUrls.has(normalizeUrl(tab.url || "")) ? 1 : 0;
     recordDiag({
       lastTrigger: source,
       lastStage: "等待选择项目",
@@ -547,7 +544,7 @@ async function quickSave(tab, source = "shortcut") {
       lastRunAt: Date.now(),
       lastTabCount: 1
     }).catch(() => {});
-    return askFolderThenSave({ tabs: [tab], source, activeTab: tab, savedCount });
+    return askFolderThenSave({ tabs: [tab], source, activeTab: tab, savedCount: 0 });
   }
 
   // 统一走 extractTabMetadata：它会在抓取前处理抖音「站内切换视频」的滞后问题，
@@ -852,15 +849,6 @@ async function saveTabsInScope(source, tabs, activeTab) {
     }
 
     const settings = (await chrome.storage.local.get(SETTINGS_KEY))[SETTINGS_KEY] || {};
-    // 这一批里有多少个网页已经收藏过？
-    // 用来在浮层里提前说清楚：「已收藏的会被一起搬过来」，免得用户以为重复的会被跳过、
-    // 回头还得手动整理一遍。（按网址去重后统计，同一篇在多个标签页里只算一个。）
-    const storedItems = (await chrome.storage.local.get(STORAGE_KEY))[STORAGE_KEY] || [];
-    const knownUrls = new Set(storedItems.map((entry) => normalizeUrl(entry.url)));
-    const batchUrls = new Set(targets.map((tab) => normalizeUrl(tab.url)));
-    let savedCount = 0;
-    for (const url of batchUrls) if (knownUrls.has(url)) savedCount += 1;
-
     // 用户关掉了「先选项目」：直接用上次用过的项目开始。
     if (settings.askFolderOnBatch === false) {
       const savedProject = (await chrome.storage.local.get(LAST_PROJECT_KEY))[LAST_PROJECT_KEY] || "";
@@ -876,7 +864,9 @@ async function saveTabsInScope(source, tabs, activeTab) {
     }
 
     stage({ lastStage: "等待选择项目", lastTabCount: targets.length }).catch(() => {});
-    return askFolderThenSave({ tabs: targets, source, activeTab, savedCount });
+    // Membership is computed from the picker's own current snapshot, so
+    // opening the picker never copies the whole library once just for a count.
+    return askFolderThenSave({ tabs: targets, source, activeTab, savedCount: 0 });
   } catch (error) {
     await recordDiag({
       lastStage: "失败",
@@ -900,7 +890,7 @@ async function shouldAskFolderForSingle() {
 // 都是先选项目 → 再抓取收藏 → 已收藏过的会被搬进所选项目。
 async function askFolderThenSave({ tabs, source = "shortcut", activeTab = null, savedCount = 0 }) {
   const targets = tabs || [];
-  // 每次添加都从「等待整理」开始，避免上次选过的项目影响本次归属。
+  // 新网页从「等待整理」开始；全部已存于同一项目时，在展示快照里选中实际归属。
   // 移动已有网页的浮层由调用方显式传入原项目，不走此添加流程。
 
   // 先把这一批标签页暂存起来，等用户在浮层里选好项目（或新建一个）再真正开始。
@@ -997,6 +987,7 @@ async function runBatchSave({ tabs, source = "shortcut", notifyTabId = null, pro
     let movedCount = 0;
     let enriched = 0;
     let degraded = 0;
+    const counted = new Map();
 
     // 收多篇时才播报「开始」；收一篇时静悄悄抓，最后只弹一条结果提示。
     if (!single) await notify(en ? `Adding ${targets.length} tabs → ${folderLabel}` : `开始添加 ${targets.length} 个标签页 → ${folderLabel}`);
@@ -1023,10 +1014,10 @@ async function runBatchSave({ tabs, source = "shortcut", notifyTabId = null, pro
         });
       }
 
+      const key = normalizeUrl(meta.url);
       const saved = await queueItemWrite(async () => {
         const stored = await chrome.storage.local.get(STORAGE_KEY);
         const items = stored[STORAGE_KEY] || [];
-        const key = normalizeUrl(meta.url);
         const existing = items.find((entry) => normalizeUrl(entry.url) === key);
         if (existing) {
           const refreshed = mergeDuplicateMetadata(existing, meta);
@@ -1053,12 +1044,14 @@ async function runBatchSave({ tabs, source = "shortcut", notifyTabId = null, pro
         await chrome.storage.local.set({ [STORAGE_KEY]: items });
         return { record, duplicated: false };
       });
+      // 重复标签仍刷新元数据，同一网页只统计和播报一次。
+      const previous = counted.get(key);
+      counted.set(key, { record: saved.record, refreshed: previous?.refreshed || saved.refreshed });
+      if (previous) continue;
       const { record, refreshed, moved } = saved;
       if (saved.duplicated) {
         duplicated += 1;
-        if (isIncomplete(record)) degraded += 1;
         if (refreshed || moved) {
-          if (refreshed) enriched += 1;
           if (moved) movedCount += 1;
           const title = pillTitle(record.title || meta.title);
           const text = moved
@@ -1075,11 +1068,14 @@ async function runBatchSave({ tabs, source = "shortcut", notifyTabId = null, pro
       previousAddedId = record.id;
 
       added += 1;
-      if (isIncomplete(record)) degraded += 1;
       // ③ 成功一篇就通知一篇，并顺手更新角标数字（切到别的标签页也看得到进度）。
       await showActionFeedback(`+${added}`, "#2f9e44", 2600);
       await notify(en ? `Added: ${pillTitle(record.title)}` : `已添加：${pillTitle(record.title)}`);
     }
+
+    const finalPages = [...counted.values()];
+    enriched = finalPages.filter(page => page.refreshed).length;
+    degraded = finalPages.filter(page => isIncomplete(page.record)).length;
 
     // 收尾：角标停一会儿再清掉，页面上再补一条总结。
     await showActionFeedback(added > 0 ? `+${added}` : "✓", added > 0 ? "#2f9e44" : "#111111", 2600);
@@ -1129,14 +1125,51 @@ async function runBatchSave({ tabs, source = "shortcut", notifyTabId = null, pro
 }
 
 // ── 网页内的「选择项目」浮层 ──────────────────────────────
-// 在用户当前所在的网页里直接弹出一个居中浮层（不新开窗口），选好项目再开始收藏。
-// 内容全部放在 Shadow DOM 里，页面自身的 CSS 影响不到它，所以视觉可以和扩展界面
-// 完全保持一致（同一套圆角、阴影、渐变按钮、深色模式）。
-// 页面正在跳转、冻结或渲染进程短暂无响应时，executeScript 可能一直不返回。
-// 选项目浮层不能跟着无限等待：到点就交回 false，让调用方重试网页内浮层。
+// 在当前网页的 Shadow DOM 里选择项目；注入超时后返回 false，供调用方重试。
 const PICKER_INJECT_TIMEOUT_MS = 1600;
 const PICKER_VERIFY_TIMEOUT_MS = 700;
 const pickerRunByTab = new Map();
+
+// The picker uses the same URL identity and first existing record as saving.
+// Reuse its current storage snapshot; no extra collection or metadata reads.
+function pickerSaveContext(tabs, items, projects, english = false) {
+  const targets = Array.isArray(tabs) ? tabs : [];
+  const wanted = new Set(targets.map(tab => normalizeUrl(tab.url)).filter(Boolean));
+  const saved = new Map();
+  for (const item of Array.isArray(items) ? items : []) {
+    const url = normalizeUrl(item?.url);
+    if (wanted.has(url) && !saved.has(url)) saved.set(url, item);
+  }
+  const byProject = new Map((Array.isArray(projects) ? projects : []).map(project => [String(project.id), project]));
+  const groups = new Map();
+  const where = item => {
+    const projectId = item?.projectId ? String(item.projectId) : "";
+    const project = byProject.get(projectId);
+    const name = !projectId ? (english ? "Inbox" : "等待整理")
+      : project ? project.name || (english ? "Untitled project" : "未命名项目")
+      : (english ? "Deleted project" : "已删除的项目");
+    return { projectId, projectName: project?.archived ? `${name}${english ? " (archived)" : "（已归档）"}` : name,
+      ...(project?.archived ? { archived: true } : {}), ...(!project && projectId ? { missing: true } : {}) };
+  };
+  for (const url of wanted) {
+    const item = saved.get(url);
+    if (!item) continue;
+    const location = where(item);
+    if (!groups.has(location.projectId)) groups.set(location.projectId, { ...location, count: 0 });
+    groups.get(location.projectId).count++;
+  }
+  const allGroups = [...groups.values()];
+  const total = wanted.size, savedCount = saved.size;
+  const common = total > 0 && total === savedCount && allGroups.length === 1 ? allGroups[0].projectId : null;
+  return {
+    saveContext: { total, savedCount, newCount: total - savedCount, groups: allGroups, sameProjectId: common },
+    pages: targets.map(tab => {
+      const item = saved.get(normalizeUrl(tab.url));
+      return { title: tab.title || tab.url, url: tab.url, saved: !!item, ...(item ? where(item) : {}) };
+    }),
+    matchedCounts: new Map(allGroups.map(group => [group.projectId, group.count]))
+  };
+}
 
 async function showPickerOverlay(tab, payload) {
   if (!tab?.id || !isWebUrl(tab.url)) return false;
@@ -1148,55 +1181,49 @@ async function showPickerOverlay(tab, payload) {
     const items = stored[STORAGE_KEY] || [];
     const settings = stored[SETTINGS_KEY] || {};
     const covers = stored[COVERS_KEY] || {};
+    const english = settings.language === "en";
+    const context = pickerSaveContext(payload?.tabs, items, projects, english);
 
     // 每个项目下已有多少篇：给用户一个参考。
     const counts = new Map();
+    const firstCovers = new Map();
     let unfiled = 0;
     for (const item of items) {
       if (item.projectId) counts.set(item.projectId, (counts.get(item.projectId) || 0) + 1);
       else unfiled += 1;
+      const id = item.projectId || "";
+      if (firstCovers.has(id)) continue;
+      const image = typeof item.image === "string" ? item.image : "";
+      const cover = item.id && covers[item.id] || (image.startsWith("local://") ? covers[image.slice(8)] : image);
+      if (cover) firstCovers.set(id, cover);
     }
-    // 项目的封面：优先用用户「编辑项目」时上传的自定义封面（data URL，离线也能显示），
-    // 没有才取该项目里第一篇「有图」的收藏。浮层里每行左侧就显示这张缩略图——
-    // 和全屏左侧栏项目行是同一套逻辑（library.js 的 projectCoverFor），两处永远一致。
-    const coverFor = (projectId) => {
-      const project = projects.find((p) => p.id === projectId);
-      if (project?.cover) return project.cover;
-      const inProject = items.filter((it) => (it.projectId || "") === projectId);
-      for (const it of inProject) {
-        // 条目上存的是 local://<id> 指针，真正的图在 covers 里；老数据可能还是 data: / 远程 URL。
-        if (it.id && covers[it.id]) return covers[it.id];
-        const image = typeof it.image === "string" ? it.image : "";
-        if (image.startsWith("local://")) {
-          const data = covers[image.slice(8)];
-          if (data) return data;
-        } else if (image) {
-          return image;
-        }
-      }
-      return null;
-    };
+    // 自定义项目封面优先，其次是上面单次扫描找到的第一张网页封面。
+    const projectCovers = new Map(projects.filter(project => project.cover).map(project => [project.id, project.cover]));
+    const coverFor = id => projectCovers.get(id) || firstCovers.get(id) || null;
     const folders = [
-      { id: "", name: settings.language === "en" ? "Inbox" : "等待整理", count: unfiled, cover: coverFor("") },
+      { id: "", name: english ? "Inbox" : "等待整理", count: unfiled, cover: coverFor("") },
       ...projects.filter((project) => !project.archived).map((project) => ({ id: project.id, name: project.name, count: counts.get(project.id) || 0, cover: coverFor(project.id) }))
-    ];
+    ].map(folder => ({ ...folder, matchedCount: context.matchedCounts.get(folder.id) || 0 }));
 
-    // 默认选中上次用过的项目；它如果已被删掉就退回「待整理」。
+    // An actual common membership takes precedence over the ordinary Inbox
+    // default. A missing or archived project stays visible in the context,
+    // but cannot silently become "already in Inbox" after selection fallback.
     let selected = payload?.projectId || "";
+    if (context.saveContext.sameProjectId !== null && folders.some(folder => folder.id === context.saveContext.sameProjectId)) {
+      selected = context.saveContext.sameProjectId;
+    }
     if (selected && !folders.some((folder) => folder.id === selected)) selected = "";
 
     const pickerPayload = {
       theme: settings.theme || "light",
-      language: settings.language === "en" ? "en" : "zh-CN",
+      language: english ? "en" : "zh-CN",
       selected,
-      savedCount: payload?.savedCount || 0,
+      savedCount: context.saveContext.savedCount,
+      saveContext: context.saveContext,
       folders,
-      pages: (payload?.tabs || []).map((entry) => ({ title: entry.title || entry.url, url: entry.url }))
+      pages: context.pages
     };
-    // files 注入不能直接带 args：先把很小的配置放进一个一次性 JSON 节点，
-    // 再执行真正的 UI 文件。用 DOM 传递比依赖两次注入共享全局变量更稳。
-    // 配置节点和 UI 文件可以并行注入：content-folder-picker.js 会监听配置就绪事件，
-    // 即使两条注入的先后顺序不同，也能在两者都到位后立即打开浮层。
+    // 配置节点与 UI 并行注入；封装监听配置就绪，消除到达顺序的影响。
     const [payloadInjected, uiInjected] = await Promise.all([
       withTimeout(
         chrome.scripting.executeScript({

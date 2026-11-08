@@ -40,6 +40,7 @@ function showFolderPickerOverlay(payload) {
     selected,
     pages,
     savedCount,
+    saveContext: data.saveContext,
     // 新建项目 / 确认收藏 / 取消收藏：都走后台那一套，行为和以前完全一致。
     // onCreateProject 按约定返回「项目对象 {id,name}」（不是后台那层 {ok,project} 包装），
     // 所以这里把响应拆开再交出去。
