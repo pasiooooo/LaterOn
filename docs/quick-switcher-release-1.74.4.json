@@ -1,0 +1,17 @@
+{
+  "version": "1.74.4",
+  "files": 73,
+  "bytes": 646877,
+  "sha256": "51752c51923dab8a492312ba4028ae6bcb5a670e6e53540e4f7d7ec473687a14",
+  "artifact": "LaterOn-1.74.4.zip",
+  "crc": true,
+  "archiveSourceExtractedEqual": true,
+  "acceptedTestRuntimeEqualExceptRemovedVersionName": true,
+  "testSourceFilesMatchPassed114Snapshot": true,
+  "localReferences": 44,
+  "localesValid": true,
+  "nativeDefaultShortcuts": 4,
+  "bookmarksPermission": "optional",
+  "faviconPermission": true,
+  "unrelatedPluginFilesExcluded": true
+}

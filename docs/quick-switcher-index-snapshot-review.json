@@ -1,0 +1,35 @@
+{
+  "sourceHashes": {
+    "url-utils.js": "cbdf90437516fc0d5d746b77231648938adfff307248f323cac8d5e0fb6c9de5",
+    "quick-switcher-search.js": "feda8afbd67fa396238560b1893e22c0252f6e5cd8d4686e2e0d81c4156ba726",
+    "local-index.js": "74eed33d3d5cc601133845e6247b1070108cbd60dc1603f253174ee6f597aae1"
+  },
+  "snapshot": {
+    "oldGen": 1,
+    "answerGen": 1,
+    "oldResults": [
+      "OldBook",
+      "OldBook",
+      "OldBook",
+      "OldBook",
+      "OldBook"
+    ],
+    "oldLookupTitles": [
+      "OldBook"
+    ],
+    "nextGen": 2,
+    "nextLookupTitles": [
+      "NewBook"
+    ]
+  },
+  "cancellation": {
+    "changedDuringFirstLookupSuccess": true,
+    "currentChecks": 266,
+    "idReads": 256,
+    "successes": 256,
+    "returnedNull": true,
+    "returnedLookups": 0,
+    "returnedResults": 0,
+    "cancelled": true
+  }
+}

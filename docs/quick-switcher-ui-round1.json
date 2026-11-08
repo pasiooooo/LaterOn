@@ -1,0 +1,225 @@
+{
+  "mode": "default",
+  "lastRequest": {
+    "query": "",
+    "modeId": "default",
+    "sources": [
+      "tabs",
+      "reading",
+      "bookmarks"
+    ],
+    "at": 361228.09999999404
+  },
+  "timings": [
+    {
+      "start": 361181.7000000179,
+      "focusMs": 44.89999997615814,
+      "rowsMs": 49.5
+    }
+  ],
+  "rows": 40,
+  "focused": "INPUT",
+  "icons": [
+    {
+      "complete": false,
+      "width": 0,
+      "source": "http://127.0.0.1:8974/_favicon/?pageUrl=https%3A%2F%2Fslow.test%2F0&size=32"
+    },
+    {
+      "complete": false,
+      "width": 0,
+      "source": "http://127.0.0.1:8974/_favicon/?pageUrl=https%3A%2F%2Fbad-icon.test%2F1&size=32"
+    },
+    {
+      "complete": false,
+      "width": 0,
+      "source": "http://127.0.0.1:8974/_favicon/?pageUrl=https%3A%2F%2Ffixture.test%2F2&size=32"
+    },
+    {
+      "complete": false,
+      "width": 0,
+      "source": "http://127.0.0.1:8974/_favicon/?pageUrl=https%3A%2F%2Ffixture.test%2F3&size=32"
+    },
+    {
+      "complete": false,
+      "width": 0,
+      "source": "http://127.0.0.1:8974/_favicon/?pageUrl=https%3A%2F%2Ffixture.test%2F4&size=32"
+    },
+    {
+      "complete": false,
+      "width": 0,
+      "source": "http://127.0.0.1:8974/_favicon/?pageUrl=https%3A%2F%2Ffixture.test%2F5&size=32"
+    },
+    {
+      "complete": false,
+      "width": 0,
+      "source": "http://127.0.0.1:8974/_favicon/?pageUrl=https%3A%2F%2Ffixture.test%2F6&size=32"
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    },
+    {
+      "complete": true,
+      "width": 0,
+      "source": ""
+    }
+  ],
+  "iconBackground": "rgba(0, 0, 0, 0)"
+}

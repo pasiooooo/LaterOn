@@ -1,0 +1,31 @@
+{
+  "hashes": {
+    "url-utils.js": "cbdf90437516fc0d5d746b77231648938adfff307248f323cac8d5e0fb6c9de5",
+    "quick-switcher-search.js": "feda8afbd67fa396238560b1893e22c0252f6e5cd8d4686e2e0d81c4156ba726",
+    "local-index.js": "74eed33d3d5cc601133845e6247b1070108cbd60dc1603f253174ee6f597aae1"
+  },
+  "cancelledNull": true,
+  "rReads": 256,
+  "rSettled": 256,
+  "aborts": 1,
+  "concurrentResult": {
+    "generation": 1,
+    "total": 1105,
+    "lookupCount": 105,
+    "titles": [
+      "BookShared",
+      "BookShared",
+      "BookShared"
+    ],
+    "urls": [
+      "https://isolation.test/0000?q=x#same",
+      "https://isolation.test/0001?q=x#same",
+      "https://isolation.test/0002?q=x#same"
+    ]
+  },
+  "after": {
+    "generation": 1,
+    "total": 1105,
+    "lastEntryTitle": "BookShared"
+  }
+}

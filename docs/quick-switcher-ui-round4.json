@@ -1,0 +1,154 @@
+{
+  "verification": "controlled browser with real keyboard/form/DOM and simulated Chrome API and local storage",
+  "checks": [
+    {
+      "name": "real form editing and opening for a source combination",
+      "mode": "default",
+      "sources": [
+        "tabs"
+      ],
+      "rows": 14
+    },
+    {
+      "name": "real form editing and opening for a source combination",
+      "mode": "default",
+      "sources": [
+        "reading"
+      ],
+      "rows": 14
+    },
+    {
+      "name": "real form editing and opening for a source combination",
+      "mode": "default",
+      "sources": [
+        "bookmarks"
+      ],
+      "rows": 14
+    },
+    {
+      "name": "real form editing and opening for a source combination",
+      "mode": "default",
+      "sources": [
+        "tabs",
+        "reading"
+      ],
+      "rows": 27
+    },
+    {
+      "name": "real form editing and opening for a source combination",
+      "mode": "default",
+      "sources": [
+        "tabs",
+        "bookmarks"
+      ],
+      "rows": 27
+    },
+    {
+      "name": "real form editing and opening for a source combination",
+      "mode": "default",
+      "sources": [
+        "reading",
+        "bookmarks"
+      ],
+      "rows": 27
+    },
+    {
+      "name": "real form editing and opening for a source combination",
+      "mode": "default",
+      "sources": [
+        "tabs",
+        "reading",
+        "bookmarks"
+      ],
+      "rows": 40
+    },
+    {
+      "name": "Tab follows its saved reassignment",
+      "mode": "mode3",
+      "query": "research",
+      "sources": [
+        "bookmarks"
+      ]
+    },
+    {
+      "name": "saved custom slash trigger",
+      "mode": "mode2",
+      "query": "research",
+      "sources": [
+        "reading"
+      ]
+    },
+    {
+      "name": "reloaded page restores the saved form from simulated storage",
+      "modes": [
+        {
+          "id": "default",
+          "prefix": "",
+          "sources": [
+            "tabs",
+            "reading",
+            "bookmarks"
+          ]
+        },
+        {
+          "id": "mode1",
+          "prefix": "@",
+          "sources": [
+            "tabs"
+          ]
+        },
+        {
+          "id": "mode2",
+          "prefix": "/",
+          "sources": [
+            "reading"
+          ]
+        },
+        {
+          "id": "mode3",
+          "prefix": "\t",
+          "sources": [
+            "bookmarks"
+          ]
+        }
+      ],
+      "type1": "custom",
+      "value2": "/",
+      "type3": "tab"
+    },
+    {
+      "name": "four visible mode controls fit the narrow dialog",
+      "width": 390,
+      "left": 8,
+      "right": 382,
+      "modes": [
+        {
+          "text": "全部",
+          "left": 21,
+          "right": 105
+        },
+        {
+          "text": "标签页@",
+          "left": 109,
+          "right": 193
+        },
+        {
+          "text": "阅读库/",
+          "left": 197,
+          "right": 281
+        },
+        {
+          "text": "书签库Tab",
+          "left": 285,
+          "right": 369
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    "/private/tmp/lateron-modes-ui-round4-dark.png",
+    "/private/tmp/lateron-modes-ui-round4-light.png",
+    "/private/tmp/lateron-modes-ui-round4-narrow.png",
+    "/private/tmp/lateron-modes-ui-round4-settings-narrow.png"
+  ]
+}

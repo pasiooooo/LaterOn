@@ -1,0 +1,72 @@
+{
+  "sourceRoot": "/private/tmp/lateron-live-tabs-cancel-warm-freeze-2026-11-08",
+  "boundary": "Actual frozen/runtime JS through its exported VM fixture; synthetic APIs, not native Chrome or real persistent-index integration. Fixture read fallback is in memory only.",
+  "sourceHashes": {
+    "quick-switcher-background.js": "5db09f05ce436f438d3e5e1f34448b34233f80aca25c3395d626d2733e2c3156",
+    "quick-switcher-search.js": "feda8afbd67fa396238560b1893e22c0252f6e5cd8d4686e2e0d81c4156ba726",
+    "tests/quick-switcher-live-tabs.test.js": "4aaa4747024545bcf51bad1933a87f2a66caf7e7fc09faa8c2d821a6e172c478"
+  },
+  "helperHashes": {
+    "quick-switcher-modes.js": "a1e5ce2198c0d1655a0cf7c13357d4665621c19f4d28c6813691f5b1213b56cf",
+    "url-utils.js": "cbdf90437516fc0d5d746b77231648938adfff307248f323cac8d5e0fb6c9de5"
+  },
+  "probes": [
+    {
+      "name": "initial_snapshot_churn",
+      "arrivals": 1,
+      "nativeQueries": 1,
+      "total": 1,
+      "provisional": false
+    },
+    {
+      "name": "continuous_distinct_total",
+      "additions": 3,
+      "total": 4,
+      "rows": 4,
+      "titles": [
+        "RareUnique Library",
+        "RareUnique Native 1",
+        "RareUnique Native 2",
+        "RareUnique Native 3"
+      ],
+      "provisional": true,
+      "totalBelowVisibleRows": false
+    },
+    {
+      "name": "reading_deleted_in_final_context",
+      "contextReads": 2,
+      "outcome": {
+        "error": "quickSwitcherMissing"
+      },
+      "readingStillExists": false,
+      "created": []
+    },
+    {
+      "name": "bookmark_permission_during_final_get",
+      "nativeGets": 2,
+      "outcome": {
+        "error": "quickSwitcherMissing"
+      },
+      "currentScope": null,
+      "created": []
+    },
+    {
+      "name": "bookmark_scope_during_final_get",
+      "nativeGets": 3,
+      "outcome": {
+        "error": "quickSwitcherMissing"
+      },
+      "currentScope": "missing-scope",
+      "created": []
+    },
+    {
+      "name": "tab_navigation_during_final_get",
+      "nativeGets": 3,
+      "outcome": {
+        "error": "quickSwitcherMissing"
+      },
+      "pendingUrl": "https://leaving.test/?q=new#section",
+      "updates": []
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "modesScriptSha256": "74a664321f5f02a9377b0a578b8fb44365c40db9511200f767b8717045256ef2",
+  "provenance": "Execution source reconstructed from the one subsequent restoration-readback-only edit; bytes verified against execution-recorded SHA256.",
+  "probeNote": "Launcher/import routing copied at preservation time; mode scenario execution is identified by the exact modes.mjs hash."
+}

@@ -1,0 +1,40 @@
+{
+  "verification": "controlled browser; CDP IME, mocked settings transport",
+  "checks": [
+    {
+      "name": "Shift+Tab retains focus navigation",
+      "mode": "mode3",
+      "query": "research",
+      "focused": "BUTTON"
+    },
+    {
+      "name": "trusted browser composition defers prefix and search",
+      "mode": "default",
+      "query": "'中",
+      "requests": 10
+    },
+    {
+      "name": "composition commit interprets one prefix",
+      "mode": "mode3",
+      "query": "中文"
+    },
+    {
+      "name": "every reopening resets the mode",
+      "mode": "default"
+    },
+    {
+      "name": "live configuration preserves slot and query despite a new matching prefix",
+      "mode": "mode1",
+      "query": "research",
+      "request": {
+        "query": "research",
+        "modeId": "mode1",
+        "sources": [
+          "tabs",
+          "bookmarks"
+        ],
+        "at": 903531.7000000179
+      }
+    }
+  ]
+}

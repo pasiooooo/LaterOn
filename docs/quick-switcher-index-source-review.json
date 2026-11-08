@@ -1,0 +1,60 @@
+{
+  "sourceHashes": {
+    "url-utils.js": "cbdf90437516fc0d5d746b77231648938adfff307248f323cac8d5e0fb6c9de5",
+    "quick-switcher-search.js": "feda8afbd67fa396238560b1893e22c0252f6e5cd8d4686e2e0d81c4156ba726",
+    "local-index.js": "74eed33d3d5cc601133845e6247b1070108cbd60dc1603f253174ee6f597aae1"
+  },
+  "probes": [
+    {
+      "name": "equal_book_dates_\"\"",
+      "actual": [
+        "https://tie.test/0000?q=x#exact",
+        "https://tie.test/0001?q=x#exact",
+        "https://tie.test/0002?q=x#exact"
+      ],
+      "expected": [
+        "https://tie.test/0000?q=x#exact",
+        "https://tie.test/0001?q=x#exact",
+        "https://tie.test/0002?q=x#exact"
+      ],
+      "total": 1105
+    },
+    {
+      "name": "equal_book_dates_\"marked\"",
+      "actual": [
+        "https://tie.test/0000?q=x#exact",
+        "https://tie.test/0001?q=x#exact",
+        "https://tie.test/0002?q=x#exact"
+      ],
+      "expected": [
+        "https://tie.test/0000?q=x#exact",
+        "https://tie.test/0001?q=x#exact",
+        "https://tie.test/0002?q=x#exact"
+      ],
+      "total": 1105
+    },
+    {
+      "name": "equal_book_dates_\"tie.test\"",
+      "actual": [
+        "https://tie.test/0000?q=x#exact",
+        "https://tie.test/0001?q=x#exact",
+        "https://tie.test/0002?q=x#exact"
+      ],
+      "expected": [
+        "https://tie.test/0000?q=x#exact",
+        "https://tie.test/0001?q=x#exact",
+        "https://tie.test/0002?q=x#exact"
+      ],
+      "total": 1105
+    },
+    {
+      "name": "more_than_1000_lookups",
+      "requested": 1105,
+      "returned": 1105,
+      "lastRequested": "https://tie.test/1104?q=x#exact",
+      "lastReturned": "https://tie.test/1104?q=x#exact",
+      "sourcesFiltered": true,
+      "provisional": false
+    }
+  ]
+}

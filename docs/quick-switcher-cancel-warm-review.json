@@ -1,0 +1,34 @@
+{
+  "boundary": "Actual final B and Index in fake-indexeddb; only an in-memory gate delays the old request until it is superseded; no Chrome or source modifications",
+  "sourceHashes": {
+    "quick-switcher-background.js": "5db09f05ce436f438d3e5e1f34448b34233f80aca25c3395d626d2733e2c3156",
+    "quick-switcher-search.js": "feda8afbd67fa396238560b1893e22c0252f6e5cd8d4686e2e0d81c4156ba726",
+    "local-index.js": "74eed33d3d5cc601133845e6247b1070108cbd60dc1603f253174ee6f597aae1"
+  },
+  "before": {
+    "generation": 1,
+    "revision": 1
+  },
+  "after": {
+    "generation": 1,
+    "revision": 1
+  },
+  "replies": [
+    {
+      "query": "Common",
+      "queryCurrent": false,
+      "returnedNull": true
+    }
+  ],
+  "cancelled": {
+    "results": [],
+    "total": 0,
+    "cancelled": true,
+    "sourcesFiltered": true
+  },
+  "replacement": {
+    "total": 1
+  },
+  "storageWrites": [],
+  "unexpectedGenerationAdvance": false
+}

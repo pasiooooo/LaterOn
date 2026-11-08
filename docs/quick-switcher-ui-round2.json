@@ -1,0 +1,84 @@
+{
+  "verification": "controlled browser, mocked Chrome/source data",
+  "checks": [
+    {
+      "name": "visible asynchronous icons and transparent error fallback",
+      "loaded": 6,
+      "failedIconRemoved": true,
+      "fallbackPresent": true,
+      "transparent": true
+    },
+    {
+      "name": "Tab selects tabs and preserves query",
+      "mode": "mode1",
+      "query": "research",
+      "request": {
+        "query": "research",
+        "modeId": "mode1",
+        "sources": [
+          "tabs"
+        ],
+        "at": 528939.900000006
+      },
+      "rows": 14,
+      "contexts": [
+        "Sresearch 0 · 中文网页slow.test/0标签页",
+        "Fresearch 3 · 中文网页fixture.test/3标签页",
+        "Fresearch 6 · 中文网页fixture.test/6标签页",
+        "Fresearch 9 · 中文网页fixture.test/9标签页",
+        "Fresearch 12 · 中文网页fixture.test/12标签页",
+        "Fresearch 15 · 中文网页fixture.test/15标签页",
+        "Fresearch 18 · 中文网页fixture.test/18标签页",
+        "Fresearch 21 · 中文网页fixture.test/21标签页",
+        "Fresearch 24 · 中文网页fixture.test/24标签页",
+        "Fresearch 27 · 中文网页fixture.test/27标签页",
+        "Fresearch 30 · 中文网页fixture.test/30标签页",
+        "Fresearch 33 · 中文网页fixture.test/33标签页",
+        "Fresearch 36 · 中文网页fixture.test/36标签页",
+        "Fresearch 39 · 中文网页fixture.test/39标签页"
+      ]
+    },
+    {
+      "name": "ordinary internal space remains text",
+      "mode": "mode1",
+      "query": "research alpha"
+    },
+    {
+      "name": "leading Space selects Reading",
+      "mode": "mode2",
+      "sources": [
+        "reading"
+      ]
+    },
+    {
+      "name": "pasted apostrophe prefix selects Bookmarks with no residual separator",
+      "mode": "mode3",
+      "query": "research",
+      "request": {
+        "query": "research",
+        "modeId": "mode3",
+        "sources": [
+          "bookmarks"
+        ],
+        "at": 529587.900000006
+      },
+      "rows": 14,
+      "contexts": [
+        "Sresearch 0 · 中文网页slow.test/0·书签目录书签库",
+        "Fresearch 2 · 中文网页fixture.test/2·书签目录书签库",
+        "Fresearch 5 · 中文网页fixture.test/5·书签目录书签库",
+        "Fresearch 8 · 中文网页fixture.test/8·书签目录书签库",
+        "Fresearch 11 · 中文网页fixture.test/11·书签目录书签库",
+        "Fresearch 14 · 中文网页fixture.test/14·书签目录书签库",
+        "Fresearch 17 · 中文网页fixture.test/17·书签目录书签库",
+        "Fresearch 20 · 中文网页fixture.test/20·书签目录书签库",
+        "Fresearch 23 · 中文网页fixture.test/23·书签目录书签库",
+        "Fresearch 26 · 中文网页fixture.test/26·书签目录书签库",
+        "Fresearch 29 · 中文网页fixture.test/29·书签目录书签库",
+        "Fresearch 32 · 中文网页fixture.test/32·书签目录书签库",
+        "Fresearch 35 · 中文网页fixture.test/35·书签目录书签库",
+        "Fresearch 38 · 中文网页fixture.test/38·书签目录书签库"
+      ]
+    }
+  ]
+}

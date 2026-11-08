@@ -1,0 +1,182 @@
+{
+  "extension": {
+    "state": "ENABLED",
+    "disableReasons": {
+      "blockedByPolicy": false,
+      "corruptInstall": false,
+      "custodianApprovalRequired": false,
+      "disabledByAnotherExtension": false,
+      "parentDisabledPermissions": false,
+      "publishedInStoreRequired": false,
+      "reloading": false,
+      "suspiciousInstall": false,
+      "unsupportedDeveloperExtension": false,
+      "unsupportedManifestVersion": false,
+      "updateRequired": false
+    },
+    "path": "/private/tmp/lateron-instant-native-ext-baseline",
+    "manifestErrors": [],
+    "runtimeErrors": [
+      {
+        "message": "Uncaught NetworkError: Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'chrome-extension://ifkjnimbijeafkmehbhchmamkpnhphac/page-metadata.js' failed to load.",
+        "contextUrl": "chrome-extension://ifkjnimbijeafkmehbhchmamkpnhphac/background.js"
+      },
+      {
+        "message": "An unknown error occurred when fetching the script.",
+        "contextUrl": ""
+      }
+    ],
+    "views": [
+      {
+        "incognito": false,
+        "isIframe": false,
+        "renderProcessId": 67,
+        "renderViewId": -1,
+        "type": "EXTENSION_SERVICE_WORKER_BACKGROUND",
+        "url": "chrome-extension://ifkjnimbijeafkmehbhchmamkpnhphac/background.js"
+      }
+    ]
+  },
+  "targets": [
+    {
+      "id": "0CA86255A068196AFA8129991DDC3AA2",
+      "url": "chrome-extension://ifkjnimbijeafkmehbhchmamkpnhphac/background.js",
+      "type": "service_worker",
+      "attached": false
+    },
+    {
+      "id": "3D73FC8F30FC90BAEDC60BB4022E5397",
+      "url": "about:blank",
+      "type": "page",
+      "attached": false
+    },
+    {
+      "id": "CE4AAE04E2C84834FAB0EAE51254F243",
+      "url": "chrome://omnibox-popup.top-chrome/omnibox_popup_aim.html",
+      "type": "browser_ui",
+      "attached": false
+    },
+    {
+      "id": "F757F0812D7C745D27DA7229DEC51717",
+      "url": "chrome://omnibox-popup.top-chrome/",
+      "type": "browser_ui",
+      "attached": false
+    },
+    {
+      "id": "49F49CDF9E221DD140BAAB3861E65C9D",
+      "url": "chrome://extensions/",
+      "type": "page",
+      "attached": true
+    }
+  ],
+  "probes": [
+    {
+      "file": "native-modes-harness.html",
+      "result": {
+        "url": "chrome-extension://ifkjnimbijeafkmehbhchmamkpnhphac/native-modes-harness.html",
+        "title": "LaterOn native mode tests",
+        "body": "Owned synthetic LaterOn mode validation",
+        "ready": "complete",
+        "chrome": "object"
+      },
+      "state": {
+        "stored": {
+          "laterOnBookmarkConfig": {
+            "enabled": true,
+            "scopeId": null
+          },
+          "laterOnBookmarkStateMeta": {
+            "checkedAt": 1794074281486,
+            "enabled": true,
+            "error": null,
+            "leanSignature": "46evrq-d06t5s-6t117",
+            "nativeVerifiedAt": 1794074280861,
+            "pages": 50000,
+            "scopeId": null,
+            "signature": "1nsyhx0-193oq4c-6uk73",
+            "source": "indexeddb",
+            "updatedAt": 1794074280841
+          }
+        },
+        "indexes": [
+          {
+            "key": "search",
+            "schema": 5,
+            "ready": true,
+            "generation": 21,
+            "nextGeneration": 22,
+            "pending": null,
+            "counts": {
+              "r": 5000,
+              "a": 55000
+            },
+            "readingItems": 5000,
+            "bookmarkPages": 50000,
+            "bookmarkEnabled": true,
+            "bookmarkScope": null,
+            "bookmarkError": null,
+            "thinBookmarks": true,
+            "postingStats": {
+              "r": {
+                "rows": 5000,
+                "limit": 2048,
+                "keys": 2036,
+                "positions": 299549,
+                "omittedKeys": 88,
+                "omittedPositions": 371317
+              },
+              "a": {
+                "rows": 55000,
+                "limit": 11000,
+                "keys": 2360,
+                "positions": 2092635,
+                "omittedKeys": 279,
+                "omittedPositions": 7327383
+              }
+            },
+            "revision": 1794074280852,
+            "updatedAt": 1794074322999,
+            "sourceViews": true,
+            "sharedPages": 0
+          },
+          {
+            "key": "bookmarks",
+            "schema": 5,
+            "ready": true,
+            "generation": 16,
+            "nextGeneration": 17,
+            "pending": null,
+            "enabled": true,
+            "scopeId": null,
+            "error": null,
+            "updatedAt": 1794074280841,
+            "signature": "1nsyhx0-193oq4c-6uk73",
+            "totalPages": 50000,
+            "searchSourceReady": true,
+            "revision": 16
+          }
+        ],
+        "health": {
+          "ok": true,
+          "total": 0
+        }
+      },
+      "restoreReadback": {
+        "items": 5000,
+        "projects": 24,
+        "bookmarkPages": 50000,
+        "fixtureFolderAbsent": true,
+        "readingFixtureAbsent": true,
+        "projectFixtureAbsent": true,
+        "settings": {
+          "language": "zh-CN",
+          "theme": "light"
+        },
+        "bookmarkConfig": {
+          "enabled": true,
+          "scopeId": null
+        }
+      }
+    }
+  ]
+}
