@@ -22,5 +22,31 @@
   "runtimeFilesUnchangedSinceRendererChecks": true,
   "browserBoundary": "Actual UI and actual backend-generated synthetic payloads; actual save loop tested with isolated Chrome API mocks. No personal-profile installation test.",
   "publicationWorkflow": ".github/workflows/release.yml on v1.74.5 tag",
-  "publicationStatus": "prepared"
+  "publicationStatus": "published and downloaded asset verified",
+  "publication": {
+    "version": "1.74.5",
+    "releaseURL": "https://github.com/pasiooooo/LaterOn/releases/tag/v1.74.5",
+    "tag": "v1.74.5",
+    "tagCommit": "fbb40d1a1ea306e32b1cb7f7accf7fc0cb843823",
+    "releaseTitle": "LaterOn 1.74.5",
+    "draft": false,
+    "prerelease": false,
+    "publishedAt": "2026-11-08T01:28:47Z",
+    "downloadURL": "https://github.com/pasiooooo/LaterOn/releases/download/v1.74.5/LaterOn-1.74.5.zip",
+    "asset": "LaterOn-1.74.5.zip",
+    "bytes": 649188,
+    "sha256": "9282fedfd669b49712c3ae91e2b0acc5d5f495be90a107c383d3ce2546b71f2f",
+    "githubAssetDigestMatches": true,
+    "localArchiveEqual": true,
+    "downloadedArchiveSourceEqual": true,
+    "crc": true,
+    "files": 73,
+    "releaseBodyMatchesChangelog": true,
+    "workflow": {
+      "conclusion": "success",
+      "headSha": "fbb40d1a1ea306e32b1cb7f7accf7fc0cb843823",
+      "status": "completed",
+      "url": "https://github.com/pasiooooo/LaterOn/actions/runs/42434409884"
+    }
+  }
 }
